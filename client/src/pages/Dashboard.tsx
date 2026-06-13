@@ -1,6 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import RedactioLayout from "@/components/RedactioLayout";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ArrowRight,
@@ -64,22 +63,25 @@ export default function Dashboard() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {VOLETS.map((volet) => (
-                <Link key={volet.id} href={`/redaction?volet=${volet.id}`}>
-                  <a className="volet-card group" aria-label={`Démarrer ${volet.label}`}>
-                    <div className={`w-12 h-12 rounded-xl ${volet.bg} flex items-center justify-center ${volet.color}`}>
-                      {volet.icon}
-                    </div>
-                    <div className="space-y-1">
-                      <h3 className="font-semibold text-foreground text-sm">{volet.label}</h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        {volet.description}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-primary font-medium mt-auto">
-                      <span>Démarrer</span>
-                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                    </div>
-                  </a>
+                <Link
+                  key={volet.id}
+                  href={`/redaction?volet=${volet.id}`}
+                  className="volet-card group"
+                  aria-label={`Démarrer ${volet.label}`}
+                >
+                  <div className={`w-12 h-12 rounded-xl ${volet.bg} flex items-center justify-center ${volet.color}`}>
+                    {volet.icon}
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="font-semibold text-foreground text-sm">{volet.label}</h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {volet.description}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-primary font-medium mt-auto">
+                    <span>Démarrer</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
                 </Link>
               ))}
             </div>
@@ -113,37 +115,33 @@ export default function Dashboard() {
               Administration
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                <Link href="/backoffice">
-                  <a className="block">
+              <Link href="/backoffice" className="block">
+                <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+                  <CardHeader>
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-primary" />
+                      Back-office de prompts
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Gérer les socles et templates de prompts, campagnes de non-régression.
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+              {userRole === "admin" && (
+                <Link href="/organisations" className="block">
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
                     <CardHeader>
                       <CardTitle className="text-sm flex items-center gap-2">
-                        <BookOpen className="w-4 h-4 text-primary" />
-                        Back-office de prompts
+                        <Info className="w-4 h-4 text-primary" />
+                        Gestion des organisations
                       </CardTitle>
                       <CardDescription className="text-xs">
-                        Gérer les socles et templates de prompts, campagnes de non-régression.
+                        Établissements, abonnements, utilisateurs.
                       </CardDescription>
                     </CardHeader>
-                  </a>
+                  </Card>
                 </Link>
-              </Card>
-              {userRole === "admin" && (
-                <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                  <Link href="/organisations">
-                    <a className="block">
-                      <CardHeader>
-                        <CardTitle className="text-sm flex items-center gap-2">
-                          <Info className="w-4 h-4 text-primary" />
-                          Gestion des organisations
-                        </CardTitle>
-                        <CardDescription className="text-xs">
-                          Établissements, abonnements, utilisateurs.
-                        </CardDescription>
-                      </CardHeader>
-                    </a>
-                  </Link>
-                </Card>
               )}
             </div>
           </section>
