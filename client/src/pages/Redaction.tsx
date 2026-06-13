@@ -1,0 +1,601 @@
+import { useAuth } from "@/_core/hooks/useAuth";
+import RedactioLayout from "@/components/RedactioLayout";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  Check,
+  CheckCircle,
+  Copy,
+  Download,
+  FileText,
+  Loader2,
+  RotateCcw,
+  Stethoscope,
+  X,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation } from "wouter";
+import { cn } from "../lib/utils";
+import { toast } from "sonner";
+
+type Volet = "courrier_sortie" | "conciliation" | "correspondance";
+
+const VOLETS: Record<Volet, { label: string; icon: React.ReactNode; description: string; color: string }> = {
+  courrier_sortie: {
+    label: "Courrier de sortie",
+    icon: <FileText className="w-6 h-6" />,
+    description: "Rédaction du courrier de sortie d'hospitalisation à destination du médecin traitant ou d'un correspondant.",
+    color: "blue",
+  },
+  conciliation: {
+    label: "Conciliation médicamenteuse",
+    icon: <Stethoscope className="w-6 h-6" />,
+    description: "Bilan de conciliation médicamenteuse à l'admission, au transfert ou à la sortie.",
+    color: "emerald",
+  },
+  correspondance: {
+    label: "Correspondance médicale",
+    icon: <BookOpen className="w-6 h-6" />,
+    description: "Rédaction d'une correspondance médicale professionnelle entre praticiens.",
+    color: "violet",
+  },
+};
+
+const STEPS = [
+  { id: 1, label: "Volet" },
+  { id: 2, label: "Données" },
+  { id: 3, label: "Génération" },
+  { id: 4, label: "Relecture" },
+  { id: 5, label: "Export" },
+];
+
+// Regex pour détecter les balises [À COMPLÉTER PAR LE MÉDECIN]
+const TAG_REGEX = /\[À COMPLÉTER PAR LE MÉDECIN\]/g;
+
+function highlightTags(text: string): string {
+  return text.replace(
+    TAG_REGEX,
+    '<mark class="tag-a-completer" title="Cliquez pour compléter">[À COMPLÉTER PAR LE MÉDECIN]</mark>'
+  );
+}
+
+export default function Redaction() {
+  const [, setLocation] = useLocation();
+  const { isAuthenticated, loading: authLoading } = useAuth();
+
+  // Récupérer le volet depuis l'URL
+  const searchParams = new URLSearchParams(window.location.search);
+  const initialVolet = (searchParams.get("volet") as Volet) || null;
+
+  const [step, setStep] = useState(initialVolet ? 2 : 1);
+  const [selectedVolet, setSelectedVolet] = useState<Volet | null>(initialVolet);
+  const [rawData, setRawData] = useState("");
+  const [generatedDoc, setGeneratedDoc] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [validated, setValidated] = useState(false);
+  const [pseudoInfo, setPseudoInfo] = useState<{
+    maskCount: number;
+    detectedCategories: string[];
+    hasPotentialOvermasking: boolean;
+  } | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const [streamingText, setStreamingText] = useState("");
+
+  // Génération via streaming SSE
+  const handleStreamGenerate = useCallback(async (volet: Volet, rawData: string) => {
+    setIsGenerating(true);
+    setGeneratedDoc("");
+    setStreamingText("");
+    setValidated(false);
+    setPseudoInfo(null);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    let accumulated = "";
+
+    try {
+      const response = await fetch("/api/generate/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ volet, rawData }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: "Erreur réseau" }));
+        throw new Error(err.error || `HTTP ${response.status}`);
+      }
+
+      const reader = response.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const data = line.slice(6).trim();
+          if (!data) continue;
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.type === "pseudonymisation") {
+              setPseudoInfo({
+                maskCount: parsed.maskCount,
+                detectedCategories: parsed.detectedCategories,
+                hasPotentialOvermasking: parsed.hasPotentialOvermasking,
+              });
+            } else if (parsed.type === "token") {
+              accumulated += parsed.content;
+              setStreamingText(accumulated);
+            } else if (parsed.type === "done") {
+              setGeneratedDoc(accumulated);
+              setIsGenerating(false);
+              setStep(4);
+            } else if (parsed.type === "error") {
+              throw new Error(parsed.message);
+            }
+          } catch (e) {
+            if (e instanceof SyntaxError) continue;
+            throw e;
+          }
+        }
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "AbortError") {
+        setIsGenerating(false);
+        toast.info("Génération annulée.");
+        return;
+      }
+      setIsGenerating(false);
+      toast.error(err instanceof Error ? err.message : "Erreur lors de la génération.");
+    }
+  }, []);
+
+  // Éditeur TipTap
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: "",
+    editorProps: {
+      attributes: {
+        class: "tiptap-editor",
+        "aria-label": "Éditeur de document médical",
+        role: "textbox",
+        "aria-multiline": "true",
+      },
+    },
+  });
+
+  // Mettre à jour l'éditeur quand le document est généré
+  useEffect(() => {
+    if (editor && generatedDoc) {
+      const htmlContent = highlightTags(
+        generatedDoc
+          .split("\n")
+          .map((line) => `<p>${line || "&nbsp;"}</p>`)
+          .join("")
+      );
+      editor.commands.setContent(htmlContent);
+    }
+  }, [editor, generatedDoc]);
+
+  const handleGenerate = useCallback(() => {
+    if (!selectedVolet || !rawData.trim()) return;
+    handleStreamGenerate(selectedVolet, rawData);
+  }, [selectedVolet, rawData, handleStreamGenerate]);
+
+  const handleCancelGeneration = useCallback(() => {
+    setIsGenerating(false);
+    abortRef.current?.abort();
+  }, []);
+
+  const handleCopy = useCallback(() => {
+    if (!validated) return;
+    const text = editor?.getText() ?? generatedDoc;
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success("Document copié dans le presse-papier.");
+    });
+  }, [validated, editor, generatedDoc]);
+
+  const handleDownload = useCallback(() => {
+    if (!validated) return;
+    const text = editor?.getText() ?? generatedDoc;
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `redactio_${selectedVolet}_${new Date().toISOString().slice(0, 10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Document téléchargé.");
+  }, [validated, editor, generatedDoc, selectedVolet]);
+
+  const handleReset = useCallback(() => {
+    setStep(1);
+    setSelectedVolet(null);
+    setRawData("");
+    setGeneratedDoc("");
+    setValidated(false);
+    setPseudoInfo(null);
+    editor?.commands.setContent("");
+  }, [editor]);
+
+  if (authLoading) return null;
+  if (!isAuthenticated) {
+    setLocation("/");
+    return null;
+  }
+
+  const progress = (step / 5) * 100;
+
+  return (
+    <RedactioLayout>
+      <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
+        {/* En-tête avec étapes */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-bold text-foreground">Nouvelle rédaction</h1>
+            <Button variant="ghost" size="sm" onClick={handleReset} aria-label="Recommencer">
+              <RotateCcw className="w-4 h-4 mr-1.5" />
+              Recommencer
+            </Button>
+          </div>
+
+          {/* Indicateur d'étapes */}
+          <div className="space-y-2">
+            <Progress value={progress} className="h-1.5" aria-label={`Étape ${step} sur 5`} />
+            <div className="flex items-center justify-between" role="list" aria-label="Étapes du parcours">
+              {STEPS.map((s) => (
+                <div key={s.id} className="step-indicator" role="listitem">
+                  <div
+                    className={cn("step-dot", {
+                      active: step === s.id,
+                      completed: step > s.id,
+                      pending: step < s.id,
+                    })}
+                    aria-current={step === s.id ? "step" : undefined}
+                  >
+                    {step > s.id ? <Check className="w-3 h-3" /> : s.id}
+                  </div>
+                  <span
+                    className={cn("text-xs hidden sm:block", {
+                      "text-primary font-semibold": step === s.id,
+                      "text-muted-foreground": step !== s.id,
+                    })}
+                  >
+                    {s.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ─── Étape 1 : Choix du volet ─── */}
+        {step === 1 && (
+          <div className="space-y-4 animate-fade-in">
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">Choisissez un volet</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Sélectionnez le type de document à rédiger.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {(Object.entries(VOLETS) as [Volet, typeof VOLETS[Volet]][]).map(([id, volet]) => (
+                <button
+                  key={id}
+                  className={cn("volet-card text-left", { selected: selectedVolet === id })}
+                  onClick={() => setSelectedVolet(id)}
+                  aria-pressed={selectedVolet === id}
+                  aria-label={`Sélectionner ${volet.label}`}
+                >
+                  <div className={cn(
+                    "w-12 h-12 rounded-xl flex items-center justify-center",
+                    volet.color === "blue" && "bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400",
+                    volet.color === "emerald" && "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400",
+                    volet.color === "violet" && "bg-violet-50 dark:bg-violet-950/30 text-violet-600 dark:text-violet-400",
+                  )}>
+                    {volet.icon}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground text-sm">{volet.label}</h3>
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{volet.description}</p>
+                  </div>
+                  {selectedVolet === id && (
+                    <div className="absolute top-3 right-3">
+                      <CheckCircle className="w-5 h-5 text-primary" />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-end">
+              <Button
+                onClick={() => setStep(2)}
+                disabled={!selectedVolet}
+                className="gap-2"
+              >
+                Continuer
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Étape 2 : Injection des données ─── */}
+        {step === 2 && selectedVolet && (
+          <div className="space-y-4 animate-fade-in">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={() => setStep(1)} aria-label="Retour">
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">
+                  {VOLETS[selectedVolet].label}
+                </h2>
+                <p className="text-sm text-muted-foreground">Saisissez les données médicales du patient.</p>
+              </div>
+            </div>
+
+            {/* Avertissement renforcé */}
+            <div
+              className="flex items-start gap-3 p-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30"
+              role="alert"
+            >
+              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="text-sm text-amber-800 dark:text-amber-200 space-y-1">
+                <p className="font-semibold">Consigne de confidentialité obligatoire</p>
+                <p>
+                  Ne saisissez <strong>aucun identifiant direct</strong> du patient : ni nom, ni prénom,
+                  ni numéro de sécurité sociale, ni date de naissance, ni adresse, ni numéro de téléphone.
+                </p>
+                <p className="text-xs opacity-80">
+                  Le filtre de pseudonymisation détectera et masquera automatiquement les identifiants
+                  structurés, mais vous restez responsable de ne pas saisir d'identité directe.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="rawData" className="text-sm font-medium text-foreground">
+                Données médicales brutes
+                <span className="text-muted-foreground font-normal ml-1">(sans identifiant direct)</span>
+              </label>
+              <Textarea
+                id="rawData"
+                value={rawData}
+                onChange={(e) => setRawData(e.target.value)}
+                placeholder={`Exemple pour ${VOLETS[selectedVolet].label} :\n\nService : Cardiologie\nMotif d'hospitalisation : Décompensation cardiaque\nAntécédents : HTA, FA chronique, insuffisance cardiaque FE 35%\nTraitement habituel : Furosémide 40mg, Bisoprolol 5mg, Rivaroxaban 20mg\n...`}
+                className="min-h-[280px] font-mono text-sm resize-y"
+                aria-describedby="rawData-help"
+                maxLength={8000}
+              />
+              <div className="flex items-center justify-between">
+                <p id="rawData-help" className="text-xs text-muted-foreground">
+                  {rawData.length}/8000 caractères
+                </p>
+                {rawData.length > 0 && (
+                  <Badge variant="secondary" className="text-xs">
+                    Pseudonymisation automatique activée
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={() => setStep(1)}>
+                <ArrowLeft className="w-4 h-4 mr-1.5" />
+                Retour
+              </Button>
+              <Button
+                onClick={() => { setStep(3); handleGenerate(); }}
+                disabled={rawData.trim().length < 10}
+                className="gap-2"
+              >
+                Générer le document
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Étape 3 : Génération en cours ─── */}
+        {step === 3 && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="text-center space-y-4 py-8">
+              <div className="flex items-center justify-center">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-lg font-semibold text-foreground">Génération en cours…</h2>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                  Le moteur IA rédige votre document à partir des données pseudonymisées.
+                  Cela prend généralement quelques secondes.
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Pseudonymisation appliquée — contenu filtré avant envoi au moteur</span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancelGeneration}
+                className="gap-2"
+              >
+                <X className="w-4 h-4" />
+                Annuler
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Étape 4 : Relecture et édition ─── */}
+        {step === 4 && (
+          <div className="space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">Relecture et édition</h2>
+                <p className="text-sm text-muted-foreground">
+                  Relisez, corrigez et complétez le document avant validation.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setStep(2); setGeneratedDoc(""); }}
+                className="gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Régénérer
+              </Button>
+            </div>
+
+            {/* Informations de pseudonymisation */}
+            {pseudoInfo && pseudoInfo.maskCount > 0 && (
+              <div className="flex flex-wrap items-center gap-2 p-3 rounded-lg bg-muted/50 border border-border">
+                <span className="text-xs text-muted-foreground font-medium">Masquages appliqués :</span>
+                <span className="mask-badge">
+                  {pseudoInfo.maskCount} identifiant{pseudoInfo.maskCount > 1 ? "s" : ""} masqué{pseudoInfo.maskCount > 1 ? "s" : ""}
+                </span>
+                {pseudoInfo.detectedCategories.map((cat) => (
+                  <span key={cat} className="mask-badge">{cat.replace(/_/g, " ")}</span>
+                ))}
+                {pseudoInfo.hasPotentialOvermasking && (
+                  <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    Sur-masquage possible — vérifiez le document
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Légende des balises */}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="tag-a-completer text-xs">[À COMPLÉTER PAR LE MÉDECIN]</span>
+              <span>= zones à compléter obligatoirement avant export</span>
+            </div>
+
+            {/* Éditeur riche */}
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/30">
+                <span className="text-xs text-muted-foreground font-medium">
+                  Éditeur de document — {selectedVolet && VOLETS[selectedVolet].label}
+                </span>
+              </div>
+              <EditorContent editor={editor} />
+            </div>
+
+            {/* Validation */}
+            {!validated ? (
+              <Card className="border-amber-200 dark:border-amber-800">
+                <CardContent className="pt-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div className="space-y-3 flex-1">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">Validation requise avant export</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          En validant ce document, vous confirmez l'avoir relu, corrigé et complété toutes les
+                          balises <strong>[À COMPLÉTER PAR LE MÉDECIN]</strong>. Vous assumez la responsabilité
+                          médicale du contenu.
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => { setValidated(true); setStep(5); }}
+                        className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                      >
+                        <Check className="w-4 h-4" />
+                        Je valide ce document
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="flex justify-end">
+                <Button onClick={() => setStep(5)} className="gap-2">
+                  Continuer vers l'export
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── Étape 5 : Export ─── */}
+        {step === 5 && validated && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="text-center space-y-2">
+              <div className="flex items-center justify-center">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/30 flex items-center justify-center">
+                  <CheckCircle className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                </div>
+              </div>
+              <h2 className="text-lg font-semibold text-foreground">Document validé</h2>
+              <p className="text-sm text-muted-foreground">
+                Vous pouvez maintenant copier ou télécharger le document.
+              </p>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Options d'export</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button
+                  className="w-full gap-2"
+                  variant="outline"
+                  onClick={handleCopy}
+                >
+                  <Copy className="w-4 h-4" />
+                  Copier dans le presse-papier
+                </Button>
+                <Button
+                  className="w-full gap-2"
+                  onClick={handleDownload}
+                >
+                  <Download className="w-4 h-4" />
+                  Télécharger en texte (.txt)
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
+              <CardContent className="pt-4">
+                <p className="text-xs text-blue-700/80 dark:text-blue-300/80">
+                  <strong>Rappel :</strong> Ce document sera purgé de la mémoire à la fermeture de la session.
+                  Aucune donnée médicale n'est conservée sur la plateforme.
+                </p>
+              </CardContent>
+            </Card>
+
+            <div className="flex justify-center">
+              <Button variant="outline" onClick={handleReset} className="gap-2">
+                <RotateCcw className="w-4 h-4" />
+                Nouvelle rédaction
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </RedactioLayout>
+  );
+}
