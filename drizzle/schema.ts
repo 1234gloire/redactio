@@ -32,6 +32,8 @@ export const users = mysqlTable("users", {
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
+  passwordHash: varchar("passwordHash", { length: 255 }),
+  passwordUpdatedAt: timestamp("passwordUpdatedAt"),
   loginMethod: varchar("loginMethod", { length: 64 }),
   // RBAC : rôles métier REDACTIO
   role: mysqlEnum("role", [

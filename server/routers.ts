@@ -1,9 +1,9 @@
 import { TRPCError } from "@trpc/server";
-import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { ENV } from "./_core/env";
+import { hashPassword, verifyPassword } from "./_core/passwords";
 import { getLocalOpenId, sdk } from "./_core/sdk";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
@@ -18,6 +18,7 @@ import {
   getOrganisationById,
   getPromptBaseById,
   getPromptTemplateById,
+  getUserByEmail,
   getUserById,
   listAuditLogs,
   listOrganisations,
@@ -35,13 +36,6 @@ import {
 import { pseudonymise } from "./pseudonymisation";
 import { invokeLLM } from "./_core/llm";
 import { DEFAULT_PROMPT_BASE, DEFAULT_TEMPLATES, DEFAULT_TEST_CASES } from "./defaultPrompts";
-
-function safePasswordEquals(candidate: string, expected: string) {
-  const candidateBuffer = Buffer.from(candidate);
-  const expectedBuffer = Buffer.from(expected);
-  if (candidateBuffer.length !== expectedBuffer.length) return false;
-  return timingSafeEqual(candidateBuffer, expectedBuffer);
-}
 
 // ─── Helpers RBAC ─────────────────────────────────────────────────────────────
 
@@ -91,19 +85,47 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
-        if (!ENV.localAdminEmail || !ENV.localAdminPassword) {
+        const email = input.email.trim().toLowerCase();
+        let user = await getUserByEmail(email);
+
+        const expectedBootstrapEmail = ENV.localAdminEmail.trim().toLowerCase();
+        const isBootstrapAdmin =
+          Boolean(ENV.localAdminEmail && ENV.localAdminPassword) &&
+          email === expectedBootstrapEmail;
+
+        if (isBootstrapAdmin) {
+          if (!user) {
+            const passwordHash = await hashPassword(ENV.localAdminPassword);
+            await upsertUser({
+              openId: getLocalOpenId(email),
+              name: ENV.localAdminName,
+              email,
+              passwordHash,
+              passwordUpdatedAt: new Date(),
+              loginMethod: "password",
+              role: "admin",
+              lastSignedIn: new Date(),
+            });
+            user = await getUserByEmail(email);
+          } else if (!user.passwordHash) {
+            await updateUser(user.id, {
+              passwordHash: await hashPassword(ENV.localAdminPassword),
+              passwordUpdatedAt: new Date(),
+              loginMethod: "password",
+              role: "admin",
+            });
+            user = await getUserByEmail(email);
+          }
+        }
+
+        if (!user || !user.active || !user.passwordHash) {
           throw new TRPCError({
-            code: "PRECONDITION_FAILED",
-            message: "Authentification locale non configurée.",
+            code: "UNAUTHORIZED",
+            message: "Identifiants invalides.",
           });
         }
 
-        const email = input.email.trim().toLowerCase();
-        const expectedEmail = ENV.localAdminEmail.trim().toLowerCase();
-        const isValid =
-          email === expectedEmail &&
-          safePasswordEquals(input.password, ENV.localAdminPassword);
-
+        const isValid = await verifyPassword(input.password, user.passwordHash);
         if (!isValid) {
           throw new TRPCError({
             code: "UNAUTHORIZED",
@@ -111,20 +133,10 @@ export const appRouter = router({
           });
         }
 
-        const openId = getLocalOpenId(email);
-        if (ENV.databaseUrl) {
-          await upsertUser({
-            openId,
-            name: ENV.localAdminName,
-            email,
-            loginMethod: "password",
-            role: "admin",
-            lastSignedIn: new Date(),
-          });
-        }
+        await updateUser(user.id, { lastSignedIn: new Date() });
 
-        const sessionToken = await sdk.createSessionToken(openId, {
-          name: ENV.localAdminName,
+        const sessionToken = await sdk.createSessionToken(user.openId, {
+          name: user.name ?? "",
           expiresInMs: ONE_YEAR_MS,
         });
 

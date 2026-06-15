@@ -52,7 +52,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     const values: InsertUser = { openId: user.openId };
     const updateSet: Record<string, unknown> = {};
 
-    const textFields = ["name", "email", "loginMethod"] as const;
+    const textFields = ["name", "email", "loginMethod", "passwordHash"] as const;
     for (const field of textFields) {
       const value = user[field];
       if (value === undefined) continue;
@@ -64,6 +64,10 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     if (user.lastSignedIn !== undefined) {
       values.lastSignedIn = user.lastSignedIn;
       updateSet.lastSignedIn = user.lastSignedIn;
+    }
+    if (user.passwordUpdatedAt !== undefined) {
+      values.passwordUpdatedAt = user.passwordUpdatedAt;
+      updateSet.passwordUpdatedAt = user.passwordUpdatedAt;
     }
     if (user.role !== undefined) {
       values.role = user.role;
@@ -86,6 +90,14 @@ export async function getUserByOpenId(openId: string): Promise<User | undefined>
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getUserByEmail(email: string): Promise<User | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const normalizedEmail = email.trim().toLowerCase();
+  const result = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 

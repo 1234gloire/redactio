@@ -15,6 +15,13 @@
       "when": 1781348129488,
       "tag": "0001_powerful_annihilus",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1781542708943,
+      "tag": "0002_acoustic_mantis",
+      "breakpoints": true
     }
   ]
 }

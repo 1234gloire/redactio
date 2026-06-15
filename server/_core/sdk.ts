@@ -373,6 +373,8 @@ export function buildLocalAdminUser(): AuthenticatedUser {
     openId: getLocalOpenId(ENV.localAdminEmail || "admin@redactio.local"),
     name: ENV.localAdminName,
     email: ENV.localAdminEmail || "admin@redactio.local",
+    passwordHash: null,
+    passwordUpdatedAt: null,
     loginMethod: "password",
     role: "admin" as const,
     organisationId: null,
