@@ -30,11 +30,8 @@ const GET_USER_INFO_WITH_JWT_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserI
 
 class OAuthService {
   constructor(private client: ReturnType<typeof axios.create>) {
-    console.log("[OAuth] Initialized with baseURL:", ENV.oAuthServerUrl);
-    if (!ENV.oAuthServerUrl) {
-      console.error(
-        "[OAuth] ERROR: OAUTH_SERVER_URL is not configured! Set OAUTH_SERVER_URL environment variable."
-      );
+    if (ENV.oAuthServerUrl) {
+      console.log("[OAuth] Initialized with baseURL:", ENV.oAuthServerUrl);
     }
   }
 
@@ -85,6 +82,7 @@ const createOAuthHttpClient = (): AxiosInstance =>
 class SDKServer {
   private readonly client: AxiosInstance;
   private readonly oauthService: OAuthService;
+  private hasWarnedMissingSessionSecret = false;
 
   constructor(client: AxiosInstance = createOAuthHttpClient()) {
     this.client = client;
@@ -156,6 +154,9 @@ class SDKServer {
 
   private getSessionSecret() {
     const secret = ENV.cookieSecret;
+    if (!secret) {
+      return null;
+    }
     return new TextEncoder().encode(secret);
   }
 
@@ -171,7 +172,7 @@ class SDKServer {
     return this.signSession(
       {
         openId,
-        appId: ENV.appId,
+        appId: ENV.appId || "redactio",
         name: options.name || "",
       },
       options
@@ -186,6 +187,9 @@ class SDKServer {
     const expiresInMs = options.expiresInMs ?? ONE_YEAR_MS;
     const expirationSeconds = Math.floor((issuedAt + expiresInMs) / 1000);
     const secretKey = this.getSessionSecret();
+    if (!secretKey) {
+      throw new Error("JWT_SECRET is required to create a session token");
+    }
 
     return new SignJWT({
       openId: payload.openId,
@@ -207,6 +211,13 @@ class SDKServer {
 
     try {
       const secretKey = this.getSessionSecret();
+      if (!secretKey) {
+        if (!this.hasWarnedMissingSessionSecret) {
+          console.warn("[Auth] JWT_SECRET is not configured; session verification is disabled.");
+          this.hasWarnedMissingSessionSecret = true;
+        }
+        return null;
+      }
       const { payload } = await jwtVerify(cookieValue, secretKey, {
         algorithms: ["HS256"],
       });
@@ -279,6 +290,13 @@ class SDKServer {
     const signedInAt = new Date();
     let user = await db.getUserByOpenId(sessionUserId);
 
+    if (!user && sessionUserId.startsWith(LOCAL_OPEN_ID_PREFIX)) {
+      if (sessionUserId === getLocalOpenId(ENV.localAdminEmail)) {
+        return buildLocalAdminUser();
+      }
+      throw ForbiddenError("Invalid local session");
+    }
+
     // If user not in DB, sync from OAuth server automatically
     if (!user) {
       try {
@@ -311,6 +329,7 @@ class SDKServer {
 }
 
 const CRON_OPEN_ID_PREFIX = "cron_";
+export const LOCAL_OPEN_ID_PREFIX = "local:";
 
 /** Result of `sdk.authenticateRequest`. Cron callbacks set `isCron=true` and `taskUid`; see `references/periodic-updates.md`. */
 export type AuthenticatedUser = User & {
@@ -341,6 +360,31 @@ function buildCronUser(
     taskUid: userInfo.taskUid ?? undefined,
     isCron: true,
   } as AuthenticatedUser;
+}
+
+export function getLocalOpenId(email: string) {
+  return `${LOCAL_OPEN_ID_PREFIX}${email.trim().toLowerCase()}`;
+}
+
+export function buildLocalAdminUser(): AuthenticatedUser {
+  const now = new Date();
+  return {
+    id: 1,
+    openId: getLocalOpenId(ENV.localAdminEmail || "admin@redactio.local"),
+    name: ENV.localAdminName,
+    email: ENV.localAdminEmail || "admin@redactio.local",
+    loginMethod: "password",
+    role: "admin" as const,
+    organisationId: null,
+    specialite: null,
+    rpps: null,
+    twoFactorEnabled: false,
+    twoFactorSecret: null,
+    active: true,
+    createdAt: now,
+    updatedAt: now,
+    lastSignedIn: now,
+  };
 }
 
 export const sdk = new SDKServer();

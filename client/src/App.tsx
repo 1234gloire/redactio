@@ -12,11 +12,13 @@ import Utilisateurs from "./pages/Utilisateurs";
 import Audit from "./pages/Audit";
 import Profil from "./pages/Profil";
 import Home from "./pages/Home";
+import Login from "./pages/Login";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/login" component={Login} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/redaction" component={Redaction} />
       <Route path="/backoffice" component={Backoffice} />

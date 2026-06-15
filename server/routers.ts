@@ -1,7 +1,10 @@
 import { TRPCError } from "@trpc/server";
+import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { ENV } from "./_core/env";
+import { getLocalOpenId, sdk } from "./_core/sdk";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import {
@@ -27,10 +30,18 @@ import {
   updatePromptTemplate,
   updateTestCase,
   updateUser,
+  upsertUser,
 } from "./db";
 import { pseudonymise } from "./pseudonymisation";
 import { invokeLLM } from "./_core/llm";
 import { DEFAULT_PROMPT_BASE, DEFAULT_TEMPLATES, DEFAULT_TEST_CASES } from "./defaultPrompts";
+
+function safePasswordEquals(candidate: string, expected: string) {
+  const candidateBuffer = Buffer.from(candidate);
+  const expectedBuffer = Buffer.from(expected);
+  if (candidateBuffer.length !== expectedBuffer.length) return false;
+  return timingSafeEqual(candidateBuffer, expectedBuffer);
+}
 
 // ─── Helpers RBAC ─────────────────────────────────────────────────────────────
 
@@ -72,6 +83,59 @@ export const appRouter = router({
   // ─── Authentification ──────────────────────────────────────────────────────
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
+    login: publicProcedure
+      .input(
+        z.object({
+          email: z.string().email(),
+          password: z.string().min(1),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        if (!ENV.localAdminEmail || !ENV.localAdminPassword) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Authentification locale non configurée.",
+          });
+        }
+
+        const email = input.email.trim().toLowerCase();
+        const expectedEmail = ENV.localAdminEmail.trim().toLowerCase();
+        const isValid =
+          email === expectedEmail &&
+          safePasswordEquals(input.password, ENV.localAdminPassword);
+
+        if (!isValid) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Identifiants invalides.",
+          });
+        }
+
+        const openId = getLocalOpenId(email);
+        if (ENV.databaseUrl) {
+          await upsertUser({
+            openId,
+            name: ENV.localAdminName,
+            email,
+            loginMethod: "password",
+            role: "admin",
+            lastSignedIn: new Date(),
+          });
+        }
+
+        const sessionToken = await sdk.createSessionToken(openId, {
+          name: ENV.localAdminName,
+          expiresInMs: ONE_YEAR_MS,
+        });
+
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, sessionToken, {
+          ...cookieOptions,
+          maxAge: ONE_YEAR_MS,
+        });
+
+        return { success: true };
+      }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });

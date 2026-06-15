@@ -1,0 +1,21 @@
+[Unit]
+Description=REDACTIO Node.js application
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=redactio
+Group=redactio
+WorkingDirectory=/var/www/redactio
+EnvironmentFile=/var/www/redactio/.env
+ExecStart=/usr/bin/node /var/www/redactio/dist/index.js
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/www/redactio
+
+[Install]
+WantedBy=multi-user.target
