@@ -34,8 +34,10 @@ import {
   upsertUser,
 } from "./db";
 import { pseudonymise } from "./pseudonymisation";
-import { invokeLLM } from "./_core/llm";
+import { createAnthropicMessage } from "./_core/anthropic";
 import { DEFAULT_PROMPT_BASE, DEFAULT_TEMPLATES, DEFAULT_TEST_CASES } from "./defaultPrompts";
+
+const RAW_DATA_MAX_CHARS = 50_000;
 
 // ─── Helpers RBAC ─────────────────────────────────────────────────────────────
 
@@ -277,7 +279,7 @@ export const appRouter = router({
       .input(
         z.object({
           volet: z.enum(["courrier_sortie", "conciliation", "correspondance"]),
-          rawData: z.string().min(10).max(8000),
+          rawData: z.string().min(10).max(RAW_DATA_MAX_CHARS),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -306,14 +308,10 @@ export const appRouter = router({
         // EXG-API-02 : Le contenu n'est JAMAIS journalisé
         let generatedText = "";
         try {
-          const response = await invokeLLM({
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: userPrompt },
-            ],
+          generatedText = await createAnthropicMessage({
+            system: systemPrompt,
+            messages: [{ role: "user", content: userPrompt }],
           });
-          const rawContent = response?.choices?.[0]?.message?.content;
-          generatedText = typeof rawContent === "string" ? rawContent : "";
         } catch (err) {
           // Dégradation maîtrisée — aucun contenu dans le log
           throw new TRPCError({
@@ -351,7 +349,7 @@ export const appRouter = router({
 
     // Endpoint de pseudonymisation seule (pour prévisualisation)
     pseudonymisePreview: protectedProcedure
-      .input(z.object({ text: z.string().max(8000) }))
+      .input(z.object({ text: z.string().max(RAW_DATA_MAX_CHARS) }))
       .mutation(async ({ input }) => {
         const result = pseudonymise(input.text);
         // Ne retourner que les méta-données, pas le texte filtré

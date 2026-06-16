@@ -16,6 +16,7 @@ import {
   CheckCircle,
   Copy,
   Download,
+  FileUp,
   FileText,
   Loader2,
   RotateCcw,
@@ -28,6 +29,7 @@ import { cn } from "../lib/utils";
 import { toast } from "sonner";
 
 type Volet = "courrier_sortie" | "conciliation" | "correspondance";
+const RAW_DATA_MAX_CHARS = 50_000;
 
 const VOLETS: Record<Volet, { label: string; icon: React.ReactNode; description: string; color: string }> = {
   courrier_sortie: {
@@ -81,6 +83,7 @@ export default function Redaction() {
   const [rawData, setRawData] = useState("");
   const [generatedDoc, setGeneratedDoc] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isExtractingFile, setIsExtractingFile] = useState(false);
   const [validated, setValidated] = useState(false);
   const [pseudoInfo, setPseudoInfo] = useState<{
     maskCount: number;
@@ -88,6 +91,7 @@ export default function Redaction() {
     hasPotentialOvermasking: boolean;
   } | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [streamingText, setStreamingText] = useState("");
 
   // Génération via streaming SSE
@@ -198,6 +202,42 @@ export default function Redaction() {
     if (!selectedVolet || !rawData.trim()) return;
     handleStreamGenerate(selectedVolet, rawData);
   }, [selectedVolet, rawData, handleStreamGenerate]);
+
+  const handleFileUpload = useCallback(async (file: File | null) => {
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    setIsExtractingFile(true);
+
+    try {
+      const response = await fetch("/api/extract-file", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || "Extraction du fichier impossible.");
+      }
+
+      const extractedText = String(payload.text ?? "").trim();
+      if (!extractedText) {
+        throw new Error("Aucun texte exploitable trouvé dans ce fichier.");
+      }
+
+      setRawData((current) => {
+        const separator = current.trim().length > 0 ? "\n\n--- Contenu importé ---\n\n" : "";
+        return `${current}${separator}${extractedText}`.slice(0, RAW_DATA_MAX_CHARS);
+      });
+      toast.success(`Texte extrait depuis ${payload.filename || file.name}.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Extraction du fichier impossible.");
+    } finally {
+      setIsExtractingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }, []);
 
   const handleCancelGeneration = useCallback(() => {
     setIsGenerating(false);
@@ -383,17 +423,44 @@ export default function Redaction() {
                 placeholder={`Exemple pour ${VOLETS[selectedVolet].label} :\n\nService : Cardiologie\nMotif d'hospitalisation : Décompensation cardiaque\nAntécédents : HTA, FA chronique, insuffisance cardiaque FE 35%\nTraitement habituel : Furosémide 40mg, Bisoprolol 5mg, Rivaroxaban 20mg\n...`}
                 className="min-h-[280px] font-mono text-sm resize-y"
                 aria-describedby="rawData-help"
-                maxLength={8000}
+                maxLength={RAW_DATA_MAX_CHARS}
               />
               <div className="flex items-center justify-between">
                 <p id="rawData-help" className="text-xs text-muted-foreground">
-                  {rawData.length}/8000 caractères
+                  {rawData.length}/{RAW_DATA_MAX_CHARS.toLocaleString("fr-FR")} caractères
                 </p>
                 {rawData.length > 0 && (
                   <Badge variant="secondary" className="text-xs">
                     Pseudonymisation automatique activée
                   </Badge>
                 )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept=".txt,.md,.csv,.json,.xml,.html,.rtf,.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/*"
+                  onChange={(event) => handleFileUpload(event.target.files?.[0] ?? null)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isExtractingFile}
+                >
+                  {isExtractingFile ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <FileUp className="w-4 h-4" />
+                  )}
+                  {isExtractingFile ? "Extraction…" : "Importer un fichier"}
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  PDF, Word .docx, TXT, Markdown, CSV ou JSON
+                </span>
               </div>
             </div>
 

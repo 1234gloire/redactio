@@ -5,11 +5,13 @@
  * EXG-PSE-01 : La pseudonymisation est synchrone et bloquante.
  */
 import type { Express, Request, Response } from "express";
-import { ENV } from "./_core/env";
 import { pseudonymise } from "./pseudonymisation";
 import { createAuditLog, getActivePromptBase, getActiveTemplateByVolet } from "./db";
 import { DEFAULT_PROMPT_BASE, DEFAULT_TEMPLATES } from "./defaultPrompts";
 import { sdk } from "./_core/sdk";
+import { createAnthropicStream, extractAnthropicTextDelta } from "./_core/anthropic";
+
+const RAW_DATA_MAX_CHARS = 50_000;
 
 // ─── Rate limiting en mémoire (par userId) ───────────────────────────────────
 const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
@@ -66,8 +68,8 @@ export function registerStreamGeneration(app: Express) {
       res.status(400).json({ error: "Données médicales trop courtes (min 10 caractères)." });
       return;
     }
-    if (rawData.length > 8000) {
-      res.status(400).json({ error: "Données médicales trop longues (max 8000 caractères)." });
+    if (rawData.length > RAW_DATA_MAX_CHARS) {
+      res.status(400).json({ error: `Données médicales trop longues (max ${RAW_DATA_MAX_CHARS} caractères).` });
       return;
     }
 
@@ -122,27 +124,14 @@ export function registerStreamGeneration(app: Express) {
     res.on("close", handleClose);
 
     try {
-      const apiUrl = ENV.forgeApiUrl
-        ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
-        : "https://forge.manus.im/v1/chat/completions";
-
-      const llmResponse = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${ENV.forgeApiKey}`,
-        },
-        body: JSON.stringify({
-          messages: [
-            { role: "system", content: baseContent },
-            { role: "user", content: templateContent },
-          ],
-          stream: true,
-        }),
+      const llmResponse = await createAnthropicStream({
+        system: baseContent,
+        messages: [{ role: "user", content: templateContent }],
       });
 
       if (!llmResponse.ok || !llmResponse.body) {
-        throw new Error(`LLM stream failed: ${llmResponse.status}`);
+        const errorText = await llmResponse.text().catch(() => "");
+        throw new Error(`Anthropic stream failed: ${llmResponse.status} ${errorText}`);
       }
 
       const reader = llmResponse.body.getReader();
@@ -166,15 +155,14 @@ export function registerStreamGeneration(app: Express) {
             break;
           }
           try {
-            const parsed = JSON.parse(data);
-            const delta = parsed?.choices?.[0]?.delta?.content;
-            if (typeof delta === "string" && delta.length > 0) {
+            const delta = extractAnthropicTextDelta(data);
+            if (delta) {
               tokenCount++;
-              // EXG-API-02 : On ne transmet que les tokens, jamais le contenu complet
               res.write(`data: ${JSON.stringify({ type: "token", content: delta })}\n\n`);
             }
-          } catch {
-            // Ignorer les lignes SSE malformées
+          } catch (error) {
+            if (error instanceof SyntaxError) continue;
+            throw error;
           }
         }
       }
