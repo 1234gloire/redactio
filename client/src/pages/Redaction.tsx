@@ -1,5 +1,12 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import RedactioLayout from "@/components/RedactioLayout";
+import {
+  getDefaultSubtype,
+  isValidVolet,
+  REDACTION_SUBTYPES,
+  type RedactionSubtype,
+  type Volet,
+} from "@shared/redactionOptions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +35,6 @@ import { useLocation } from "wouter";
 import { cn } from "../lib/utils";
 import { toast } from "sonner";
 
-type Volet = "courrier_sortie" | "conciliation" | "correspondance";
 const RAW_DATA_MAX_CHARS = 50_000;
 
 const VOLETS: Record<Volet, { label: string; icon: React.ReactNode; description: string; color: string }> = {
@@ -76,10 +82,14 @@ export default function Redaction() {
 
   // Récupérer le volet depuis l'URL
   const searchParams = new URLSearchParams(window.location.search);
-  const initialVolet = (searchParams.get("volet") as Volet) || null;
+  const requestedVolet = searchParams.get("volet");
+  const initialVolet = requestedVolet && isValidVolet(requestedVolet) ? requestedVolet : null;
 
   const [step, setStep] = useState(initialVolet ? 2 : 1);
   const [selectedVolet, setSelectedVolet] = useState<Volet | null>(initialVolet);
+  const [selectedSubtype, setSelectedSubtype] = useState<RedactionSubtype | null>(
+    initialVolet ? getDefaultSubtype(initialVolet) : null
+  );
   const [rawData, setRawData] = useState("");
   const [generatedDoc, setGeneratedDoc] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -95,7 +105,11 @@ export default function Redaction() {
   const [streamingText, setStreamingText] = useState("");
 
   // Génération via streaming SSE
-  const handleStreamGenerate = useCallback(async (volet: Volet, rawData: string) => {
+  const handleStreamGenerate = useCallback(async (
+    volet: Volet,
+    subtype: RedactionSubtype,
+    rawData: string
+  ) => {
     setIsGenerating(true);
     setGeneratedDoc("");
     setStreamingText("");
@@ -112,7 +126,7 @@ export default function Redaction() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ volet, rawData }),
+        body: JSON.stringify({ volet, subtype, rawData }),
         signal: controller.signal,
       });
 
@@ -199,9 +213,9 @@ export default function Redaction() {
   }, [editor, generatedDoc]);
 
   const handleGenerate = useCallback(() => {
-    if (!selectedVolet || !rawData.trim()) return;
-    handleStreamGenerate(selectedVolet, rawData);
-  }, [selectedVolet, rawData, handleStreamGenerate]);
+    if (!selectedVolet || !selectedSubtype || !rawData.trim()) return;
+    handleStreamGenerate(selectedVolet, selectedSubtype, rawData);
+  }, [selectedVolet, selectedSubtype, rawData, handleStreamGenerate]);
 
   const handleFileUpload = useCallback(async (file: File | null) => {
     if (!file) return;
@@ -268,6 +282,7 @@ export default function Redaction() {
   const handleReset = useCallback(() => {
     setStep(1);
     setSelectedVolet(null);
+    setSelectedSubtype(null);
     setRawData("");
     setGeneratedDoc("");
     setValidated(false);
@@ -340,7 +355,10 @@ export default function Redaction() {
                 <button
                   key={id}
                   className={cn("volet-card text-left", { selected: selectedVolet === id })}
-                  onClick={() => setSelectedVolet(id)}
+                  onClick={() => {
+                    setSelectedVolet(id);
+                    setSelectedSubtype(getDefaultSubtype(id));
+                  }}
                   aria-pressed={selectedVolet === id}
                   aria-label={`Sélectionner ${volet.label}`}
                 >
@@ -412,6 +430,33 @@ export default function Redaction() {
             </div>
 
             <div className="space-y-2">
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-medium text-foreground">
+                  Type de document
+                </legend>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {REDACTION_SUBTYPES[selectedVolet].map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setSelectedSubtype(option.id)}
+                      className={cn(
+                        "flex min-h-11 items-center justify-between gap-3 rounded-md border px-3 py-2 text-left text-sm transition-colors",
+                        selectedSubtype === option.id
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-border bg-background text-foreground hover:bg-muted/60"
+                      )}
+                      aria-pressed={selectedSubtype === option.id}
+                    >
+                      <span className="font-medium leading-snug">{option.label}</span>
+                      {selectedSubtype === option.id && <CheckCircle className="h-4 w-4 shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+            </div>
+
+            <div className="space-y-2">
               <label htmlFor="rawData" className="text-sm font-medium text-foreground">
                 Données médicales brutes
                 <span className="text-muted-foreground font-normal ml-1">(sans identifiant direct)</span>
@@ -471,7 +516,7 @@ export default function Redaction() {
               </Button>
               <Button
                 onClick={() => { setStep(3); handleGenerate(); }}
-                disabled={rawData.trim().length < 10}
+                disabled={!selectedSubtype || rawData.trim().length < 10}
                 className="gap-2"
               >
                 Générer le document

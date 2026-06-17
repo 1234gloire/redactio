@@ -1,6 +1,11 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import {
+  getDefaultSubtype,
+  isValidSubtypeForVolet,
+  type RedactionSubtype,
+} from "@shared/redactionOptions";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { ENV } from "./_core/env";
 import { hashPassword, verifyPassword } from "./_core/passwords";
@@ -35,7 +40,12 @@ import {
 } from "./db";
 import { pseudonymise } from "./pseudonymisation";
 import { createAnthropicMessage } from "./_core/anthropic";
-import { DEFAULT_PROMPT_BASE, DEFAULT_TEMPLATES, DEFAULT_TEST_CASES } from "./defaultPrompts";
+import {
+  buildTemplateForSubtype,
+  DEFAULT_PROMPT_BASE,
+  DEFAULT_TEMPLATES,
+  DEFAULT_TEST_CASES,
+} from "./defaultPrompts";
 
 const RAW_DATA_MAX_CHARS = 50_000;
 
@@ -279,10 +289,16 @@ export const appRouter = router({
       .input(
         z.object({
           volet: z.enum(["courrier_sortie", "conciliation", "correspondance"]),
+          subtype: z.string().optional(),
           rawData: z.string().min(10).max(RAW_DATA_MAX_CHARS),
         })
       )
       .mutation(async ({ ctx, input }) => {
+        const selectedSubtype: RedactionSubtype =
+          input.subtype && isValidSubtypeForVolet(input.volet, input.subtype)
+            ? input.subtype
+            : getDefaultSubtype(input.volet);
+
         // EXG-PSE-01 [BLOQUANT] : Pseudonymisation synchrone et bloquante
         const pseudoResult = pseudonymise(input.rawData);
 
@@ -294,11 +310,17 @@ export const appRouter = router({
 
         // Fallback si aucun prompt publié : utiliser les défauts
         const baseContent = base?.content ?? DEFAULT_PROMPT_BASE.content;
-        const templateContent = (
+        const baseTemplate = (
           template?.content ??
           DEFAULT_TEMPLATES.find((t) => t.volet === input.volet)?.content ??
           ""
-        ).replace("{{DONNEES_MEDICALES}}", pseudoResult.filteredText);
+        );
+        const templateContent = buildTemplateForSubtype({
+          volet: input.volet,
+          subtype: selectedSubtype,
+          baseTemplate,
+          data: pseudoResult.filteredText,
+        });
 
         // Assemblage du prompt final
         const systemPrompt = baseContent;
@@ -328,6 +350,7 @@ export const appRouter = router({
           resource: "generation",
           metadata: {
             volet: input.volet,
+            subtype: selectedSubtype,
             maskCount: pseudoResult.maskCount,
             detectedCategories: pseudoResult.detectedCategories,
             hasPotentialOvermasking: pseudoResult.hasPotentialOvermasking,

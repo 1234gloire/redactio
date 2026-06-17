@@ -5,9 +5,15 @@
  * EXG-PSE-01 : La pseudonymisation est synchrone et bloquante.
  */
 import type { Express, Request, Response } from "express";
+import {
+  getDefaultSubtype,
+  isValidSubtypeForVolet,
+  isValidVolet,
+  type RedactionSubtype,
+} from "@shared/redactionOptions";
 import { pseudonymise } from "./pseudonymisation";
 import { createAuditLog, getActivePromptBase, getActiveTemplateByVolet } from "./db";
-import { DEFAULT_PROMPT_BASE, DEFAULT_TEMPLATES } from "./defaultPrompts";
+import { buildTemplateForSubtype, DEFAULT_PROMPT_BASE, DEFAULT_TEMPLATES } from "./defaultPrompts";
 import { sdk } from "./_core/sdk";
 import { createAnthropicStream, extractAnthropicTextDelta } from "./_core/anthropic";
 
@@ -37,10 +43,6 @@ function checkRateLimit(userId: number): { allowed: boolean; retryAfterMs?: numb
   return { allowed: true };
 }
 
-// ─── Volets valides ───────────────────────────────────────────────────────────
-type Volet = "courrier_sortie" | "conciliation" | "correspondance";
-const VALID_VOLETS: Volet[] = ["courrier_sortie", "conciliation", "correspondance"];
-
 // ─── Enregistrement de la route SSE ──────────────────────────────────────────
 export function registerStreamGeneration(app: Express) {
   app.post("/api/generate/stream", async (req: Request, res: Response) => {
@@ -59,11 +61,14 @@ export function registerStreamGeneration(app: Express) {
     }
 
     // 2. Validation des paramètres
-    const { volet, rawData } = req.body as { volet?: string; rawData?: string };
-    if (!volet || !VALID_VOLETS.includes(volet as Volet)) {
+    const { volet, subtype, rawData } = req.body as { volet?: string; subtype?: string; rawData?: string };
+    if (!volet || !isValidVolet(volet)) {
       res.status(400).json({ error: "Volet invalide." });
       return;
     }
+    const selectedSubtype: RedactionSubtype = subtype && isValidSubtypeForVolet(volet, subtype)
+      ? subtype
+      : getDefaultSubtype(volet);
     if (!rawData || typeof rawData !== "string" || rawData.trim().length < 10) {
       res.status(400).json({ error: "Données médicales trop courtes (min 10 caractères)." });
       return;
@@ -88,14 +93,20 @@ export function registerStreamGeneration(app: Express) {
     // 5. Résolution du prompt actif
     const [base, template] = await Promise.all([
       getActivePromptBase(),
-      getActiveTemplateByVolet(volet as Volet),
+      getActiveTemplateByVolet(volet),
     ]);
     const baseContent = base?.content ?? DEFAULT_PROMPT_BASE.content;
-    const templateContent = (
+    const baseTemplate = (
       template?.content ??
       DEFAULT_TEMPLATES.find((t) => t.volet === volet)?.content ??
       ""
-    ).replace("{{DONNEES_MEDICALES}}", pseudoResult.filteredText);
+    );
+    const templateContent = buildTemplateForSubtype({
+      volet,
+      subtype: selectedSubtype,
+      baseTemplate,
+      data: pseudoResult.filteredText,
+    });
 
     // 6. Configuration SSE
     res.setHeader("Content-Type", "text/event-stream");
@@ -187,6 +198,7 @@ export function registerStreamGeneration(app: Express) {
         resource: "generation",
         metadata: {
           volet,
+          subtype: selectedSubtype,
           maskCount: pseudoResult.maskCount,
           detectedCategories: pseudoResult.detectedCategories,
           hasPotentialOvermasking: pseudoResult.hasPotentialOvermasking,

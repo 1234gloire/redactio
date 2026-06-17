@@ -1,3 +1,5 @@
+import { getSubtypeLabel, type RedactionSubtype, type Volet } from "@shared/redactionOptions";
+
 /**
  * Prompts par défaut pour REDACTIO.
  * Ces contenus sont injectés en base lors du premier démarrage.
@@ -123,6 +125,61 @@ Rédige la correspondance en respectant la structure. Pour toute information man
     changelog: "Template initial correspondance médicale — v1.0.0",
   },
 ];
+
+const SUBTYPE_PROMPT_INSTRUCTIONS: Record<RedactionSubtype, string> = {
+  medecine_aigue: `PROMPT SPÉCIFIQUE — MÉDECINE AIGUË :
+- Oriente le courrier vers une synthèse de prise en charge médicale aiguë.
+- Mets en avant le motif d'admission, les diagnostics retenus, l'évolution clinique, les examens significatifs, les traitements modifiés et le suivi.
+- Ne transforme pas le courrier en compte rendu opératoire.`,
+  chirurgie: `PROMPT SPÉCIFIQUE — CHIRURGIE :
+- Oriente le courrier vers une prise en charge chirurgicale.
+- Fais ressortir l'indication opératoire, le geste réalisé, les suites opératoires, les consignes de pansement, d'anticoagulation, d'antalgiques, de rééducation et de consultation postopératoire si ces informations sont fournies.
+- N'invente jamais de geste opératoire, de voie d'abord ou de complication.`,
+  court_sejour_geriatrique: `PROMPT SPÉCIFIQUE — COURT SÉJOUR GÉRIATRIQUE :
+- Oriente le courrier vers une synthèse gériatrique globale.
+- Structure les éléments autour du motif d'hospitalisation, des comorbidités, de l'autonomie, du risque de chute, de la cognition, de la nutrition, du traitement et du devenir.
+- Signale avec [À COMPLÉTER PAR LE MÉDECIN] toute information gériatrique attendue mais absente.`,
+  smr: `PROMPT SPÉCIFIQUE — SMR :
+- Oriente le courrier vers une prise en charge en soins médicaux et de réadaptation.
+- Fais ressortir le motif d'admission en SMR, les objectifs de réadaptation, l'évolution fonctionnelle, les soins réalisés, l'autonomie, les aides nécessaires et le projet de sortie.
+- N'ajoute aucun score fonctionnel absent des données.`,
+  traitement_entree: `PROMPT SPÉCIFIQUE — CONCILIATION, TRAITEMENT D'ENTRÉE :
+- Rédige une conciliation médicamenteuse centrée sur le traitement à l'entrée.
+- Compare le traitement habituel avant admission au traitement prescrit à l'entrée.
+- Distingue clairement divergences intentionnelles, divergences non intentionnelles et actions à mener si les données le permettent.`,
+  traitement_sortie: `PROMPT SPÉCIFIQUE — CONCILIATION, TRAITEMENT DE SORTIE :
+- Rédige une conciliation médicamenteuse centrée sur le traitement de sortie.
+- Compare le traitement avant hospitalisation, les modifications pendant le séjour et le traitement de sortie.
+- Mets en évidence les arrêts, introductions, modifications de posologie et recommandations de suivi si elles sont fournies.`,
+  transfert_urgence: `PROMPT SPÉCIFIQUE — TRANSFERT VERS UN SERVICE D'URGENCE :
+- Rédige une correspondance courte et opérationnelle pour transfert vers les urgences.
+- Priorise le motif de transfert, le contexte, les constantes ou signes de gravité fournis, les examens déjà réalisés, les traitements administrés et la demande explicite.
+- N'ajoute pas de triage ou de niveau d'urgence absent des données.`,
+  transfert_inter_service: `PROMPT SPÉCIFIQUE — TRANSFERT INTER-SERVICE :
+- Rédige une correspondance structurée pour transfert entre services.
+- Mets en avant le motif du transfert, le résumé du séjour ou de la prise en charge, l'état clinique actuel, les traitements en cours, les surveillances et les points à reprendre.
+- Garde un ton direct, clinique et utile au service receveur.`,
+  consultation_specialisee: `PROMPT SPÉCIFIQUE — CONSULTATION SPÉCIALISÉE :
+- Rédige une demande ou synthèse pour consultation spécialisée.
+- Mets en avant la question posée au spécialiste, le contexte clinique, les antécédents pertinents, les examens disponibles, le traitement en cours et les attentes du demandeur.
+- Si la spécialité exacte n'est pas fournie, insère [À COMPLÉTER PAR LE MÉDECIN].`,
+};
+
+export function buildTemplateForSubtype(params: {
+  volet: Volet;
+  subtype: RedactionSubtype;
+  baseTemplate: string;
+  data: string;
+}) {
+  const subtypeLabel = getSubtypeLabel(params.volet, params.subtype);
+  const subtypeInstructions = SUBTYPE_PROMPT_INSTRUCTIONS[params.subtype];
+  return `TYPE SÉLECTIONNÉ PAR L'UTILISATEUR :
+${subtypeLabel}
+
+${subtypeInstructions}
+
+${params.baseTemplate}`.replaceAll("{{DONNEES_MEDICALES}}", params.data);
+}
 
 export const DEFAULT_TEST_CASES = [
   {
