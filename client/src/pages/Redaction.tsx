@@ -30,7 +30,7 @@ import {
   Stethoscope,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import { useLocation } from "wouter";
 import { cn } from "../lib/utils";
 import { toast } from "sonner";
@@ -94,6 +94,7 @@ export default function Redaction() {
   const [generatedDoc, setGeneratedDoc] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExtractingFile, setIsExtractingFile] = useState(false);
+  const [isFileDragOver, setIsFileDragOver] = useState(false);
   const [validated, setValidated] = useState(false);
   const [pseudoInfo, setPseudoInfo] = useState<{
     maskCount: number;
@@ -252,6 +253,23 @@ export default function Redaction() {
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }, []);
+
+  const handleFileDrag = useCallback((event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (isExtractingFile) return;
+    setIsFileDragOver(event.type === "dragenter" || event.type === "dragover");
+  }, [isExtractingFile]);
+
+  const handleFileDrop = useCallback((event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsFileDragOver(false);
+    if (isExtractingFile) return;
+    const file = event.dataTransfer.files?.[0] ?? null;
+    if (!file) return;
+    void handleFileUpload(file);
+  }, [handleFileUpload, isExtractingFile]);
 
   const handleCancelGeneration = useCallback(() => {
     setIsGenerating(false);
@@ -480,7 +498,18 @@ export default function Redaction() {
                   </Badge>
                 )}
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div
+                className={cn(
+                  "flex flex-col gap-3 rounded-md border border-dashed p-3 transition-colors sm:flex-row sm:items-center sm:justify-between",
+                  isFileDragOver
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-muted/30"
+                )}
+                onDragEnter={handleFileDrag}
+                onDragOver={handleFileDrag}
+                onDragLeave={handleFileDrag}
+                onDrop={handleFileDrop}
+              >
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -488,24 +517,33 @@ export default function Redaction() {
                   accept=".txt,.md,.csv,.json,.xml,.html,.rtf,.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/*"
                   onChange={(event) => handleFileUpload(event.target.files?.[0] ?? null)}
                 />
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-background text-muted-foreground">
+                    {isExtractingFile ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <FileUp className="h-4 w-4" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      Glissez-déposez un fichier ici
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      PDF, Word .docx, TXT, Markdown, CSV ou JSON
+                    </p>
+                  </div>
+                </div>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="gap-2"
+                  className="gap-2 self-start sm:self-auto"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isExtractingFile}
                 >
-                  {isExtractingFile ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <FileUp className="w-4 h-4" />
-                  )}
-                  {isExtractingFile ? "Extraction…" : "Importer un fichier"}
+                  {isExtractingFile ? "Extraction…" : "Parcourir"}
                 </Button>
-                <span className="text-xs text-muted-foreground">
-                  PDF, Word .docx, TXT, Markdown, CSV ou JSON
-                </span>
               </div>
             </div>
 
