@@ -36,6 +36,7 @@ import { cn } from "../lib/utils";
 import { toast } from "sonner";
 
 const RAW_DATA_MAX_CHARS = 200_000;
+type ConciliationImportTarget = "entry" | "exit";
 
 const VOLETS: Record<Volet, { label: string; icon: React.ReactNode; description: string; color: string }> = {
   courrier_sortie: {
@@ -94,6 +95,7 @@ export default function Redaction() {
   const [treatmentEntryData, setTreatmentEntryData] = useState("");
   const [treatmentExitData, setTreatmentExitData] = useState("");
   const [treatmentExitDate, setTreatmentExitDate] = useState("");
+  const [conciliationImportTarget, setConciliationImportTarget] = useState<ConciliationImportTarget>("entry");
   const [generatedDoc, setGeneratedDoc] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExtractingFile, setIsExtractingFile] = useState(false);
@@ -264,7 +266,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
       }
 
       if (selectedVolet === "conciliation") {
-        const updateTreatment = selectedSubtype === "traitement_sortie" ? setTreatmentExitData : setTreatmentEntryData;
+        const updateTreatment = conciliationImportTarget === "exit" ? setTreatmentExitData : setTreatmentEntryData;
         updateTreatment((current) => {
           const separator = current.trim().length > 0 ? "\n\n--- Contenu importé ---\n\n" : "";
           return `${current}${separator}${extractedText}`.slice(0, RAW_DATA_MAX_CHARS);
@@ -282,7 +284,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
       setIsExtractingFile(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
-  }, [selectedSubtype, selectedVolet]);
+  }, [conciliationImportTarget, selectedVolet]);
 
   const handleFileDrag = useCallback((event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -335,6 +337,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     setTreatmentEntryData("");
     setTreatmentExitData("");
     setTreatmentExitDate("");
+    setConciliationImportTarget("entry");
     setGeneratedDoc("");
     setValidated(false);
     setPseudoInfo(null);
@@ -520,6 +523,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                         id="treatmentEntryData"
                         value={treatmentEntryData}
                         onChange={(e) => setTreatmentEntryData(e.target.value)}
+                        onFocus={() => setConciliationImportTarget("entry")}
                         placeholder={`Exemple :\nAMLODIPINE 5 mg gélule : 1 le matin\nZOPICLONE 7,5 mg cp : 1 au coucher\nKARDEGIC 75 mg : 1 sachet à midi`}
                         className="min-h-[220px] font-mono text-sm resize-y"
                         maxLength={RAW_DATA_MAX_CHARS}
@@ -534,6 +538,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                         id="treatmentExitData"
                         value={treatmentExitData}
                         onChange={(e) => setTreatmentExitData(e.target.value)}
+                        onFocus={() => setConciliationImportTarget("exit")}
                         placeholder={`Exemple :\nAMLODIPINE 5 mg gélule : 1 le matin\nAPIXABAN 5 mg cp : 1 matin et 1 soir\nKARDEGIC 75 mg : arrêté`}
                         className="min-h-[220px] font-mono text-sm resize-y"
                         maxLength={RAW_DATA_MAX_CHARS}
@@ -616,11 +621,41 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {selectedVolet === "conciliation"
-                        ? "Le fichier sera ajouté au champ sélectionné : entrée ou sortie."
+                        ? `Destination : traitement ${conciliationImportTarget === "entry" ? "d'entrée" : "de sortie"}.`
                         : "PDF, Word .docx, TXT, Markdown, CSV ou JSON"}
                     </p>
                   </div>
                 </div>
+                {selectedVolet === "conciliation" && (
+                  <div className="flex rounded-md border bg-background p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setConciliationImportTarget("entry")}
+                      className={cn(
+                        "h-8 rounded px-3 text-xs font-medium transition-colors",
+                        conciliationImportTarget === "entry"
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                      aria-pressed={conciliationImportTarget === "entry"}
+                    >
+                      Entrée
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConciliationImportTarget("exit")}
+                      className={cn(
+                        "h-8 rounded px-3 text-xs font-medium transition-colors",
+                        conciliationImportTarget === "exit"
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                      aria-pressed={conciliationImportTarget === "exit"}
+                    >
+                      Sortie
+                    </button>
+                  </div>
+                )}
                 <Button
                   type="button"
                   variant="outline"
