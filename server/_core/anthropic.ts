@@ -91,3 +91,9 @@ export function extractAnthropicTextDelta(eventData: string): string | null {
 
   return null;
 }
+
+export function extractAnthropicStopReason(eventData: string): string | null {
+  const parsed = JSON.parse(eventData);
+  const stopReason = parsed?.delta?.stop_reason ?? parsed?.message?.stop_reason;
+  return typeof stopReason === "string" ? stopReason : null;
+}

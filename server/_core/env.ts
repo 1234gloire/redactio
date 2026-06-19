@@ -1,3 +1,5 @@
+const configuredAnthropicMaxTokens = Number(process.env.ANTHROPIC_MAX_TOKENS ?? "12000");
+
 export const ENV = {
   appId: process.env.VITE_APP_ID ?? "",
   cookieSecret: process.env.JWT_SECRET ?? "",
@@ -9,7 +11,9 @@ export const ENV = {
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? "",
   anthropicModel: process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6",
-  anthropicMaxTokens: Number(process.env.ANTHROPIC_MAX_TOKENS ?? "4096"),
+  anthropicMaxTokens: Number.isFinite(configuredAnthropicMaxTokens)
+    ? Math.max(configuredAnthropicMaxTokens, 12000)
+    : 12000,
   localAdminEmail: process.env.LOCAL_ADMIN_EMAIL ?? "",
   localAdminPassword: process.env.LOCAL_ADMIN_PASSWORD ?? "",
   localAdminName: process.env.LOCAL_ADMIN_NAME ?? "Administrateur REDACTIO",

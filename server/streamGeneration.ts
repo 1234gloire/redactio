@@ -15,7 +15,11 @@ import { pseudonymise } from "./pseudonymisation";
 import { createAuditLog, getActivePromptBase, getActiveTemplateByVolet } from "./db";
 import { buildTemplateForSubtype, DEFAULT_PROMPT_BASE, DEFAULT_TEMPLATES } from "./defaultPrompts";
 import { sdk } from "./_core/sdk";
-import { createAnthropicStream, extractAnthropicTextDelta } from "./_core/anthropic";
+import {
+  createAnthropicStream,
+  extractAnthropicStopReason,
+  extractAnthropicTextDelta,
+} from "./_core/anthropic";
 
 const RAW_DATA_MAX_CHARS = 200_000;
 
@@ -128,6 +132,7 @@ export function registerStreamGeneration(app: Express) {
     // 8. Appel LLM en streaming
     let finished = false;
     let tokenCount = 0;
+    let generatedText = "";
 
     const handleClose = () => {
       finished = true;
@@ -135,50 +140,69 @@ export function registerStreamGeneration(app: Express) {
     res.on("close", handleClose);
 
     try {
-      const llmResponse = await createAnthropicStream({
-        system: baseContent,
-        messages: [{ role: "user", content: templateContent }],
-      });
+      let messages: Array<{ role: "user" | "assistant"; content: string }> = [
+        { role: "user", content: templateContent },
+      ];
+      let continuationCount = 0;
 
-      if (!llmResponse.ok || !llmResponse.body) {
-        const errorText = await llmResponse.text().catch(() => "");
-        throw new Error(`Anthropic stream failed: ${llmResponse.status} ${errorText}`);
-      }
+      while (!finished && continuationCount < 3) {
+        let stopReason: string | null = null;
+        const llmResponse = await createAnthropicStream({
+          system: baseContent,
+          messages,
+        });
 
-      const reader = llmResponse.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
+        if (!llmResponse.ok || !llmResponse.body) {
+          const errorText = await llmResponse.text().catch(() => "");
+          throw new Error(`Anthropic stream failed: ${llmResponse.status} ${errorText}`);
+        }
 
-      while (!finished) {
-        const { done, value } = await reader.read();
-        if (done) break;
+        const reader = llmResponse.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
+        while (!finished) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-        for (const line of lines) {
-          if (finished) break;
-          if (!line.startsWith("data: ")) continue;
-          const data = line.slice(6).trim();
-          if (data === "[DONE]") {
-            finished = true;
-            break;
-          }
-          try {
-            const delta = extractAnthropicTextDelta(data);
-            if (delta) {
-              tokenCount++;
-              res.write(`data: ${JSON.stringify({ type: "token", content: delta })}\n\n`);
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+
+          for (const line of lines) {
+            if (finished) break;
+            if (!line.startsWith("data: ")) continue;
+            const data = line.slice(6).trim();
+            if (data === "[DONE]") break;
+            try {
+              stopReason = extractAnthropicStopReason(data) ?? stopReason;
+              const delta = extractAnthropicTextDelta(data);
+              if (delta) {
+                tokenCount++;
+                generatedText += delta;
+                res.write(`data: ${JSON.stringify({ type: "token", content: delta })}\n\n`);
+              }
+            } catch (error) {
+              if (error instanceof SyntaxError) continue;
+              throw error;
             }
-          } catch (error) {
-            if (error instanceof SyntaxError) continue;
-            throw error;
           }
         }
-      }
 
-      reader.cancel().catch(() => {});
+        reader.cancel().catch(() => {});
+        if (finished || stopReason !== "max_tokens") break;
+
+        continuationCount++;
+        messages = [
+          { role: "user", content: templateContent },
+          { role: "assistant", content: generatedText },
+          {
+            role: "user",
+            content:
+              "Continue exactement où tu t'es arrêté. Ne recommence pas le document. Termine toutes les sections restantes jusqu'à la dernière ligne demandée par le prompt.",
+          },
+        ];
+      }
     } catch (err) {
       if (!finished) {
         res.write(

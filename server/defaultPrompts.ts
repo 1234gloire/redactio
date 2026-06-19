@@ -553,15 +553,6 @@ Synthèse de conciliation médicamenteuse
 ✓ Médicaments inchangés :
 - …
 
-OBSERVATIONS PARAMÉDICALES DE FIN DE PRISE EN CHARGE :
-KINE — Bilan de fin de prise en charge le [date] :
-- Rappel du projet initial à l'entrée et de l'évolution des objectifs : …
-- État des lieux à la sortie (analytique et fonctionnel) : …
-- Objectifs de la poursuite de la prise en charge : …
-Recommandations pour le traitement :
-- Patient autonome pour la prise du traitement : Oui / Non
-- [Mention conciliation réalisée, conduite en cas d'effets indésirables,
-  durée limitée de prescription, renouvellement par le médecin traitant.]
 
 Cordialement,
 
@@ -584,9 +575,13 @@ Courrier de sortie adressé au médecin traitant : Oui/Non (date, heure)
 > À partir des données ci-dessous, rédige le courrier de sortie de SMR complet en respectant **exactement** la structure, l'ordre et le style définis ci-dessus. N'ajoute aucun en-tête, aucune donnée d'identité ni d'établissement (masqués par l'application), mais **conserve** dates d'hospitalisation, motifs, antécédents, noms de diagnostics, dates d'examens/RDV et noms des médecins. Produis le tableau de conciliation médicamenteuse à 5 colonnes.
 >
 
+CONSIGNE DE FINALISATION OBLIGATOIRE :
+Tu dois produire le courrier complet jusqu'à la toute dernière ligne de la structure demandée. Ne t'arrête pas après le tableau ou la synthèse de conciliation. Termine obligatoirement par les sections de traçabilité de fin de courrier et la mention d'envoi au médecin traitant.
+
 DONNÉES CLINIQUES DU PATIENT (pseudonymisées) :
 {{DONNEES_MEDICALES}}`,
 };
+
 export function buildTemplateForSubtype(params: {
   volet: Volet;
   subtype: RedactionSubtype;
