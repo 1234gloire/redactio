@@ -47,7 +47,7 @@ import {
   DEFAULT_TEST_CASES,
 } from "./defaultPrompts";
 
-const RAW_DATA_MAX_CHARS = 50_000;
+const RAW_DATA_MAX_CHARS = 200_000;
 
 // ─── Helpers RBAC ─────────────────────────────────────────────────────────────
 

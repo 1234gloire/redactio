@@ -17,7 +17,7 @@ import { buildTemplateForSubtype, DEFAULT_PROMPT_BASE, DEFAULT_TEMPLATES } from 
 import { sdk } from "./_core/sdk";
 import { createAnthropicStream, extractAnthropicTextDelta } from "./_core/anthropic";
 
-const RAW_DATA_MAX_CHARS = 50_000;
+const RAW_DATA_MAX_CHARS = 200_000;
 
 // ─── Rate limiting en mémoire (par userId) ───────────────────────────────────
 const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute

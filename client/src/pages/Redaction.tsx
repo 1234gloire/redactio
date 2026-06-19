@@ -35,7 +35,7 @@ import { useLocation } from "wouter";
 import { cn } from "../lib/utils";
 import { toast } from "sonner";
 
-const RAW_DATA_MAX_CHARS = 50_000;
+const RAW_DATA_MAX_CHARS = 200_000;
 
 const VOLETS: Record<Volet, { label: string; icon: React.ReactNode; description: string; color: string }> = {
   courrier_sortie: {
