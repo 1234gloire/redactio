@@ -181,6 +181,7 @@ export default function Redaction() {
         }
       }
     } catch (err: unknown) {
+      setStep(2);
       if (err instanceof Error && err.name === "AbortError") {
         setIsGenerating(false);
         toast.info("Génération annulée.");

@@ -29,7 +29,7 @@ export async function createAnthropicStream(params: {
       model: ENV.anthropicModel,
       max_tokens: Number.isFinite(ENV.anthropicMaxTokens)
         ? ENV.anthropicMaxTokens
-        : 4096,
+        : 12000,
       system: params.system,
       messages: params.messages,
       stream: true,
@@ -56,7 +56,7 @@ export async function createAnthropicMessage(params: {
       model: ENV.anthropicModel,
       max_tokens: Number.isFinite(ENV.anthropicMaxTokens)
         ? ENV.anthropicMaxTokens
-        : 4096,
+        : 12000,
       system: params.system,
       messages: params.messages,
     }),

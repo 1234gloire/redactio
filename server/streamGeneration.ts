@@ -47,6 +47,25 @@ function checkRateLimit(userId: number): { allowed: boolean; retryAfterMs?: numb
   return { allowed: true };
 }
 
+function getGenerationClientErrorMessage(err: unknown): string {
+  const message = err instanceof Error ? err.message : String(err);
+
+  if (message.includes("ANTHROPIC_API_KEY")) {
+    return "Configuration Anthropic manquante. Vérifiez la clé API côté serveur.";
+  }
+  if (message.includes("401") || message.includes("403")) {
+    return "Clé Anthropic invalide ou non autorisée.";
+  }
+  if (message.includes("429")) {
+    return "Quota ou limite Anthropic atteint. Réessayez plus tard.";
+  }
+  if (message.includes("400") || message.toLowerCase().includes("model")) {
+    return "Configuration du modèle Anthropic invalide ou indisponible.";
+  }
+
+  return "Le moteur de génération est temporairement indisponible.";
+}
+
 // ─── Enregistrement de la route SSE ──────────────────────────────────────────
 export function registerStreamGeneration(app: Express) {
   app.post("/api/generate/stream", async (req: Request, res: Response) => {
@@ -204,11 +223,19 @@ export function registerStreamGeneration(app: Express) {
         ];
       }
     } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[Generation] Anthropic stream failed", {
+        message,
+        volet,
+        subtype: selectedSubtype,
+        userId,
+      });
+
       if (!finished) {
         res.write(
           `data: ${JSON.stringify({
             type: "error",
-            message: "Le moteur de génération est temporairement indisponible.",
+            message: getGenerationClientErrorMessage(err),
           })}\n\n`
         );
       }
