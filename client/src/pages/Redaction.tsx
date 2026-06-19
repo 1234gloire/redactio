@@ -91,6 +91,9 @@ export default function Redaction() {
     initialVolet ? getDefaultSubtype(initialVolet) : null
   );
   const [rawData, setRawData] = useState("");
+  const [treatmentEntryData, setTreatmentEntryData] = useState("");
+  const [treatmentExitData, setTreatmentExitData] = useState("");
+  const [treatmentExitDate, setTreatmentExitDate] = useState("");
   const [generatedDoc, setGeneratedDoc] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExtractingFile, setIsExtractingFile] = useState(false);
@@ -213,10 +216,29 @@ export default function Redaction() {
     }
   }, [editor, generatedDoc]);
 
+  const buildGenerationRawData = useCallback(() => {
+    if (selectedVolet !== "conciliation") return rawData;
+    return `TRAITEMENT D'ENTRÉE :
+${treatmentEntryData.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}
+
+TRAITEMENT DE SORTIE :
+${treatmentExitData.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}
+
+DATE DE RÉDACTION DE LA SORTIE :
+${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
+  }, [rawData, selectedVolet, treatmentEntryData, treatmentExitData, treatmentExitDate]);
+
+  const currentInputLength = selectedVolet === "conciliation"
+    ? treatmentEntryData.length + treatmentExitData.length + treatmentExitDate.length
+    : rawData.length;
+  const canGenerate = selectedVolet === "conciliation"
+    ? Boolean(selectedSubtype && treatmentEntryData.trim().length >= 3 && treatmentExitData.trim().length >= 3)
+    : Boolean(selectedSubtype && rawData.trim().length >= 10);
+
   const handleGenerate = useCallback(() => {
-    if (!selectedVolet || !selectedSubtype || !rawData.trim()) return;
-    handleStreamGenerate(selectedVolet, selectedSubtype, rawData);
-  }, [selectedVolet, selectedSubtype, rawData, handleStreamGenerate]);
+    if (!selectedVolet || !selectedSubtype || !canGenerate) return;
+    handleStreamGenerate(selectedVolet, selectedSubtype, buildGenerationRawData());
+  }, [buildGenerationRawData, canGenerate, selectedVolet, selectedSubtype, handleStreamGenerate]);
 
   const handleFileUpload = useCallback(async (file: File | null) => {
     if (!file) return;
@@ -241,10 +263,18 @@ export default function Redaction() {
         throw new Error("Aucun texte exploitable trouvé dans ce fichier.");
       }
 
-      setRawData((current) => {
-        const separator = current.trim().length > 0 ? "\n\n--- Contenu importé ---\n\n" : "";
-        return `${current}${separator}${extractedText}`.slice(0, RAW_DATA_MAX_CHARS);
-      });
+      if (selectedVolet === "conciliation") {
+        const updateTreatment = selectedSubtype === "traitement_sortie" ? setTreatmentExitData : setTreatmentEntryData;
+        updateTreatment((current) => {
+          const separator = current.trim().length > 0 ? "\n\n--- Contenu importé ---\n\n" : "";
+          return `${current}${separator}${extractedText}`.slice(0, RAW_DATA_MAX_CHARS);
+        });
+      } else {
+        setRawData((current) => {
+          const separator = current.trim().length > 0 ? "\n\n--- Contenu importé ---\n\n" : "";
+          return `${current}${separator}${extractedText}`.slice(0, RAW_DATA_MAX_CHARS);
+        });
+      }
       toast.success(`Texte extrait depuis ${payload.filename || file.name}.`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Extraction du fichier impossible.");
@@ -252,7 +282,7 @@ export default function Redaction() {
       setIsExtractingFile(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
-  }, []);
+  }, [selectedSubtype, selectedVolet]);
 
   const handleFileDrag = useCallback((event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -302,6 +332,9 @@ export default function Redaction() {
     setSelectedVolet(null);
     setSelectedSubtype(null);
     setRawData("");
+    setTreatmentEntryData("");
+    setTreatmentExitData("");
+    setTreatmentExitDate("");
     setGeneratedDoc("");
     setValidated(false);
     setPseudoInfo(null);
@@ -475,24 +508,76 @@ export default function Redaction() {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="rawData" className="text-sm font-medium text-foreground">
-                Données médicales brutes
-                <span className="text-muted-foreground font-normal ml-1">(sans identifiant direct)</span>
-              </label>
-              <Textarea
-                id="rawData"
-                value={rawData}
-                onChange={(e) => setRawData(e.target.value)}
-                placeholder={`Exemple pour ${VOLETS[selectedVolet].label} :\n\nService : Cardiologie\nMotif d'hospitalisation : Décompensation cardiaque\nAntécédents : HTA, FA chronique, insuffisance cardiaque FE 35%\nTraitement habituel : Furosémide 40mg, Bisoprolol 5mg, Rivaroxaban 20mg\n...`}
-                className="min-h-[280px] font-mono text-sm resize-y"
-                aria-describedby="rawData-help"
-                maxLength={RAW_DATA_MAX_CHARS}
-              />
+              {selectedVolet === "conciliation" ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <label htmlFor="treatmentEntryData" className="text-sm font-medium text-foreground">
+                        Traitement d'entrée
+                        <span className="text-muted-foreground font-normal ml-1">(bilan médicamenteux)</span>
+                      </label>
+                      <Textarea
+                        id="treatmentEntryData"
+                        value={treatmentEntryData}
+                        onChange={(e) => setTreatmentEntryData(e.target.value)}
+                        placeholder={`Exemple :\nAMLODIPINE 5 mg gélule : 1 le matin\nZOPICLONE 7,5 mg cp : 1 au coucher\nKARDEGIC 75 mg : 1 sachet à midi`}
+                        className="min-h-[220px] font-mono text-sm resize-y"
+                        maxLength={RAW_DATA_MAX_CHARS}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="treatmentExitData" className="text-sm font-medium text-foreground">
+                        Traitement de sortie
+                        <span className="text-muted-foreground font-normal ml-1">(ordonnance finale)</span>
+                      </label>
+                      <Textarea
+                        id="treatmentExitData"
+                        value={treatmentExitData}
+                        onChange={(e) => setTreatmentExitData(e.target.value)}
+                        placeholder={`Exemple :\nAMLODIPINE 5 mg gélule : 1 le matin\nAPIXABAN 5 mg cp : 1 matin et 1 soir\nKARDEGIC 75 mg : arrêté`}
+                        className="min-h-[220px] font-mono text-sm resize-y"
+                        maxLength={RAW_DATA_MAX_CHARS}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="treatmentExitDate" className="text-sm font-medium text-foreground">
+                      Date de rédaction de la sortie
+                      <span className="text-muted-foreground font-normal ml-1">(optionnel)</span>
+                    </label>
+                    <input
+                      id="treatmentExitDate"
+                      type="text"
+                      value={treatmentExitDate}
+                      onChange={(e) => setTreatmentExitDate(e.target.value)}
+                      placeholder="JJ/MM/AAAA"
+                      className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      maxLength={32}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <label htmlFor="rawData" className="text-sm font-medium text-foreground">
+                    Données médicales brutes
+                    <span className="text-muted-foreground font-normal ml-1">(sans identifiant direct)</span>
+                  </label>
+                  <Textarea
+                    id="rawData"
+                    value={rawData}
+                    onChange={(e) => setRawData(e.target.value)}
+                    placeholder={`Exemple pour ${VOLETS[selectedVolet].label} :\n\nService : Cardiologie\nMotif d'hospitalisation : Décompensation cardiaque\nAntécédents : HTA, FA chronique, insuffisance cardiaque FE 35%\nTraitement habituel : Furosémide 40mg, Bisoprolol 5mg, Rivaroxaban 20mg\n...`}
+                    className="min-h-[280px] font-mono text-sm resize-y"
+                    aria-describedby="rawData-help"
+                    maxLength={RAW_DATA_MAX_CHARS}
+                  />
+                </>
+              )}
               <div className="flex items-center justify-between">
                 <p id="rawData-help" className="text-xs text-muted-foreground">
-                  {rawData.length}/{RAW_DATA_MAX_CHARS.toLocaleString("fr-FR")} caractères
+                  {currentInputLength}/{RAW_DATA_MAX_CHARS.toLocaleString("fr-FR")} caractères
                 </p>
-                {rawData.length > 0 && (
+                {currentInputLength > 0 && (
                   <Badge variant="secondary" className="text-xs">
                     Pseudonymisation automatique activée
                   </Badge>
@@ -530,7 +615,9 @@ export default function Redaction() {
                       Glissez-déposez un fichier ici
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      PDF, Word .docx, TXT, Markdown, CSV ou JSON
+                      {selectedVolet === "conciliation"
+                        ? "Le fichier sera ajouté au champ sélectionné : entrée ou sortie."
+                        : "PDF, Word .docx, TXT, Markdown, CSV ou JSON"}
                     </p>
                   </div>
                 </div>
@@ -554,7 +641,7 @@ export default function Redaction() {
               </Button>
               <Button
                 onClick={() => { setStep(3); handleGenerate(); }}
-                disabled={!selectedSubtype || rawData.trim().length < 10}
+                disabled={!canGenerate}
                 className="gap-2"
               >
                 Générer le document
