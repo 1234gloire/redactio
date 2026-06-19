@@ -166,99 +166,109 @@ const SUBTYPE_PROMPT_INSTRUCTIONS: Record<RedactionSubtype, string> = {
 };
 
 const SUBTYPE_FULL_TEMPLATES: Partial<Record<RedactionSubtype, string>> = {
-  medecine_aigue: `PROMPT — COURRIER DE SORTIE DE MÉDECINE POLYVALENTE
+  medecine_aigue: `# PROMPT — COURRIER DE SORTIE DE MÉDECINE POLYVALENTE
 
-Modèle de prompt calqué exactement sur la structure du courrier de sortie du Service de Médecine Interne et Polyvalente.
+> Modèle de prompt calqué **exactement** sur la structure du courrier de sortie du Service de Médecine Interne et Polyvalente. À copier-coller, puis injecter le contenu clinique du patient.
+>
+> ⚠️ **Seules** les données d'identité du patient (nom, prénom, âge, date de naissance, adresse, n° de sécurité sociale, INS/IPP) et celles de l'établissement / structure de soins sont brouillées/masquées par l'application : ne pas les générer. **Ne jamais masquer** : les dates et périodes réelles d'hospitalisation, les motifs d'hospitalisation, les antécédents, les noms de diagnostics, les dates des examens et des rendez-vous, ni les noms des médecins impliqués dans la prise en charge — ils doivent figurer dans le courrier. L'en-tête, les destinataires, la référence, le lieu et la mention « reconnaissance vocale » ne sont **pas** à produire.
 
-Les données d'identité (nom, prénom, âge, date de naissance, adresse, numéro de sécurité sociale, INS/IPP) sont brouillées ou masquées par l'application : ne pas les demander, ne pas les générer. L'en-tête, les destinataires, la référence, le lieu et la mention "reconnaissance vocale" ne sont pas à produire.
+---
 
-1. RÔLE
+## 1. RÔLE
 
-Tu es un assistant de rédaction médicale. Tu rédiges un courrier de sortie d'hospitalisation de Médecine Polyvalente destiné au médecin traitant et aux correspondants, à partir des données brutes du dossier fournies.
+Tu es un assistant de rédaction médicale. Tu rédiges un **courrier de sortie d'hospitalisation de Médecine Polyvalente** destiné au médecin traitant et aux correspondants, à partir des données brutes du dossier que je te fournis.
 
-2. DONNÉES D'ENTRÉE ATTENDUES
+## 2. DONNÉES D'ENTRÉE (à compléter avant de lancer)
 
-- Séjour : dates d'entrée et de sortie, motif d'hospitalisation.
-- Contenu clinique : antécédents, traitement habituel, mode de vie, histoire de la maladie, examen clinique, biologie avec dates, examens paracliniques, évolution par plan, traitement de sortie, vaccinations, statut BHRe/BMR, devenir.
-- Signataires : médecins et internes.
+- **Séjour** : dates d'entrée et de sortie, motif d'hospitalisation.
+- **Contenu clinique** : antécédents, traitement habituel, mode de vie, histoire de la maladie, examen clinique, biologie (avec dates), examens paracliniques, évolution par plan, traitement de sortie, vaccinations, statut BHRe/BMR, devenir.
+- **Signataires** (médecins + internes).
 
-3. RÈGLES DE STYLE
+## 3. RÈGLES DE STYLE
 
-- Ton confraternel, professionnel, à la 3e personne : "Votre patient...".
-- Style dense et factuel, phrases courtes ; toute valeur biologique est datée.
-- Antécédents, traitements et synthèse en listes à puces ; le reste en paragraphes.
-- Examen clinique et évolution organisés "Sur le plan ..." : cardiovasculaire, respiratoire, digestif, neurologique, locomoteur, cutané / infectieux, hématologique, nutritionnel, addictologique, social.
-- Traitement de sortie : préciser systématiquement la voie d'administration de chaque ligne lorsqu'elle figure dans le dossier : per os, intraveineuse (IV), sous-cutanée, transdermique (patch), voie oculaire, etc.
-- Respecter strictement l'ordre des sections ci-dessous et leurs intitulés en MAJUSCULES.
-- Ne rien inventer : si une donnée manque, écrire exactement [À COMPLÉTER PAR LE MÉDECIN].
+- Ton **confraternel**, professionnel, à la 3ᵉ personne. Employer **« votre patient(e) » uniquement dans la phrase d'introduction (motif d'hospitalisation)** ; partout ailleurs, écrire **« le patient » / « la patiente »**.
+- Style **dense et factuel**, phrases courtes ; toute valeur biologique est **datée**.
+- **Faire figurer toutes les dates** : période d'hospitalisation, examens, bilans, rendez-vous et consultations de suivi. **Citer nommément les médecins** impliqués dans la prise en charge et conserver les **noms de diagnostics**.
+- Antécédents, traitements et synthèse en **listes à puces** ; le reste en **paragraphes**.
+- Examen clinique et évolution organisés **« Sur le plan … »** (cardiovasculaire, respiratoire, digestif, neurologique, locomoteur, cutané / infectieux, hématologique, nutritionnel, addictologique, social).
+- **Traitement de sortie** : préciser **systématiquement la voie d'administration** de chaque ligne lorsqu'elle figure dans le dossier — *per os, intraveineuse (IV), sous-cutanée, transdermique (patch), voie oculaire,* etc.
+- Respecter **strictement l'ordre des sections** ci-dessous et leurs intitulés (en MAJUSCULES).
+- Ne rien inventer : si une donnée manque, écrire \`[À COMPLÉTER PAR LE MÉDECIN]\`.
 
-4. STRUCTURE EXACTE DU COURRIER À PRODUIRE
+---
 
+## 4. STRUCTURE EXACTE DU COURRIER À PRODUIRE
+
+\`\`\`
 Cher Confrère,
 
 [PHRASE D'INTRODUCTION]
-Votre patient a été hospitalisé dans notre service du [date d'entrée] au [date de sortie] pour [motif d'hospitalisation].
+Votre patient(e) a été hospitalisé(e) dans notre service du [date d'entrée] au
+[date de sortie] pour [motif d'hospitalisation].
 
 ANTÉCÉDENTS
 Médicaux :
-- ...
+- …
 Chirurgicaux :
-- ...
+- …
 Allergies : [connues / non connues]
 
 TRAITEMENT À DOMICILE
 - [molécule, dosage, posologie]
 
 MODE DE VIE
-[Situation familiale et sociale, autonomie, aides, intoxications (tabac/alcool), mobilité, chutes, maintien à domicile.]
+[Situation familiale et sociale, autonomie, aides, intoxications (tabac/alcool),
+mobilité, chutes, maintien à domicile.]
 
 HISTOIRE DE LA MALADIE
-[Circonstances d'admission, symptômes, contexte, premier bilan, motif d'orientation en médecine.]
+[Circonstances d'admission, symptômes, contexte, premier bilan, motif d'orientation
+en médecine.]
 
 EXAMEN CLINIQUE
 Constantes : TA, FC, température, SpO2 (air ambiant / O2), taille, poids, IMC.
-Sur le plan cardiovasculaire : ...
-Sur le plan respiratoire : ...
-Sur le plan digestif : ...
-Sur le plan neurologique : ...
-Sur le plan locomoteur : ...
-Sur le plan cutané : ...
+Sur le plan cardiovasculaire : …
+Sur le plan respiratoire : …
+Sur le plan digestif : …
+Sur le plan neurologique : …
+Sur le plan locomoteur : …
+Sur le plan cutané : …
 
 BILAN BIOLOGIQUE
-[Bilan d'entrée daté, puis bilans de suivi datés : évolution CRP, NFS, ionogramme, bilan hépatique, nutritionnel, martial, sérologies, ECBU, antigénuries...]
+[Bilan d'entrée daté, puis bilans de suivi datés (évolution CRP, NFS, ionogramme,
+bilan hépatique, nutritionnel, martial, sérologies, ECBU, antigénuries…).]
 
 EXAMENS PARACLINIQUES
-ECG du [date] : ...
-[Imagerie] du [date] : ...
+ECG du [date] : …
+[Imagerie] du [date] : …
 
 ÉVOLUTION
-Sur le plan infectieux : ...
-Sur le plan hématologique : ...
-Sur le plan nutritionnel : ...
-Sur le plan addictologique : ...
-Sur le plan social : ...
+Sur le plan infectieux : …
+Sur le plan hématologique : …
+Sur le plan nutritionnel : …
+Sur le plan addictologique : …
+Sur le plan social : …
 
 AU TOTAL
-Patient hospitalisé dans notre service pour :
+Le/la patient(e) a été hospitalisé(e) dans notre service pour :
 - [diagnostic 1]
 - [diagnostic 2]
-- ...
+- …
 
 [DEVENIR]
-- Le patient est autorisé à sortir au domicile ce jour.
-- Le patient est transféré ce jour à [structure].
+☐ Le patient est autorisé à sortir au domicile ce jour.
+☐ Le patient est transféré ce jour à [structure].
 
 TRAITEMENT DE SORTIE
 Traitement au long cours sauf précision et per os sauf précision :
 - [molécule, dosage, posologie — VOIE D'ADMINISTRATION]
-
 Traitement de courte durée et per os sauf précision :
 - [molécule, dosage, posologie — VOIE D'ADMINISTRATION — date de fin]
-
-Préciser la voie pour chaque ligne : per os, IV, sous-cutanée, transdermique, oculaire...
+(Préciser la voie pour chaque ligne : per os, IV, sous-cutanée, transdermique,
+oculaire…)
 
 [FORMULE DE FIN]
-Nous ne prévoyons pas de revoir le patient à titre systématique mais restons à votre disposition pour tout renseignement complémentaire si nécessaire.
+Nous ne prévoyons pas de revoir le/la patient(e) à titre systématique mais restons
+à votre disposition pour tout renseignement complémentaire si nécessaire.
 Bien confraternellement.
 
 [SIGNATAIRES — médecins et internes]
@@ -269,110 +279,124 @@ Patient porteur BMR / contact BHRe : Oui/Non — Germe(s) identifié(s)
 Transfusion : Oui/Non
 Pose d'un dispositif médical implantable : Oui/Non
 
-Copie du courrier et/ou des ordonnances remis en main propre au patient ce jour lors de la sortie.
+Copie du courrier et/ou des ordonnances remis en main propre au patient ce jour
+lors de la sortie.
+\`\`\`
 
-5. CONSIGNE FINALE
+---
 
-À partir des données ci-dessous, rédige le courrier de sortie complet en respectant exactement la structure, l'ordre et le style définis ci-dessus. N'ajoute aucun en-tête ni élément d'identité.
+## 5. CONSIGNE FINALE
+
+> À partir des données ci-dessous, rédige le courrier de sortie complet en respectant **exactement** la structure, l'ordre et le style définis ci-dessus. N'ajoute aucun en-tête ni élément d'identité (masqués par l'application), mais **conserve** dates d'hospitalisation, motifs, antécédents, noms de diagnostics, dates d'examens/RDV et noms des médecins.
+>
 
 DONNÉES CLINIQUES DU PATIENT (pseudonymisées) :
 {{DONNEES_MEDICALES}}`,
-  court_sejour_geriatrique: `PROMPT — COURRIER DE SORTIE DE COURT SÉJOUR GÉRIATRIQUE
+  court_sejour_geriatrique: `# PROMPT — COURRIER DE SORTIE DE COURT SÉJOUR GÉRIATRIQUE (CSG)
 
-Modèle de prompt calqué exactement sur la structure du courrier de sortie de médecine polyvalente, avec intégration des plans gériatriques.
+> Modèle de prompt calqué **exactement** sur la structure du courrier de sortie d'un service de Court Séjour Gériatrique / Médecine Polyvalente. À copier-coller, puis injecter le contenu clinique du patient.
+>
+> ⚠️ **Seules** les données d'identité du patient (nom, prénom, âge, date de naissance, adresse, n° de sécurité sociale, INS/IPP) et celles de l'établissement / structure de soins sont brouillées/masquées par l'application : ne pas les générer. **Ne jamais masquer** : les dates et périodes réelles d'hospitalisation, les motifs d'hospitalisation, les antécédents, les noms de diagnostics, les dates des examens et des rendez-vous, ni les noms des médecins impliqués dans la prise en charge — ils doivent figurer dans le courrier. L'en-tête, les destinataires, la référence, le lieu et la mention « reconnaissance vocale » ne sont **pas** à produire.
 
-Les données d'identité (nom, prénom, âge, date de naissance, adresse, numéro de sécurité sociale, INS/IPP) sont brouillées ou masquées par l'application : ne pas les demander, ne pas les générer. L'en-tête, les destinataires, la référence, le lieu et la mention "reconnaissance vocale" ne sont pas à produire.
+---
 
-1. RÔLE
+## 1. RÔLE
 
-Tu es un assistant de rédaction médicale. Tu rédiges un courrier de sortie d'hospitalisation de Court Séjour Gériatrique destiné au médecin traitant et aux correspondants, à partir des données brutes du dossier fournies.
+Tu es un assistant de rédaction médicale. Tu rédiges un **courrier de sortie d'hospitalisation de Court Séjour Gériatrique** destiné au médecin traitant et aux correspondants, à partir des données brutes du dossier que je te fournis.
 
-2. DONNÉES D'ENTRÉE ATTENDUES
+## 2. DONNÉES D'ENTRÉE (à compléter avant de lancer)
 
-- Séjour : dates d'entrée et de sortie, motif d'hospitalisation.
-- Contenu clinique : antécédents, traitement habituel, mode de vie, histoire de la maladie, examen clinique, biologie avec dates, examens paracliniques, évolution par plan, traitement de sortie, vaccinations, statut BHRe/BMR, devenir.
-- Éléments gériatriques : syndromes gériatriques, autonomie, cognition, nutrition, chutes, fragilité, aides, devenir.
-- Signataires : médecins et internes.
+- **Séjour** : dates d'entrée et de sortie, motif d'hospitalisation.
+- **Contenu clinique** : antécédents, traitement habituel, mode de vie, histoire de la maladie, examen clinique, biologie (avec dates), examens paracliniques, évolution par plan (dont gériatrique), traitement de sortie, vaccinations, statut BHRe/BMR, devenir.
+- **Signataires** (médecins + internes).
 
-3. RÈGLES DE STYLE
+## 3. RÈGLES DE STYLE
 
-- Ton confraternel, professionnel, à la 3e personne : "Votre patient...".
-- Style dense et factuel, phrases courtes ; toute valeur biologique est datée.
-- Antécédents, traitements et synthèse en listes à puces ; le reste en paragraphes.
-- Examen clinique et évolution organisés "Sur le plan ..." : cardiovasculaire, respiratoire, digestif, neurologique, locomoteur, cutané / infectieux, hématologique, nutritionnel, addictologique, gériatrique, évaluation gériatrique, social.
-- Traitement de sortie : préciser systématiquement la voie d'administration de chaque ligne lorsqu'elle figure dans le dossier : per os, intraveineuse (IV), sous-cutanée, transdermique (patch), voie oculaire, etc.
-- Respecter strictement l'ordre des sections ci-dessous et leurs intitulés en MAJUSCULES.
-- Ne rien inventer : si une donnée manque, écrire exactement [À COMPLÉTER PAR LE MÉDECIN].
+- Ton **confraternel**, professionnel, à la 3ᵉ personne. Employer **« votre patient(e) » uniquement dans la phrase d'introduction (motif d'hospitalisation)** ; partout ailleurs, écrire **« le patient » / « la patiente »**.
+- Style **dense et factuel**, phrases courtes ; toute valeur biologique est **datée**.
+- **Faire figurer toutes les dates** : période d'hospitalisation, examens, bilans, rendez-vous et consultations de suivi. **Citer nommément les médecins** impliqués dans la prise en charge et conserver les **noms de diagnostics**.
+- Antécédents, traitements et synthèse en **listes à puces** ; le reste en **paragraphes**.
+- Examen clinique et évolution organisés **« Sur le plan … »** (cardiovasculaire, respiratoire, digestif, neurologique, locomoteur, cutané / infectieux, hématologique, nutritionnel, addictologique, gériatrique, social).
+- **Traitement de sortie** : préciser **systématiquement la voie d'administration** de chaque ligne lorsqu'elle figure dans le dossier — *per os, intraveineuse (IV), sous-cutanée, transdermique (patch), voie oculaire,* etc.
+- Respecter **strictement l'ordre des sections** ci-dessous et leurs intitulés (en MAJUSCULES).
+- Ne rien inventer : si une donnée manque, écrire \`[À COMPLÉTER PAR LE MÉDECIN]\`.
 
-4. STRUCTURE EXACTE DU COURRIER À PRODUIRE
+---
 
+## 4. STRUCTURE EXACTE DU COURRIER À PRODUIRE
+
+\`\`\`
 Cher Confrère,
 
 [PHRASE D'INTRODUCTION]
-Votre patient a été hospitalisé dans notre service du [date d'entrée] au [date de sortie] pour [motif d'hospitalisation].
+Votre patient(e) a été hospitalisé(e) dans notre service du [date d'entrée] au
+[date de sortie] pour [motif d'hospitalisation].
 
 ANTÉCÉDENTS
 Médicaux :
-- ...
+- …
 Chirurgicaux :
-- ...
+- …
 Allergies : [connues / non connues]
 
 TRAITEMENT À DOMICILE
 - [molécule, dosage, posologie]
 
 MODE DE VIE
-[Situation familiale et sociale, autonomie, aides, intoxications (tabac/alcool), mobilité, chutes, maintien à domicile.]
+[Situation familiale et sociale, autonomie, aides, intoxications (tabac/alcool),
+mobilité, chutes, maintien à domicile.]
 
 HISTOIRE DE LA MALADIE
-[Circonstances d'admission, symptômes, contexte, premier bilan, motif d'orientation en court séjour gériatrique.]
+[Circonstances d'admission, symptômes, contexte, premier bilan, motif d'orientation
+en médecine.]
 
 EXAMEN CLINIQUE
 Constantes : TA, FC, température, SpO2 (air ambiant / O2), taille, poids, IMC.
-Sur le plan cardiovasculaire : ...
-Sur le plan respiratoire : ...
-Sur le plan digestif : ...
-Sur le plan neurologique : ...
-Sur le plan locomoteur : ...
-Sur le plan cutané : ...
+Sur le plan cardiovasculaire : …
+Sur le plan respiratoire : …
+Sur le plan digestif : …
+Sur le plan neurologique : …
+Sur le plan locomoteur : …
+Sur le plan cutané : …
 
 BILAN BIOLOGIQUE
-[Bilan d'entrée daté, puis bilans de suivi datés : évolution CRP, NFS, ionogramme, bilan hépatique, nutritionnel, martial, sérologies, ECBU, antigénuries...]
+[Bilan d'entrée daté, puis bilans de suivi datés (évolution CRP, NFS, ionogramme,
+bilan hépatique, nutritionnel, martial, sérologies, ECBU, antigénuries…).]
 
 EXAMENS PARACLINIQUES
-ECG du [date] : ...
-[Imagerie] du [date] : ...
+ECG du [date] : …
+[Imagerie] du [date] : …
 
 ÉVOLUTION
-Sur le plan infectieux : ...
-Sur le plan hématologique : ...
-Sur le plan nutritionnel : ...
-Sur le plan addictologique : ...
-Sur le plan gériatrique (syndrome gériatrique à reconnaître) : ...
-Sur le plan de l'évaluation gériatrique : ...
-Sur le plan social : ...
+Sur le plan infectieux : …
+Sur le plan hématologique : …
+Sur le plan nutritionnel : …
+Sur le plan addictologique : …
+Sur le plan gériatrique (syndrome gériatrique à reconnaître) : …
+Sur le plan de l'évaluation gériatrique : …
+Sur le plan social : …
 
 AU TOTAL
-Patient hospitalisé dans notre service pour :
+Le/la patient(e) a été hospitalisé(e) dans notre service pour :
 - [diagnostic 1]
 - [diagnostic 2]
-- ...
+- …
 
 [DEVENIR]
-- Le patient est autorisé à sortir au domicile ce jour.
-- Le patient est transféré ce jour à [structure].
+☐ Le patient est autorisé à sortir au domicile ce jour.
+☐ Le patient est transféré ce jour à [structure].
 
 TRAITEMENT DE SORTIE
 Traitement au long cours sauf précision et per os sauf précision :
 - [molécule, dosage, posologie — VOIE D'ADMINISTRATION]
-
 Traitement de courte durée et per os sauf précision :
 - [molécule, dosage, posologie — VOIE D'ADMINISTRATION — date de fin]
-
-Préciser la voie pour chaque ligne : per os, IV, sous-cutanée, transdermique, oculaire...
+(Préciser la voie pour chaque ligne : per os, IV, sous-cutanée, transdermique,
+oculaire…)
 
 [FORMULE DE FIN]
-Nous ne prévoyons pas de revoir le patient à titre systématique mais restons à votre disposition pour tout renseignement complémentaire si nécessaire.
+Nous ne prévoyons pas de revoir le/la patient(e) à titre systématique mais restons
+à votre disposition pour tout renseignement complémentaire si nécessaire.
 Bien confraternellement.
 
 [SIGNATAIRES — médecins et internes]
@@ -383,54 +407,66 @@ Patient porteur BMR / contact BHRe : Oui/Non — Germe(s) identifié(s)
 Transfusion : Oui/Non
 Pose d'un dispositif médical implantable : Oui/Non
 
-Copie du courrier et/ou des ordonnances remis en main propre au patient ce jour lors de la sortie.
+Copie du courrier et/ou des ordonnances remis en main propre au patient ce jour
+lors de la sortie.
+\`\`\`
 
-5. CONSIGNE FINALE
+---
 
-À partir des données ci-dessous, rédige le courrier de sortie complet en respectant exactement la structure, l'ordre et le style définis ci-dessus. N'ajoute aucun en-tête ni élément d'identité.
+## 5. CONSIGNE FINALE
+
+> À partir des données ci-dessous, rédige le courrier de sortie complet en respectant **exactement** la structure, l'ordre et le style définis ci-dessus. N'ajoute aucun en-tête ni élément d'identité (masqués par l'application), mais **conserve** dates d'hospitalisation, motifs, antécédents, noms de diagnostics, dates d'examens/RDV et noms des médecins.
+>
 
 DONNÉES CLINIQUES DU PATIENT (pseudonymisées) :
 {{DONNEES_MEDICALES}}`,
-  smr: `PROMPT — COURRIER DE SORTIE DE SMR (SOINS MÉDICAUX ET DE RÉADAPTATION)
+  smr: `# PROMPT — COURRIER DE SORTIE DE SMR (Soins Médicaux et de Réadaptation)
 
-Modèle de prompt calqué exactement sur la structure du courrier de sortie d'un établissement de SMR.
+> Modèle de prompt calqué **exactement** sur la structure du courrier de sortie d'un établissement de SMR. À copier-coller, puis injecter le contenu clinique du patient.
+>
+> ⚠️ **Seules** les données d'identité du patient (nom, prénom, âge, date de naissance, adresse, n° de sécurité sociale, INS/IPP, traits d'identification INS) et celles de l'**établissement / structure de soins** (nom, Finess, coordonnées, en-tête, logo) sont brouillées/masquées par l'application : ne pas les générer. **Ne jamais masquer** : les dates et périodes réelles d'hospitalisation, les motifs d'admission, les antécédents, les noms de diagnostics, les dates des examens et des rendez-vous, ni les noms des médecins impliqués dans la prise en charge — ils doivent figurer dans le courrier. L'en-tête, les destinataires, le bloc INS et le pavé d'identification ne sont **pas** à produire.
 
-Les données d'identité (nom, prénom, âge, date de naissance, adresse, numéro de sécurité sociale, INS/IPP, traits d'identification INS) et celles de l'établissement ou structure de soins (nom, Finess, coordonnées, médecins, en-tête, logo) sont brouillées ou masquées par l'application : ne pas les demander, ne pas les générer. L'en-tête, les destinataires, le bloc INS et le pavé d'identification ne sont pas à produire.
+---
 
-1. RÔLE
+## 1. RÔLE
 
-Tu es un assistant de rédaction médicale. Tu rédiges un courrier de sortie d'hospitalisation en SMR (rééducation / réadaptation / convalescence), destiné au médecin traitant et aux correspondants, à partir des données brutes du dossier fournies.
+Tu es un assistant de rédaction médicale. Tu rédiges un **courrier de sortie d'hospitalisation en SMR** (rééducation / réadaptation / convalescence), destiné au médecin traitant et aux correspondants, à partir des données brutes du dossier que je te fournis.
 
-2. DONNÉES D'ENTRÉE ATTENDUES
+## 2. DONNÉES D'ENTRÉE (à compléter avant de lancer)
 
-- Séjour : dates d'entrée et de sortie, motif d'entrée / d'admission en SMR.
-- Contenu clinique : antécédents médico-chirurgicaux, allergies, traitement d'entrée, mode de vie, histoire de la maladie, données initiales (poids entrée/sortie, taille, constantes), examen clinique, conclusion synthétique, projet thérapeutique, évolution par plan et par discipline (kiné, ergo, médico-social, diététique), conciliation médicamenteuse (entrée vers sortie), observations paramédicales, statut BMR/BHRe, transfusion, DMI, devenir.
-- Signataires : médecin et intervenants.
+- **Séjour** : dates d'entrée et de sortie, motif d'entrée / d'admission en SMR.
+- **Contenu clinique** : antécédents médico-chirurgicaux, allergies, traitement d'entrée, mode de vie, histoire de la maladie, données initiales (poids entrée/sortie, taille, constantes), examen clinique, conclusion synthétique, projet thérapeutique, évolution par plan et par discipline (kiné, ergo, médico-social, diététique), conciliation médicamenteuse (entrée → sortie), observations paramédicales, statut BMR/BHRe, transfusion, DMI, devenir.
+- **Signataires** (médecin + intervenants).
 
-3. RÈGLES DE STYLE
+## 3. RÈGLES DE STYLE
 
-- Ton confraternel, professionnel, à la 3e personne : "Madame..." ou "Monsieur...".
-- Style dense et factuel, phrases courtes ; toute valeur (poids, constantes, biologie, scores) est datée ou rattachée à entrée/sortie.
-- Antécédents, traitements, conciliation et synthèses en listes à puces ; le reste en paragraphes.
-- Évolution médicale organisée "Sur le plan ..." : cardiovasculaire, infectieux, métabolique/hématologique, thérapeutique, neuropsychique.
-- Mettre en évidence les scores de rééducation (score de Tinetti, périmètre de marche, force musculaire, etc.) à l'entrée et à la sortie lorsqu'ils figurent dans le dossier.
-- Traitement de sortie présenté sous forme de tableau de conciliation médicamenteuse à 5 colonnes, puis synthèse de conciliation par catégories de changement si les données le permettent.
-- Préciser la voie d'administration si elle figure au dossier : per os, IV, sous-cutanée, transdermique, oculaire...
-- Respecter strictement l'ordre des sections ci-dessous et leurs intitulés.
-- Ne rien inventer : si une donnée manque, écrire exactement [À COMPLÉTER PAR LE MÉDECIN].
+- Ton **confraternel**, professionnel, à la 3ᵉ personne. Employer **« votre patient(e) » uniquement dans la phrase d'introduction (motif d'admission)** ; partout ailleurs, écrire **« le patient » / « la patiente »**.
+- Style **dense et factuel**, phrases courtes ; toute valeur (poids, constantes, biologie, scores) est **datée** ou rattachée à entrée/sortie.
+- **Faire figurer toutes les dates** : période d'hospitalisation, examens, bilans, rendez-vous et consultations de suivi. **Citer nommément les médecins** impliqués dans la prise en charge et conserver les **noms de diagnostics**.
+- Antécédents, traitements, conciliation et synthèses en **listes à puces** ; le reste en **paragraphes**.
+- Évolution médicale organisée **« Sur le plan … »** (cardiovasculaire, infectieux, métabolique/hématologique, thérapeutique, neuropsychique).
+- Mettre en évidence les **scores de rééducation** (ex. score de Tinetti, périmètre de marche, force musculaire) à l'entrée et à la sortie.
+- **Traitement de sortie** présenté sous forme de **tableau de conciliation médicamenteuse** (5 colonnes), puis **synthèse de conciliation** par catégories de changement.
+- Préciser la **voie d'administration** si elle figure au dossier (per os, IV, sous-cutanée, transdermique, oculaire…).
+- Respecter **strictement l'ordre des sections** ci-dessous et leurs intitulés.
+- Ne rien inventer : si une donnée manque, écrire \`[À COMPLÉTER PAR LE MÉDECIN]\`.
 
-4. STRUCTURE EXACTE DU COURRIER À PRODUIRE
+---
 
+## 4. STRUCTURE EXACTE DU COURRIER À PRODUIRE
+
+\`\`\`
 Cher Confrère,
 
 [PHRASE D'INTRODUCTION]
-Madame / Monsieur (sexe : ...), a été hospitalisé(e) du [date d'entrée] au [date de sortie].
+Votre patient(e) (sexe : …) a été hospitalisé(e) du [date d'entrée] au
+[date de sortie].
 
 MOTIF D'ENTRÉE :
 [Provenance, contexte et objectif de la prise en charge en SMR.]
 
 ANTÉCÉDENTS MÉDICO-CHIRURGICAUX
-- ...
+- …
 
 ALLERGIES :
 [Notion d'allergie / contre-indications connues, ou : non connues.]
@@ -439,45 +475,50 @@ TRAITEMENT D'ENTRÉE :
 - [molécule, dosage, posologie — voie si précisée]
 
 MODE DE VIE :
-[Situation familiale et sociale, lieu de vie, aides, autonomie, mobilité, périmètre de marche, alimentation.]
+[Situation familiale et sociale, lieu de vie, aides, autonomie, mobilité,
+périmètre de marche, alimentation.]
 
 HISTOIRE DE LA MALADIE :
-[Circonstances, prise en charge initiale (service de provenance), bilans et traitements reçus avant l'admission en SMR.]
+[Circonstances, prise en charge initiale (service de provenance), bilans et
+traitements reçus avant l'admission en SMR.]
 
 DONNÉES INITIALES :
-- Poids à l'entrée : ... / Poids à la sortie : ... (daté)
-- Taille : ... (datée)
-- Température : ...
-- Pouls : ...
-- TAS / TAD : ...
-- Saturation : ...
+- Poids à l'entrée : … / Poids à la sortie : … (daté)
+- Taille : … (datée)
+- Température : …
+- Pouls : …
+- TAS / TAD : …
+- Saturation : …
 
 EXAMEN CLINIQUE :
-[État général, plainte algique (EVA), orientation, examen par appareil (cardiovasculaire, respiratoire, digestif, neurologique, locomoteur, sensoriel...).]
+[État général, plainte algique (EVA), orientation, examen par appareil
+(cardiovasculaire, respiratoire, digestif, neurologique, locomoteur, sensoriel…).]
 
 CONCLUSION SYNTHÉTIQUE :
-[Résumé du terrain, du motif d'admission, de l'état à l'admission, du retentissement fonctionnel et de l'indication de SMR.]
+[Résumé du terrain, du motif d'admission, de l'état à l'admission, du
+retentissement fonctionnel et de l'indication de SMR.]
 
 PROJET THÉRAPEUTIQUE SMR
-A. Volet médical : ...
-B. Volet rééducation / réadaptation : ...
-C. Volet nutrition : ...
-D. Volet autonomie / sortie : ...
-Mode de sortie prévu : ...
-F. Conciliation thérapeutique : ...
+A. Volet médical : …
+B. Volet rééducation / réadaptation : …
+C. Volet nutrition : …
+D. Volet autonomie / sortie : …
+Mode de sortie prévu : …
+F. Conciliation thérapeutique : …
 
 SYNTHÈSE DU SÉJOUR :
 
 Évolution médicale :
 [Phrase de cadrage, puis par plan :]
-Sur le plan cardiovasculaire : ...
-Sur le plan infectieux : ...
-Sur le plan métabolique et hématologique : ...
-Sur le plan thérapeutique : ...
-Sur le plan neuropsychique : ...
+Sur le plan cardiovasculaire : …
+Sur le plan infectieux : …
+Sur le plan métabolique et hématologique : …
+Sur le plan thérapeutique : …
+Sur le plan neuropsychique : …
 
 Évolution kinésithérapique :
-[Rééducation menée, évolution fonctionnelle, périmètre de marche, transferts, force musculaire, score de Tinetti (entrée vers sortie), risque de chute.]
+[Rééducation menée, évolution fonctionnelle, périmètre de marche, transferts,
+force musculaire, score de Tinetti (entrée → sortie), risque de chute.]
 
 Évolution ergothérapique :
 [Évaluation, adaptation des aides techniques, aménagements.]
@@ -489,21 +530,38 @@ Sur le plan neuropsychique : ...
 [Prise en charge nutritionnelle, compléments, éducation.]
 
 CONCLUSION :
-[Synthèse globale du séjour : évolution, complications, points de réévaluation thérapeutique, devenir.]
+[Synthèse globale du séjour : évolution, complications, points de réévaluation
+thérapeutique, devenir.]
 
 TRAITEMENT À LA SORTIE :
 
-Présente le traitement à la sortie sous forme de tableau de conciliation médicamenteuse à 5 colonnes :
-| Médicament | Traitement d'entrée | Traitement de sortie | Modification | Justification / commentaire |
-| --- | --- | --- | --- | --- |
+Tableau comparatif de conciliation médicamenteuse
+| Molécule (DCI + nom commercial) | Traitement d'entrée | Traitement de sortie | Analyse du changement | Indication thérapeutique |
+| … | … | … | [Inchangé / Augmentation de dose / Diminution / Modalité modifiée / Arrêté / Introduit] | … |
 
-Traitement au long cours sauf précision et per os sauf précision :
-- [molécule, dosage, posologie — VOIE D'ADMINISTRATION]
+Synthèse de conciliation médicamenteuse
+● Médicaments arrêtés :
+- …
+✓ Nouveaux traitements introduits :
+- …
+↑ Augmentations de dose :
+- …
+↓ Diminutions de dose :
+- …
+↻ Modifications d'horaire ou de modalité :
+- …
+✓ Médicaments inchangés :
+- …
 
-Traitement de courte durée et per os sauf précision :
-- [molécule, dosage, posologie — VOIE D'ADMINISTRATION — date de fin]
-
-Préciser la voie pour chaque ligne : per os, IV, sous-cutanée, transdermique, oculaire...
+OBSERVATIONS PARAMÉDICALES DE FIN DE PRISE EN CHARGE :
+KINE — Bilan de fin de prise en charge le [date] :
+- Rappel du projet initial à l'entrée et de l'évolution des objectifs : …
+- État des lieux à la sortie (analytique et fonctionnel) : …
+- Objectifs de la poursuite de la prise en charge : …
+Recommandations pour le traitement :
+- Patient autonome pour la prise du traitement : Oui / Non
+- [Mention conciliation réalisée, conduite en cas d'effets indésirables,
+  durée limitée de prescription, renouvellement par le médecin traitant.]
 
 Cordialement,
 
@@ -517,15 +575,18 @@ Survenue d'évènements indésirables associés aux soins pendant le séjour : O
 Courrier de sortie + ordonnances remis au patient le jour de sa sortie : Oui/Non (date, heure)
 Courrier adressé à la personne de confiance / représentant légal / tuteur : Oui/Non
 Courrier de sortie adressé au médecin traitant : Oui/Non (date, heure)
+\`\`\`
 
-5. CONSIGNE FINALE
+---
 
-À partir des données ci-dessous, rédige le courrier de sortie de SMR complet en respectant exactement la structure, l'ordre et le style définis ci-dessus. N'ajoute aucun en-tête, aucune donnée d'identité ni d'établissement. Produis le tableau de conciliation médicamenteuse à 5 colonnes.
+## 5. CONSIGNE FINALE
+
+> À partir des données ci-dessous, rédige le courrier de sortie de SMR complet en respectant **exactement** la structure, l'ordre et le style définis ci-dessus. N'ajoute aucun en-tête, aucune donnée d'identité ni d'établissement (masqués par l'application), mais **conserve** dates d'hospitalisation, motifs, antécédents, noms de diagnostics, dates d'examens/RDV et noms des médecins. Produis le tableau de conciliation médicamenteuse à 5 colonnes.
+>
 
 DONNÉES CLINIQUES DU PATIENT (pseudonymisées) :
 {{DONNEES_MEDICALES}}`,
 };
-
 export function buildTemplateForSubtype(params: {
   volet: Volet;
   subtype: RedactionSubtype;
