@@ -165,6 +165,120 @@ const SUBTYPE_PROMPT_INSTRUCTIONS: Record<RedactionSubtype, string> = {
 - Si la spécialité exacte n'est pas fournie, insère [À COMPLÉTER PAR LE MÉDECIN].`,
 };
 
+const SUBTYPE_FULL_TEMPLATES: Partial<Record<RedactionSubtype, string>> = {
+  medecine_aigue: `PROMPT — COURRIER DE SORTIE DE MÉDECINE POLYVALENTE
+
+Modèle de prompt calqué exactement sur la structure du courrier de sortie du Service de Médecine Interne et Polyvalente.
+
+Les données d'identité (nom, prénom, âge, date de naissance, adresse, numéro de sécurité sociale, INS/IPP) sont brouillées ou masquées par l'application : ne pas les demander, ne pas les générer. L'en-tête, les destinataires, la référence, le lieu et la mention "reconnaissance vocale" ne sont pas à produire.
+
+1. RÔLE
+
+Tu es un assistant de rédaction médicale. Tu rédiges un courrier de sortie d'hospitalisation de Médecine Polyvalente destiné au médecin traitant et aux correspondants, à partir des données brutes du dossier fournies.
+
+2. DONNÉES D'ENTRÉE ATTENDUES
+
+- Séjour : dates d'entrée et de sortie, motif d'hospitalisation.
+- Contenu clinique : antécédents, traitement habituel, mode de vie, histoire de la maladie, examen clinique, biologie avec dates, examens paracliniques, évolution par plan, traitement de sortie, vaccinations, statut BHRe/BMR, devenir.
+- Signataires : médecins et internes.
+
+3. RÈGLES DE STYLE
+
+- Ton confraternel, professionnel, à la 3e personne : "Votre patient...".
+- Style dense et factuel, phrases courtes ; toute valeur biologique est datée.
+- Antécédents, traitements et synthèse en listes à puces ; le reste en paragraphes.
+- Examen clinique et évolution organisés "Sur le plan ..." : cardiovasculaire, respiratoire, digestif, neurologique, locomoteur, cutané / infectieux, hématologique, nutritionnel, addictologique, social.
+- Traitement de sortie : préciser systématiquement la voie d'administration de chaque ligne lorsqu'elle figure dans le dossier : per os, intraveineuse (IV), sous-cutanée, transdermique (patch), voie oculaire, etc.
+- Respecter strictement l'ordre des sections ci-dessous et leurs intitulés en MAJUSCULES.
+- Ne rien inventer : si une donnée manque, écrire exactement [À COMPLÉTER PAR LE MÉDECIN].
+
+4. STRUCTURE EXACTE DU COURRIER À PRODUIRE
+
+Cher Confrère,
+
+[PHRASE D'INTRODUCTION]
+Votre patient a été hospitalisé dans notre service du [date d'entrée] au [date de sortie] pour [motif d'hospitalisation].
+
+ANTÉCÉDENTS
+Médicaux :
+- ...
+Chirurgicaux :
+- ...
+Allergies : [connues / non connues]
+
+TRAITEMENT À DOMICILE
+- [molécule, dosage, posologie]
+
+MODE DE VIE
+[Situation familiale et sociale, autonomie, aides, intoxications (tabac/alcool), mobilité, chutes, maintien à domicile.]
+
+HISTOIRE DE LA MALADIE
+[Circonstances d'admission, symptômes, contexte, premier bilan, motif d'orientation en médecine.]
+
+EXAMEN CLINIQUE
+Constantes : TA, FC, température, SpO2 (air ambiant / O2), taille, poids, IMC.
+Sur le plan cardiovasculaire : ...
+Sur le plan respiratoire : ...
+Sur le plan digestif : ...
+Sur le plan neurologique : ...
+Sur le plan locomoteur : ...
+Sur le plan cutané : ...
+
+BILAN BIOLOGIQUE
+[Bilan d'entrée daté, puis bilans de suivi datés : évolution CRP, NFS, ionogramme, bilan hépatique, nutritionnel, martial, sérologies, ECBU, antigénuries...]
+
+EXAMENS PARACLINIQUES
+ECG du [date] : ...
+[Imagerie] du [date] : ...
+
+ÉVOLUTION
+Sur le plan infectieux : ...
+Sur le plan hématologique : ...
+Sur le plan nutritionnel : ...
+Sur le plan addictologique : ...
+Sur le plan social : ...
+
+AU TOTAL
+Patient hospitalisé dans notre service pour :
+- [diagnostic 1]
+- [diagnostic 2]
+- ...
+
+[DEVENIR]
+- Le patient est autorisé à sortir au domicile ce jour.
+- Le patient est transféré ce jour à [structure].
+
+TRAITEMENT DE SORTIE
+Traitement au long cours sauf précision et per os sauf précision :
+- [molécule, dosage, posologie — VOIE D'ADMINISTRATION]
+
+Traitement de courte durée et per os sauf précision :
+- [molécule, dosage, posologie — VOIE D'ADMINISTRATION — date de fin]
+
+Préciser la voie pour chaque ligne : per os, IV, sous-cutanée, transdermique, oculaire...
+
+[FORMULE DE FIN]
+Nous ne prévoyons pas de revoir le patient à titre systématique mais restons à votre disposition pour tout renseignement complémentaire si nécessaire.
+Bien confraternellement.
+
+[SIGNATAIRES — médecins et internes]
+
+Vaccinations : [DTCP / PREVENAR 20 / NIMENRIX / INFLUVAC — Oui/Non, Lot N°]
+Patient porteur BHRe : Oui/Non — Non prélevé
+Patient porteur BMR / contact BHRe : Oui/Non — Germe(s) identifié(s)
+Transfusion : Oui/Non
+Pose d'un dispositif médical implantable : Oui/Non
+
+Copie du courrier et/ou des ordonnances remis en main propre au patient ce jour lors de la sortie.
+
+5. CONSIGNE FINALE
+
+À partir des données ci-dessous, rédige le courrier de sortie complet en respectant exactement la structure, l'ordre et le style définis ci-dessus. N'ajoute aucun en-tête ni élément d'identité.
+
+DONNÉES CLINIQUES DU PATIENT (pseudonymisées) :
+{{DONNEES_MEDICALES}}`,
+};
+
 export function buildTemplateForSubtype(params: {
   volet: Volet;
   subtype: RedactionSubtype;
@@ -172,6 +286,14 @@ export function buildTemplateForSubtype(params: {
   data: string;
 }) {
   const subtypeLabel = getSubtypeLabel(params.volet, params.subtype);
+  const fullTemplate = SUBTYPE_FULL_TEMPLATES[params.subtype];
+  if (fullTemplate) {
+    return `TYPE SÉLECTIONNÉ PAR L'UTILISATEUR :
+${subtypeLabel}
+
+${fullTemplate}`.replaceAll("{{DONNEES_MEDICALES}}", params.data);
+  }
+
   const subtypeInstructions = SUBTYPE_PROMPT_INSTRUCTIONS[params.subtype];
   return `TYPE SÉLECTIONNÉ PAR L'UTILISATEUR :
 ${subtypeLabel}
