@@ -1,4 +1,6 @@
 const configuredAnthropicMaxTokens = Number(process.env.ANTHROPIC_MAX_TOKENS ?? "12000");
+const ANTHROPIC_MIN_OUTPUT_TOKENS = 12000;
+const ANTHROPIC_MAX_OUTPUT_TOKENS = 128000;
 
 export const ENV = {
   appId: process.env.VITE_APP_ID ?? "",
@@ -12,8 +14,11 @@ export const ENV = {
   anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? "",
   anthropicModel: process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6",
   anthropicMaxTokens: Number.isFinite(configuredAnthropicMaxTokens)
-    ? Math.max(configuredAnthropicMaxTokens, 12000)
-    : 12000,
+    ? Math.min(
+        Math.max(configuredAnthropicMaxTokens, ANTHROPIC_MIN_OUTPUT_TOKENS),
+        ANTHROPIC_MAX_OUTPUT_TOKENS
+      )
+    : ANTHROPIC_MIN_OUTPUT_TOKENS,
   localAdminEmail: process.env.LOCAL_ADMIN_EMAIL ?? "",
   localAdminPassword: process.env.LOCAL_ADMIN_PASSWORD ?? "",
   localAdminName: process.env.LOCAL_ADMIN_NAME ?? "Administrateur REDACTIO",
