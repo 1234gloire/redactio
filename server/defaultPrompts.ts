@@ -161,6 +161,8 @@ Conciliation médicamenteuse : démarche recommandée par la HAS ; son support n
 
 Le tableau ci-dessous reproduit la structure officielle HAS. Ne pas en modifier les intitulés ni l’ordre des colonnes.
 
+🚫  Périmètre — sections à NE PAS produire : Identité du patient, sources d’informations utilisées, divergences identifiées et actions correctrices réalisées. Ce volet se limite au tableau 6 colonnes + à la synthèse récapitulative.
+
 📋  Objectifs de l’analyse
 
 Pour chaque ligne, statuer sur le devenir du traitement selon les 4 statuts officiels HAS :
@@ -290,6 +292,12 @@ Groupe « Traitement à la sortie » : (4) Nom/dosage/forme [DCI] — (5) Posolo
 Règles : colonne « Devenir » = un seul des 4 statuts HAS {Poursuivi / Arrêté / Modifié / Ajouté} (les substitutions = Modifié). Noms en DCI (nom commercial entre parenthèses si utile au patient). Associer chaque ligne d’entrée à son devenir de sortie (« — » si sans correspondance). Ordonner par pathologie ou classe ATC. Inclure automédication, compléments, phytothérapie. Dans « Commentaires », indiquer : motif du changement, cible thérapeutique + surveillance, durée de traitement.
 
 Puis, sous le tableau, rédige une synthèse listant : médicaments arrêtés, nouveaux traitements, augmentations et diminutions de dose, modifications de forme/posologie/horaire, médicaments poursuivis. Style médical, clair, concis.
+
+NE PAS inclure : Identité du patient, sources d’informations utilisées, divergences identifiées et actions correctrices réalisées. Restituer uniquement le tableau 6 colonnes puis la synthèse.
+
+Traitement d’entrée : [coller ici]
+
+Traitement de sortie : [coller ici]   —   Date de rédaction de la sortie : [JJ/MM/AAAA]
 
 À partir des données brutes ci-dessous, identifie le traitement d'entrée, le traitement de sortie et la date de rédaction lorsqu'ils sont fournis. Si une information manque, écrire exactement [À COMPLÉTER PAR LE MÉDECIN].
 
@@ -313,6 +321,8 @@ Conciliation médicamenteuse : démarche recommandée par la HAS ; son support n
 
 Le tableau ci-dessous reproduit la structure officielle HAS. Ne pas en modifier les intitulés ni l’ordre des colonnes.
 
+🚫  Périmètre — sections à NE PAS produire : Identité du patient, sources d’informations utilisées, divergences identifiées et actions correctrices réalisées. Ce volet se limite au tableau 6 colonnes + à la synthèse récapitulative.
+
 📋  Objectifs de l’analyse
 
 Pour chaque ligne, statuer sur le devenir du traitement selon les 4 statuts officiels HAS :
@@ -442,6 +452,12 @@ Groupe « Traitement à la sortie » : (4) Nom/dosage/forme [DCI] — (5) Posolo
 Règles : colonne « Devenir » = un seul des 4 statuts HAS {Poursuivi / Arrêté / Modifié / Ajouté} (les substitutions = Modifié). Noms en DCI (nom commercial entre parenthèses si utile au patient). Associer chaque ligne d’entrée à son devenir de sortie (« — » si sans correspondance). Ordonner par pathologie ou classe ATC. Inclure automédication, compléments, phytothérapie. Dans « Commentaires », indiquer : motif du changement, cible thérapeutique + surveillance, durée de traitement.
 
 Puis, sous le tableau, rédige une synthèse listant : médicaments arrêtés, nouveaux traitements, augmentations et diminutions de dose, modifications de forme/posologie/horaire, médicaments poursuivis. Style médical, clair, concis.
+
+NE PAS inclure : Identité du patient, sources d’informations utilisées, divergences identifiées et actions correctrices réalisées. Restituer uniquement le tableau 6 colonnes puis la synthèse.
+
+Traitement d’entrée : [coller ici]
+
+Traitement de sortie : [coller ici]   —   Date de rédaction de la sortie : [JJ/MM/AAAA]
 
 À partir des données brutes ci-dessous, identifie le traitement d'entrée, le traitement de sortie et la date de rédaction lorsqu'ils sont fournis. Si une information manque, écrire exactement [À COMPLÉTER PAR LE MÉDECIN].
 
