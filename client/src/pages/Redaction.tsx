@@ -103,6 +103,11 @@ function parseMarkdownTableRow(line: string): string[] {
     .map((cell) => cell.trim());
 }
 
+function isLikelyMarkdownTableStart(currentLine: string, nextLine: string): boolean {
+  if (!currentLine.includes("|")) return false;
+  return isMarkdownTableSeparator(nextLine) || nextLine.includes("|");
+}
+
 function createDocxRuns(text: string, options: { bold?: boolean } = {}): ParagraphChild[] {
   const runs: ParagraphChild[] = [];
   const pattern = /(\*\*[^*]+\*\*|\*[^*]+\*)/g;
@@ -163,10 +168,10 @@ async function createDocxBlobFromText(text: string): Promise<Blob> {
     const line = lines[index] ?? "";
     const nextLine = lines[index + 1] ?? "";
 
-    if (line.includes("|") && isMarkdownTableSeparator(nextLine)) {
+    if (isLikelyMarkdownTableStart(line, nextLine)) {
       const headers = parseMarkdownTableRow(line);
       const rows: string[][] = [];
-      index += 2;
+      index += isMarkdownTableSeparator(nextLine) ? 2 : 1;
 
       while (index < lines.length && lines[index]?.includes("|")) {
         const row = lines[index] ?? "";

@@ -182,6 +182,18 @@ Le détail de la modification (sens, ampleur, modalité) est précisé dans la c
 
 Restituer impérativement un tableau structuré comme suit (en-têtes regroupés exactement comme dans le volet HAS) :
 
+⚠️ FORMAT TECHNIQUE OBLIGATOIRE POUR LE TABLEAU :
+Le tableau doit être produit en Markdown strict, avec des colonnes séparées par le caractère | et une ligne séparatrice juste après l'en-tête.
+Ne jamais produire le tableau sous forme de paragraphes, de listes, de texte aligné, de tabulations ou de blocs sans séparateurs |.
+Ne jamais mettre de retour à la ligne à l'intérieur d'une cellule : condenser le contenu de chaque cellule sur une seule ligne.
+
+Utiliser exactement cette structure Markdown :
+| Traitement avant hospitalisation — Nom/dosage/forme [DCI] | Traitement avant hospitalisation — Posologie | Devenir du traitement | Traitement à la sortie — Nom/dosage/forme [DCI] | Traitement à la sortie — Posologie | Commentaires |
+|---|---|---|---|---|---|
+| AMLODIPINE 5 mg gélule | 1 le matin | Poursuivi | AMLODIPINE 5 mg gélule | 1 le matin | Anti-HTA — cible TA < 140/90 ; surveillance TA |
+
+Chaque médicament doit correspondre à une ligne du tableau Markdown.
+
 Traitement AVANT hospitalisation (bilan médicamenteux)
 
 Traitement À LA SORTIE
@@ -341,6 +353,18 @@ Le détail de la modification (sens, ampleur, modalité) est précisé dans la c
 📊  Format attendu — Tableau 6 colonnes (HAS)
 
 Restituer impérativement un tableau structuré comme suit (en-têtes regroupés exactement comme dans le volet HAS) :
+
+⚠️ FORMAT TECHNIQUE OBLIGATOIRE POUR LE TABLEAU :
+Le tableau doit être produit en Markdown strict, avec des colonnes séparées par le caractère | et une ligne séparatrice juste après l'en-tête.
+Ne jamais produire le tableau sous forme de paragraphes, de listes, de texte aligné, de tabulations ou de blocs sans séparateurs |.
+Ne jamais mettre de retour à la ligne à l'intérieur d'une cellule : condenser le contenu de chaque cellule sur une seule ligne.
+
+Utiliser exactement cette structure Markdown :
+| Traitement avant hospitalisation — Nom/dosage/forme [DCI] | Traitement avant hospitalisation — Posologie | Devenir du traitement | Traitement à la sortie — Nom/dosage/forme [DCI] | Traitement à la sortie — Posologie | Commentaires |
+|---|---|---|---|---|---|
+| AMLODIPINE 5 mg gélule | 1 le matin | Poursuivi | AMLODIPINE 5 mg gélule | 1 le matin | Anti-HTA — cible TA < 140/90 ; surveillance TA |
+
+Chaque médicament doit correspondre à une ligne du tableau Markdown.
 
 Traitement AVANT hospitalisation (bilan médicamenteux)
 
