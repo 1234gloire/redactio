@@ -15,6 +15,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import {
+  Document,
+  HeadingLevel,
+  Packer,
+  Paragraph,
+  Table,
+  TableCell,
+  TableRow,
+  TextRun,
+  WidthType,
+  type FileChild,
+  type ParagraphChild,
+} from "docx";
+import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
@@ -77,14 +90,6 @@ function highlightTags(text: string): string {
   );
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
 function isMarkdownTableSeparator(line: string): boolean {
   return /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);
 }
@@ -98,15 +103,61 @@ function parseMarkdownTableRow(line: string): string[] {
     .map((cell) => cell.trim());
 }
 
-function renderInlineMarkdown(text: string): string {
-  return escapeHtml(text)
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g, "<em>$1</em>");
+function createDocxRuns(text: string, options: { bold?: boolean } = {}): ParagraphChild[] {
+  const runs: ParagraphChild[] = [];
+  const pattern = /(\*\*[^*]+\*\*|\*[^*]+\*)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      runs.push(new TextRun({ text: text.slice(lastIndex, match.index), ...options }));
+    }
+
+    const token = match[0];
+    const isBold = token.startsWith("**");
+    runs.push(
+      new TextRun({
+        text: isBold ? token.slice(2, -2) : token.slice(1, -1),
+        bold: options.bold || isBold,
+        italics: !isBold,
+      })
+    );
+    lastIndex = match.index + token.length;
+  }
+
+  if (lastIndex < text.length) {
+    runs.push(new TextRun({ text: text.slice(lastIndex), ...options }));
+  }
+
+  return runs.length ? runs : [new TextRun({ text: "", ...options })];
 }
 
-function renderDocumentAsWordHtml(text: string): string {
+function createDocxParagraph(text = "", options: { heading?: (typeof HeadingLevel)[keyof typeof HeadingLevel]; bullet?: boolean } = {}) {
+  return new Paragraph({
+    heading: options.heading,
+    children: createDocxRuns(options.bullet ? text.replace(/^[-*]\s+/, "") : text),
+    bullet: options.bullet ? { level: 0 } : undefined,
+    spacing: { after: 160 },
+  });
+}
+
+function createDocxCell(text: string, header = false) {
+  return new TableCell({
+    margins: { top: 120, bottom: 120, left: 120, right: 120 },
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    children: [
+      new Paragraph({
+        children: createDocxRuns(text, { bold: header }),
+        spacing: { after: 0 },
+      }),
+    ],
+  });
+}
+
+async function createDocxBlobFromText(text: string): Promise<Blob> {
   const lines = text.replace(/\r\n/g, "\n").split("\n");
-  const blocks: string[] = [];
+  const children: FileChild[] = [];
 
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index] ?? "";
@@ -124,61 +175,58 @@ function renderDocumentAsWordHtml(text: string): string {
       }
       index--;
 
-      blocks.push(
-        `<table><thead><tr>${headers
-          .map((header) => `<th>${renderInlineMarkdown(header)}</th>`)
-          .join("")}</tr></thead><tbody>${rows
-          .map(
-            (row) =>
-              `<tr>${row
-                .map((cell) => `<td>${renderInlineMarkdown(cell).replace(/\n/g, "<br>")}</td>`)
-                .join("")}</tr>`
-          )
-          .join("")}</tbody></table>`
+      children.push(
+        new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          rows: [
+            new TableRow({
+              children: headers.map((header) => createDocxCell(header, true)),
+            }),
+            ...rows.map(
+              (row) =>
+                new TableRow({
+                  children: headers.map((_header, cellIndex) => createDocxCell(row[cellIndex] ?? "")),
+                })
+            ),
+          ],
+        })
       );
       continue;
     }
 
     const trimmed = line.trim();
     if (!trimmed) {
-      blocks.push("<p>&nbsp;</p>");
+      children.push(createDocxParagraph(""));
       continue;
     }
 
     const headingMatch = trimmed.match(/^(#{1,3})\s+(.+)$/);
     if (headingMatch) {
-      const level = Math.min(headingMatch[1].length + 1, 4);
-      blocks.push(`<h${level}>${renderInlineMarkdown(headingMatch[2])}</h${level}>`);
+      const heading =
+        headingMatch[1].length === 1
+          ? HeadingLevel.HEADING_1
+          : headingMatch[1].length === 2
+            ? HeadingLevel.HEADING_2
+            : HeadingLevel.HEADING_3;
+      children.push(createDocxParagraph(headingMatch[2], { heading }));
       continue;
     }
 
-    const listMatch = trimmed.match(/^[-*]\s+(.+)$/);
-    if (listMatch) {
-      blocks.push(`<p class="list">• ${renderInlineMarkdown(listMatch[1])}</p>`);
+    if (/^[-*]\s+/.test(trimmed)) {
+      children.push(createDocxParagraph(trimmed, { bullet: true }));
       continue;
     }
 
-    blocks.push(`<p>${renderInlineMarkdown(trimmed)}</p>`);
+    children.push(createDocxParagraph(trimmed));
   }
 
-  return `<!doctype html>
-<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
-<head>
-  <meta charset="utf-8">
-  <title>REDACTIO</title>
-  <style>
-    body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.35; color: #111827; }
-    h2, h3, h4 { margin: 16pt 0 8pt; color: #0f172a; }
-    p { margin: 0 0 8pt; }
-    .list { margin-left: 18pt; }
-    table { border-collapse: collapse; width: 100%; margin: 10pt 0 14pt; table-layout: fixed; }
-    th, td { border: 1px solid #94a3b8; padding: 6pt; vertical-align: top; word-wrap: break-word; }
-    th { background: #e2edf7; font-weight: 700; }
-    mark { background: #fef3c7; color: #92400e; }
-  </style>
-</head>
-<body>${blocks.join("\n")}</body>
-</html>`;
+  const document = new Document({
+    creator: "REDACTIO",
+    title: "Rapport REDACTIO",
+    sections: [{ children }],
+  });
+
+  return Packer.toBlob(document);
 }
 
 export default function Redaction() {
@@ -421,18 +469,21 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     });
   }, [validated, editor, generatedDoc]);
 
-  const handleDownloadWord = useCallback(() => {
+  const handleDownloadWord = useCallback(async () => {
     if (!validated) return;
-    const text = editor?.getText() ?? generatedDoc;
-    const wordHtml = renderDocumentAsWordHtml(text);
-    const blob = new Blob([wordHtml], { type: "application/msword;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `redactio_${selectedVolet}_${new Date().toISOString().slice(0, 10)}.doc`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Document Word téléchargé.");
+    try {
+      const text = editor?.getText() ?? generatedDoc;
+      const blob = await createDocxBlobFromText(text);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `redactio_${selectedVolet}_${new Date().toISOString().slice(0, 10)}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Document Word téléchargé.");
+    } catch {
+      toast.error("Téléchargement Word impossible.");
+    }
   }, [validated, editor, generatedDoc, selectedVolet]);
 
   const handleReset = useCallback(() => {
@@ -951,7 +1002,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                   onClick={handleDownloadWord}
                 >
                   <Download className="w-4 h-4" />
-                  Télécharger en Word (.doc)
+                  Télécharger en Word (.docx)
                 </Button>
               </CardContent>
             </Card>
