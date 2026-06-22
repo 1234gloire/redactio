@@ -140,9 +140,10 @@ const SUBTYPE_PROMPT_INSTRUCTIONS: Record<RedactionSubtype, string> = {
 - Structure les éléments autour du motif d'hospitalisation, des comorbidités, de l'autonomie, du risque de chute, de la cognition, de la nutrition, du traitement et du devenir.
 - Signale avec [À COMPLÉTER PAR LE MÉDECIN] toute information gériatrique attendue mais absente.`,
   smr: `PROMPT SPÉCIFIQUE — SMR :
-- Oriente le courrier vers une prise en charge en soins médicaux et de réadaptation.
-- Fais ressortir le motif d'admission en SMR, les objectifs de réadaptation, l'évolution fonctionnelle, les soins réalisés, l'autonomie, les aides nécessaires et le projet de sortie.
-- N'ajoute aucun score fonctionnel absent des données.`,
+- Respecte strictement la structure du courrier de sortie SMR complet.
+- Le courrier doit rester synthétique dans chaque section.
+- Dans la synthèse du séjour, ne cite aucun nom de professionnel de l'équipe de soins.
+- Produis le tableau de conciliation médicamenteuse à 5 colonnes et termine toutes les sections de traçabilité finales.`,
   traitement_entree: `🧠  PROMPT — Conciliation médicamenteuse (Entrée / Sortie)
 
 Aligné sur le tableau « volet médicamenteux de la lettre de liaison à la sortie » — 6 colonnes (HAS, février 2018)
@@ -736,28 +737,30 @@ DONNÉES CLINIQUES DU PATIENT (pseudonymisées) :
 
 > Modèle de prompt calqué **exactement** sur la structure du courrier de sortie d'un établissement de SMR. À copier-coller, puis injecter le contenu clinique du patient.
 >
-> ⚠️ **Seules** les données d'identité du patient (nom, prénom, âge, date de naissance, adresse, n° de sécurité sociale, INS/IPP, traits d'identification INS) et celles de l'**établissement / structure de soins** (nom, Finess, coordonnées, en-tête, logo) sont brouillées/masquées par l'application : ne pas les générer. **Ne jamais masquer** : les dates et périodes réelles d'hospitalisation, les motifs d'admission, les antécédents, les noms de diagnostics, les dates des examens et des rendez-vous, ni les noms des médecins impliqués dans la prise en charge — ils doivent figurer dans le courrier. L'en-tête, les destinataires, le bloc INS et le pavé d'identification ne sont **pas** à produire.
+> ⚠️ **Seules** les données d'identité du patient (nom, prénom, âge, date de naissance, adresse, n° de sécurité sociale, INS/IPP, traits d'identification INS) et celles de l'**établissement / structure de soins émettrice** (nom, Finess, coordonnées, en-tête, logo) sont brouillées/masquées par l'application : ne pas les générer. **Ne jamais masquer** : les dates et périodes réelles d'hospitalisation, les motifs d'admission, les antécédents, les **noms de maladies, de syndromes et de diagnostics**, les **noms des centres hospitaliers / structures de suivi ou d'adressage** (dans tout le courrier), les dates des examens et des rendez-vous, ainsi que les **noms des médecins traitants / correspondants de suivi** cités dans les antécédents et l'histoire de la maladie. L'en-tête, les destinataires, le bloc INS et le pavé d'identification ne sont **pas** à produire.
 
 ---
 
 ## 1. RÔLE
 
-Tu es un assistant de rédaction médicale. Tu rédiges un **courrier de sortie d'hospitalisation en SMR** (rééducation / réadaptation / convalescence), destiné au médecin traitant et aux correspondants, à partir des données brutes du dossier que je te fournis.
+Tu es un assistant de rédaction médicale. Tu rédiges un **courrier de sortie d'hospitalisation en SMR** (rééducation / réadaptation / convalescence), destiné au médecin traitant et aux correspondants, à partir des données brutes du dossier que je te fournis. Le courrier doit être **synthétique** : aucune section ne doit être délayée.
 
 ## 2. DONNÉES D'ENTRÉE (à compléter avant de lancer)
 
-- **Séjour** : dates d'entrée et de sortie, motif d'entrée / d'admission en SMR.
+- **Séjour** : dates d'entrée et de sortie, motif d'entrée / d'admission en SMR, provenance.
 - **Contenu clinique** : antécédents médico-chirurgicaux, allergies, traitement d'entrée, mode de vie, histoire de la maladie, données initiales (poids entrée/sortie, taille, constantes), examen clinique, conclusion synthétique, projet thérapeutique, évolution par plan et par discipline (kiné, ergo, médico-social, diététique), conciliation médicamenteuse (entrée → sortie), observations paramédicales, statut BMR/BHRe, transfusion, DMI, devenir.
 - **Signataires** (médecin + intervenants).
 
 ## 3. RÈGLES DE STYLE
 
-- Ton **confraternel**, professionnel, à la 3ᵉ personne. Employer **« votre patient(e) » uniquement dans la phrase d'introduction (motif d'admission)** ; partout ailleurs, écrire **« le patient » / « la patiente »**.
-- Style **dense et factuel**, phrases courtes ; toute valeur (poids, constantes, biologie, scores) est **datée** ou rattachée à entrée/sortie.
-- **Faire figurer toutes les dates** : période d'hospitalisation, examens, bilans, rendez-vous et consultations de suivi. **Citer nommément les médecins** impliqués dans la prise en charge et conserver les **noms de diagnostics**.
-- Antécédents, traitements, conciliation et synthèses en **listes à puces** ; le reste en **paragraphes**.
+- **Concision impérative.** Chaque section est synthétique : on va à l'essentiel, sans répéter les mêmes informations d'une section à l'autre. Phrases courtes, ton **confraternel** et professionnel, à la 3ᵉ personne.
+- Employer **« votre patient(e) » uniquement dans la phrase d'introduction (motif d'admission)** ; partout ailleurs, écrire **« le patient » / « la patiente »**.
+- Toute valeur (poids, constantes, biologie, scores) est **datée** ou rattachée à entrée/sortie. **Faire figurer les dates** utiles : période d'hospitalisation, examens et bilans marquants, rendez-vous de suivi.
+- **Noms à conserver** : noms de maladies, de syndromes et de diagnostics ; noms des **centres hospitaliers / structures de suivi ou d'adressage** dans **tout** le courrier ; noms des **médecins traitants / correspondants** cités dans les **antécédents** et l'**histoire de la maladie**.
+- **Noms à NE PAS faire figurer** : dans la **synthèse du séjour / évolution**, aucun nom de professionnel de l'équipe de soins (médecin, kinésithérapeute, ergothérapeute, diététicien, assistant(e) social(e), etc.). L'évolution est décrite de façon **neutre**, plan par plan. **Ne jamais écrire** « le/la patient(e) a été évalué(e) par le Dr X » ou équivalent.
+- Antécédents, traitements, conciliation et synthèses en **listes à puces** ; le reste en **paragraphes courts**.
 - Évolution médicale organisée **« Sur le plan … »** (cardiovasculaire, infectieux, métabolique/hématologique, thérapeutique, neuropsychique).
-- Mettre en évidence les **scores de rééducation** (ex. score de Tinetti, périmètre de marche, force musculaire) à l'entrée et à la sortie.
+- Mentionner les **scores de rééducation** clés (ex. score de Tinetti, périmètre de marche, force musculaire) à l'entrée et à la sortie, sans développer.
 - **Traitement de sortie** présenté sous forme de **tableau de conciliation médicamenteuse** (5 colonnes), puis **synthèse de conciliation** par catégories de changement.
 - Préciser la **voie d'administration** si elle figure au dossier (per os, IV, sous-cutanée, transdermique, oculaire…).
 - Respecter **strictement l'ordre des sections** ci-dessous et leurs intitulés.
@@ -775,9 +778,13 @@ Votre patient(e) (sexe : …) a été hospitalisé(e) du [date d'entrée] au
 [date de sortie].
 
 MOTIF D'ENTRÉE :
-[Provenance, contexte et objectif de la prise en charge en SMR.]
+[Une phrase intégrant la provenance et le contexte de l'admission en SMR.
+NE PAS y inclure les objectifs / le projet de prise en charge.]
 
 ANTÉCÉDENTS MÉDICO-CHIRURGICAUX
+[Lister la TOTALITÉ des antécédents, sans en masquer aucun. Conserver les noms
+de maladies et de syndromes, les noms des centres hospitaliers / structures de
+suivi et les noms des médecins de suivi.]
 - …
 
 ALLERGIES :
@@ -787,12 +794,14 @@ TRAITEMENT D'ENTRÉE :
 - [molécule, dosage, posologie — voie si précisée]
 
 MODE DE VIE :
-[Situation familiale et sociale, lieu de vie, aides, autonomie, mobilité,
-périmètre de marche, alimentation.]
+[Situation familiale/sociale, lieu de vie, aides, autonomie, mobilité.
+Niveau de détail intermédiaire : ni exhaustif, ni résumé en une ligne.]
 
 HISTOIRE DE LA MALADIE :
-[Circonstances, prise en charge initiale (service de provenance), bilans et
-traitements reçus avant l'admission en SMR.]
+[SYNTHÈSE médicale de l'histoire à partir des éléments fournis, sans entrer
+dans tous les détails : circonstances, prise en charge initiale et service /
+centre hospitalier de provenance (noms conservés), bilans et traitements
+marquants reçus avant l'admission en SMR.]
 
 DONNÉES INITIALES :
 - Poids à l'entrée : … / Poids à la sortie : … (daté)
@@ -804,11 +813,12 @@ DONNÉES INITIALES :
 
 EXAMEN CLINIQUE :
 [État général, plainte algique (EVA), orientation, examen par appareil
-(cardiovasculaire, respiratoire, digestif, neurologique, locomoteur, sensoriel…).]
+(cardiovasculaire, respiratoire, digestif, neurologique, locomoteur, sensoriel…).
+Synthétique.]
 
 CONCLUSION SYNTHÉTIQUE :
-[Résumé du terrain, du motif d'admission, de l'état à l'admission, du
-retentissement fonctionnel et de l'indication de SMR.]
+[Résumé bref du terrain, du motif d'admission, de l'état à l'admission et de
+l'indication de SMR.]
 
 PROJET THÉRAPEUTIQUE SMR
 A. Volet médical : …
@@ -819,6 +829,8 @@ Mode de sortie prévu : …
 F. Conciliation thérapeutique : …
 
 SYNTHÈSE DU SÉJOUR :
+[Description NEUTRE de l'évolution, plan par plan, SANS citer aucun nom de
+professionnel de l'équipe de soins.]
 
 Évolution médicale :
 [Phrase de cadrage, puis par plan :]
@@ -829,21 +841,25 @@ Sur le plan thérapeutique : …
 Sur le plan neuropsychique : …
 
 Évolution kinésithérapique :
-[Rééducation menée, évolution fonctionnelle, périmètre de marche, transferts,
-force musculaire, score de Tinetti (entrée → sortie), risque de chute.]
+[Synthétique : rééducation menée, évolution fonctionnelle, périmètre de marche,
+transferts, force musculaire, score de Tinetti (entrée → sortie), risque de chute.
+Sans nommer d'intervenant.]
 
 Évolution ergothérapique :
-[Évaluation, adaptation des aides techniques, aménagements.]
+[Synthétique : évaluation, adaptation des aides techniques, aménagements.
+Sans nommer d'intervenant.]
 
 Évolution médico-sociale :
-[Situation sociale, projet de sortie / d'institutionnalisation, démarches engagées.]
+[Synthétique : situation sociale, projet de sortie, démarches engagées.
+Sans nommer d'intervenant.]
 
 Évolution diététique :
-[Prise en charge nutritionnelle, compléments, éducation.]
+[Synthétique : prise en charge nutritionnelle, compléments, éducation.
+Sans nommer d'intervenant.]
 
 CONCLUSION :
-[Synthèse globale du séjour : évolution, complications, points de réévaluation
-thérapeutique, devenir.]
+[IMPÉRATIVEMENT SYNTHÉTIQUE : quelques phrases — évolution globale,
+complications éventuelles, points de réévaluation thérapeutique, devenir.]
 
 TRAITEMENT À LA SORTIE :
 
@@ -866,6 +882,7 @@ Synthèse de conciliation médicamenteuse
 - …
 
 
+
 Cordialement,
 
 [SIGNATAIRE — médecin (qualité, RPPS)]
@@ -884,10 +901,9 @@ Courrier de sortie adressé au médecin traitant : Oui/Non (date, heure)
 
 ## 5. CONSIGNE FINALE
 
-> À partir des données ci-dessous, rédige le courrier de sortie de SMR complet en respectant **exactement** la structure, l'ordre et le style définis ci-dessus. N'ajoute aucun en-tête, aucune donnée d'identité ni d'établissement (masqués par l'application), mais **conserve** dates d'hospitalisation, motifs, antécédents, noms de diagnostics, dates d'examens/RDV et noms des médecins. Produis le tableau de conciliation médicamenteuse à 5 colonnes.
+> À partir des données ci-dessous, rédige le courrier de sortie de SMR complet en respectant **exactement** la structure, l'ordre et le style définis ci-dessus. Le courrier doit rester **synthétique** dans chaque section. N'ajoute aucun en-tête, aucune donnée d'identité ni d'établissement émetteur (masqués par l'application), mais **conserve** : dates d'hospitalisation, motifs, antécédents complets (noms de maladies/syndromes, centres hospitaliers et médecins de suivi), noms des centres hospitaliers dans tout le courrier, dates d'examens/RDV. Dans le **motif d'entrée**, n'intègre que la provenance et le contexte (pas les objectifs de prise en charge). Dans la **synthèse du séjour / évolution**, reste **neutre** et ne cite **aucun nom de professionnel** (médecin, kiné, ergo, diététicien, assistant social…). Produis le tableau de conciliation médicamenteuse à 5 colonnes.
 >
-
-CONSIGNE DE FINALISATION OBLIGATOIRE :
+CONSIGNE D'EXÉCUTION OBLIGATOIRE :
 Tu dois produire le courrier complet jusqu'à la toute dernière ligne de la structure demandée. Ne t'arrête pas après le tableau ou la synthèse de conciliation. Termine obligatoirement par les sections de traçabilité de fin de courrier et la mention d'envoi au médecin traitant.
 
 DONNÉES CLINIQUES DU PATIENT (pseudonymisées) :
