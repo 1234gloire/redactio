@@ -77,6 +77,110 @@ function highlightTags(text: string): string {
   );
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function isMarkdownTableSeparator(line: string): boolean {
+  return /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);
+}
+
+function parseMarkdownTableRow(line: string): string[] {
+  return line
+    .trim()
+    .replace(/^\|/, "")
+    .replace(/\|$/, "")
+    .split("|")
+    .map((cell) => cell.trim());
+}
+
+function renderInlineMarkdown(text: string): string {
+  return escapeHtml(text)
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>");
+}
+
+function renderDocumentAsWordHtml(text: string): string {
+  const lines = text.replace(/\r\n/g, "\n").split("\n");
+  const blocks: string[] = [];
+
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index] ?? "";
+    const nextLine = lines[index + 1] ?? "";
+
+    if (line.includes("|") && isMarkdownTableSeparator(nextLine)) {
+      const headers = parseMarkdownTableRow(line);
+      const rows: string[][] = [];
+      index += 2;
+
+      while (index < lines.length && lines[index]?.includes("|")) {
+        const row = lines[index] ?? "";
+        if (!isMarkdownTableSeparator(row)) rows.push(parseMarkdownTableRow(row));
+        index++;
+      }
+      index--;
+
+      blocks.push(
+        `<table><thead><tr>${headers
+          .map((header) => `<th>${renderInlineMarkdown(header)}</th>`)
+          .join("")}</tr></thead><tbody>${rows
+          .map(
+            (row) =>
+              `<tr>${row
+                .map((cell) => `<td>${renderInlineMarkdown(cell).replace(/\n/g, "<br>")}</td>`)
+                .join("")}</tr>`
+          )
+          .join("")}</tbody></table>`
+      );
+      continue;
+    }
+
+    const trimmed = line.trim();
+    if (!trimmed) {
+      blocks.push("<p>&nbsp;</p>");
+      continue;
+    }
+
+    const headingMatch = trimmed.match(/^(#{1,3})\s+(.+)$/);
+    if (headingMatch) {
+      const level = Math.min(headingMatch[1].length + 1, 4);
+      blocks.push(`<h${level}>${renderInlineMarkdown(headingMatch[2])}</h${level}>`);
+      continue;
+    }
+
+    const listMatch = trimmed.match(/^[-*]\s+(.+)$/);
+    if (listMatch) {
+      blocks.push(`<p class="list">• ${renderInlineMarkdown(listMatch[1])}</p>`);
+      continue;
+    }
+
+    blocks.push(`<p>${renderInlineMarkdown(trimmed)}</p>`);
+  }
+
+  return `<!doctype html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+<head>
+  <meta charset="utf-8">
+  <title>REDACTIO</title>
+  <style>
+    body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.35; color: #111827; }
+    h2, h3, h4 { margin: 16pt 0 8pt; color: #0f172a; }
+    p { margin: 0 0 8pt; }
+    .list { margin-left: 18pt; }
+    table { border-collapse: collapse; width: 100%; margin: 10pt 0 14pt; table-layout: fixed; }
+    th, td { border: 1px solid #94a3b8; padding: 6pt; vertical-align: top; word-wrap: break-word; }
+    th { background: #e2edf7; font-weight: 700; }
+    mark { background: #fef3c7; color: #92400e; }
+  </style>
+</head>
+<body>${blocks.join("\n")}</body>
+</html>`;
+}
+
 export default function Redaction() {
   const [, setLocation] = useLocation();
   const { isAuthenticated, loading: authLoading } = useAuth();
@@ -317,17 +421,18 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     });
   }, [validated, editor, generatedDoc]);
 
-  const handleDownload = useCallback(() => {
+  const handleDownloadWord = useCallback(() => {
     if (!validated) return;
     const text = editor?.getText() ?? generatedDoc;
-    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const wordHtml = renderDocumentAsWordHtml(text);
+    const blob = new Blob([wordHtml], { type: "application/msword;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `redactio_${selectedVolet}_${new Date().toISOString().slice(0, 10)}.txt`;
+    a.download = `redactio_${selectedVolet}_${new Date().toISOString().slice(0, 10)}.doc`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("Document téléchargé.");
+    toast.success("Document Word téléchargé.");
   }, [validated, editor, generatedDoc, selectedVolet]);
 
   const handleReset = useCallback(() => {
@@ -843,10 +948,10 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                 </Button>
                 <Button
                   className="w-full gap-2"
-                  onClick={handleDownload}
+                  onClick={handleDownloadWord}
                 >
                   <Download className="w-4 h-4" />
-                  Télécharger en texte (.txt)
+                  Télécharger en Word (.doc)
                 </Button>
               </CardContent>
             </Card>
