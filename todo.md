@@ -92,13 +92,25 @@
 
 ## Phase 12 — Expérience dictée vocale améliorée
 
-- [ ] Indicateur visuel animé (onde sonore / pulsation) pendant l'enregistrement
-- [ ] Bouton Start (lancer l'enregistrement)
-- [ ] Bouton Pause (suspendre sans perdre l'audio)
-- [ ] Bouton Reprise (reprendre après pause)
-- [ ] Bouton Stop (terminer et déclencher la transcription)
-- [ ] Chronomètre visible (mm:ss) avec état pause
-- [ ] Appliquer dans VoiceRecorder (champ rawData des 3 volets)
-- [ ] Appliquer dans VoiceRecorderWithPreview (colonnes de conciliation)
-- [ ] Vérifier TypeScript 0 erreur
-- [ ] Tests visuels et checkpoint
+- [x] Indicateur visuel animé (onde sonore / pulsation) pendant l'enregistrement — 5 barres via Web Audio API
+- [x] Bouton Start (lancer l'enregistrement)
+- [x] Bouton Pause (suspendre sans perdre l'audio)
+- [x] Bouton Reprise (reprendre après pause)
+- [x] Bouton Stop (terminer et déclencher la transcription)
+- [x] Chronomètre visible (mm:ss) avec état pause
+- [x] Appliquer VoiceRecorderWithPreview dans le champ rawData des 3 volets (courrier, conciliation, correspondance) — prévisualisation + Start/Pause/Reprise/Stop dans tous les champs
+- [x] Appliquer dans VoiceRecorderWithPreview (colonnes de conciliation)
+- [x] Vérifier TypeScript 0 erreur — 25/25 tests Vitest
+- [x] Tests visuels et checkpoint — v1d3f8de6
+
+## Phase 13 — Dictionnaire médical dans la prévisualisation
+
+- [ ] Endpoint tRPC medical.analyzeText : tokenisation + matching contre la BDD (termes exacts + variantes)
+- [ ] Algorithme de distance de Levenshtein pour les suggestions d'auto-correction
+- [ ] Composant MedicalTextHighlighter : surlignage inline des termes reconnus (vert) et termes à corriger (orange)
+- [ ] Tooltip sur chaque terme surligné : définition, catégorie, synonymes depuis la BDD
+- [ ] Bouton "Appliquer toutes les corrections" dans la modal de prévisualisation
+- [ ] Correction individuelle terme par terme (clic sur le terme orange → suggestion)
+- [ ] Intégration dans VoiceRecorderWithPreview : analyse automatique après transcription Whisper
+- [ ] Tests Vitest : analyzeText + distance de Levenshtein
+- [ ] Checkpoint final

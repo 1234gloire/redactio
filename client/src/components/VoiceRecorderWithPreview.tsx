@@ -5,10 +5,15 @@
  * Indicateur visuel : onde sonore animée (Web Audio API), pulsation orange en pause,
  * spinner pendant la transcription.
  *
+ * Modal de prévisualisation :
+ *   - Onglet "Édition" : texte éditable
+ *   - Onglet "Analyse médicale" : surlignage des termes reconnus + auto-correction Levenshtein
+ *
  * Aucun audio n'est stocké côté serveur — traitement en mémoire uniquement.
  */
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -20,9 +25,10 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { Check, Eye, Loader2, Mic, MicOff, Pause, Play, RotateCcw, Square, X } from "lucide-react";
+import { Check, Eye, FlaskConical, Loader2, Mic, Pause, Play, RotateCcw, Square, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import MedicalTextHighlighter from "./MedicalTextHighlighter";
 
 type RecordingState = "idle" | "recording" | "paused" | "transcribing" | "preview";
 
@@ -52,6 +58,8 @@ export function VoiceRecorderWithPreview({
   const [elapsed, setElapsed] = useState(0);
   const [previewText, setPreviewText] = useState("");
   const [editedText, setEditedText] = useState("");
+  const [analyzedText, setAnalyzedText] = useState(""); // texte après analyse/correction médicale
+  const [activeTab, setActiveTab] = useState<"edit" | "analyze">("edit");
   const [bars, setBars] = useState([0.3, 0.6, 1.0, 0.6, 0.3]);
   const [mimeType, setMimeType] = useState("");
 
@@ -145,6 +153,8 @@ export function VoiceRecorderWithPreview({
       }
       setPreviewText(text);
       setEditedText(text);
+      setAnalyzedText(text);
+      setActiveTab("analyze"); // Ouvrir directement l'onglet analyse
       setState("preview");
     } catch (err: unknown) {
       toast.error(`Transcription échouée : ${err instanceof Error ? err.message : "Erreur inconnue"}`);
@@ -232,21 +242,29 @@ export function VoiceRecorderWithPreview({
     setState("transcribing");
   }, [state]);
 
+  // Texte final à insérer = texte de l'onglet actif
+  const getFinalText = () => {
+    if (activeTab === "analyze") return analyzedText.trim();
+    return editedText.trim();
+  };
+
   const handleInsert = useCallback(() => {
-    const text = editedText.trim();
+    const text = getFinalText();
     if (!text) { toast.warning("Le texte est vide."); return; }
     onInsert(text);
     setState("idle");
     setPreviewText("");
     setEditedText("");
+    setAnalyzedText("");
     setElapsed(0);
     toast.success(insertMode === "append" ? "Transcription ajoutée." : "Champ remplacé.");
-  }, [editedText, onInsert, insertMode]);
+  }, [editedText, analyzedText, activeTab, onInsert, insertMode]);
 
   const handleCancel = useCallback(() => {
     setState("idle");
     setPreviewText("");
     setEditedText("");
+    setAnalyzedText("");
     setElapsed(0);
   }, []);
 
@@ -368,7 +386,7 @@ export function VoiceRecorderWithPreview({
 
       {/* ── Modal de prévisualisation ──────────────────────────────────────── */}
       <Dialog open={state === "preview"} onOpenChange={(open) => { if (!open) handleCancel(); }}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Eye className="h-5 w-5 text-primary" />
@@ -383,37 +401,81 @@ export function VoiceRecorderWithPreview({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Texte transcrit (modifiable)
-                </span>
-                <Badge variant="secondary" className="text-xs">Whisper FR</Badge>
-              </div>
-              <Textarea
-                value={editedText}
-                onChange={(e) => setEditedText(e.target.value)}
-                rows={8}
-                className="font-mono text-sm resize-none"
-                placeholder="Texte transcrit..."
-                autoFocus
-              />
-              <p className="text-xs text-muted-foreground">
-                {editedText.trim().split(/\s+/).filter(Boolean).length} mots · {editedText.length} caractères
-              </p>
-            </div>
+          <div className="py-2">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "edit" | "analyze")}>
+              <TabsList className="w-full mb-4">
+                <TabsTrigger value="edit" className="flex-1 gap-1.5">
+                  <Eye className="w-3.5 h-3.5" />
+                  Édition manuelle
+                </TabsTrigger>
+                <TabsTrigger value="analyze" className="flex-1 gap-1.5">
+                  <FlaskConical className="w-3.5 h-3.5" />
+                  Analyse médicale
+                  <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0 bg-primary/10 text-primary">IA</Badge>
+                </TabsTrigger>
+              </TabsList>
 
-            {editedText !== previewText && (
-              <div className="rounded-md border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-3">
-                <p className="text-xs text-amber-700 dark:text-amber-400">
-                  Le texte a été modifié par rapport à la transcription originale.
-                </p>
-              </div>
-            )}
+              {/* ── Onglet Édition ── */}
+              <TabsContent value="edit" className="space-y-3 mt-0">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Texte transcrit (modifiable)
+                    </span>
+                    <Badge variant="secondary" className="text-xs">Whisper FR</Badge>
+                  </div>
+                  <Textarea
+                    value={editedText}
+                    onChange={(e) => setEditedText(e.target.value)}
+                    rows={8}
+                    className="font-mono text-sm resize-none"
+                    placeholder="Texte transcrit..."
+                    autoFocus={activeTab === "edit"}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {editedText.trim().split(/\s+/).filter(Boolean).length} mots · {editedText.length} caractères
+                  </p>
+                </div>
+
+                {editedText !== previewText && (
+                  <div className="rounded-md border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-3">
+                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                      Le texte a été modifié par rapport à la transcription originale.
+                    </p>
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* ── Onglet Analyse médicale ── */}
+              <TabsContent value="analyze" className="space-y-3 mt-0">
+                <div className="rounded-md border border-primary/20 bg-primary/5 p-3 text-xs text-primary mb-3">
+                  <p className="font-medium mb-1">Analyse du dictionnaire médical</p>
+                  <p className="text-muted-foreground">
+                    Les termes médicaux reconnus sont{" "}
+                    <span className="inline-block w-2.5 h-2.5 rounded bg-emerald-200 border border-emerald-400 mx-0.5 align-middle" />
+                    surlignés en vert. Les corrections orthographiques suggérées sont{" "}
+                    <span className="inline-block w-2.5 h-2.5 rounded bg-amber-200 border border-amber-400 mx-0.5 align-middle" />
+                    surlignées en orange — cliquez pour les appliquer individuellement.
+                  </p>
+                </div>
+
+                <MedicalTextHighlighter
+                  text={editedText}
+                  onTextChange={(newText) => setAnalyzedText(newText)}
+                />
+
+                {analyzedText !== editedText && (
+                  <div className="rounded-md border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30 p-3">
+                    <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                      Des corrections ont été appliquées. Le texte corrigé sera inséré si vous validez depuis cet onglet.
+                    </p>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-2">
+          <DialogFooter className="gap-2 sm:gap-2 border-t pt-4">
             <Button type="button" variant="outline" size="sm" onClick={handleRetry} className="gap-1.5">
               <RotateCcw className="h-3.5 w-3.5" />
               Recommencer
@@ -422,7 +484,13 @@ export function VoiceRecorderWithPreview({
               <X className="h-3.5 w-3.5" />
               Annuler
             </Button>
-            <Button type="button" size="sm" onClick={handleInsert} disabled={!editedText.trim()} className="gap-1.5">
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleInsert}
+              disabled={!getFinalText()}
+              className="gap-1.5"
+            >
               <Check className="h-3.5 w-3.5" />
               {insertMode === "append" ? "Insérer à la suite" : "Remplacer le contenu"}
             </Button>

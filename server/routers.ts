@@ -46,6 +46,7 @@ import {
   upsertUser,
 } from "./db";
 import { pseudonymise } from "./pseudonymisation";
+import { analyzeText, invalidateDictCache } from "./medicalAnalyzer";
 import { createAnthropicMessage } from "./_core/anthropic";
 import {
   buildTemplateForSubtype,
@@ -832,7 +833,21 @@ export const appRouter = router({
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input }) => {
         await deactivateMedicalTerm(input.id);
+        invalidateDictCache();
         return { success: true };
+      }),
+    // ─── Analyse de texte : surlignage + auto-correction ─────────────────────
+    analyzeText: protectedProcedure
+      .input(
+        z.object({
+          text: z.string().min(1).max(10000),
+          maxSuggestions: z.number().int().min(1).max(50).default(20),
+        })
+      )
+      .query(async ({ input }) => {
+        // Aucun contenu médical n'est journalisé (EXG-API-02)
+        const result = await analyzeText(input.text, input.maxSuggestions);
+        return result;
       }),
   }),
     audit: router({
