@@ -16,6 +16,7 @@ import {
   Users,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useLocation } from "wouter";
 
 const heroCopy = {
@@ -88,6 +89,20 @@ export default function Home() {
   useEffect(() => {
     if (!loading && isAuthenticated) setLocation("/dashboard");
   }, [isAuthenticated, loading, setLocation]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("auth_error") === "callback_failed") {
+      toast.error(
+        "La connexion a échoué. Veuillez réessayer.",
+        { description: "Le code d'autorisation était invalide ou expiré." }
+      );
+      // Clean the URL without reloading
+      const url = new URL(window.location.href);
+      url.searchParams.delete("auth_error");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, []);
 
   if (loading) {
     return (

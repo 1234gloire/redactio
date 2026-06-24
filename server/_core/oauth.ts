@@ -47,7 +47,9 @@ export function registerOAuthRoutes(app: Express) {
       res.redirect(302, "/");
     } catch (error) {
       console.error("[OAuth] Callback failed", error);
-      res.status(500).json({ error: "OAuth callback failed" });
+      // Redirect to home with error param so the frontend can show a friendly error message
+      // instead of displaying a raw JSON error page that triggers the Manus portal error screen
+      res.redirect(302, "/?auth_error=callback_failed");
     }
   });
 }

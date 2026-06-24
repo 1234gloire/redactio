@@ -36,8 +36,18 @@ class OAuthService {
   }
 
   private decodeState(state: string): string {
-    const redirectUri = atob(state);
-    return redirectUri;
+    // Use Buffer.from for robustness: handles base64 with or without padding,
+    // and also handles URL-encoded padding (%3D) since Express auto-decodes query params.
+    try {
+      const redirectUri = Buffer.from(state, "base64").toString("utf-8");
+      if (!redirectUri.startsWith("http")) {
+        throw new Error("Decoded state does not look like a URL");
+      }
+      return redirectUri;
+    } catch {
+      // Fallback: try atob for legacy compatibility
+      return atob(state);
+    }
   }
 
   async getTokenByCode(

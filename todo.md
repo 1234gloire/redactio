@@ -121,3 +121,10 @@
 - [x] TypeScript 0 erreur confirmé après fix
 - [x] 37/37 tests Vitest passent
 - [x] Checkpoint final — fix OAuth sauvegardé
+
+## Phase 15 — Robustesse OAuth callback
+
+- [x] Décodage du state plus robuste dans sdk.ts : Buffer.from(state, 'base64') au lieu de atob() — gère le padding URL-encodé (%3D)
+- [x] Callback OAuth redirige vers /?auth_error=callback_failed au lieu de retourner un JSON 500 — évite la page d'erreur du portail Manus
+- [x] Toast d'erreur convivial dans Home.tsx quand auth_error=callback_failed — message clair avec bouton de reconnexion
+- [x] 37/37 tests Vitest passent — TypeScript 0 erreur
