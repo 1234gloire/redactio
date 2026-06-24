@@ -722,6 +722,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                                 return `${prev}${sep}${text}`.slice(0, RAW_DATA_MAX_CHARS);
                               });
                             }}
+                            onDeleteLastWord={() => setTreatmentEntryData((prev) => prev.replace(/\S+\s*$/, ""))}
                             onInterimResult={setInterimEntryData}
                             onStop={() => setInterimEntryData("")}
                           />
@@ -756,6 +757,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                                 return `${prev}${sep}${text}`.slice(0, RAW_DATA_MAX_CHARS);
                               });
                             }}
+                            onDeleteLastWord={() => setTreatmentExitData((prev) => prev.replace(/\S+\s*$/, ""))}
                             onInterimResult={setInterimExitData}
                             onStop={() => setInterimExitData("")}
                           />
@@ -806,6 +808,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                             return `${prev}${sep}${text}`.slice(0, RAW_DATA_MAX_CHARS);
                           });
                         }}
+                        onDeleteLastWord={() => setRawData((prev) => prev.replace(/\S+\s*$/, ""))}
                         onInterimResult={setInterimRawData}
                         onStop={() => setInterimRawData("")}
                         disabled={isGenerating}

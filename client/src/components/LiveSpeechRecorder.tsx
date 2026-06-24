@@ -3,7 +3,24 @@
  *
  * Le texte reconnu apparaît directement dans le champ cible pendant la dictée :
  *  - Texte intermédiaire (interim) : affiché en italique gris dans la zone de prévisualisation
- *  - Texte final : inséré immédiatement dans le champ via onPartialResult
+ *  - Texte final : traité par le moteur de ponctuation puis inséré dans le champ
+ *
+ * Commandes vocales de ponctuation reconnues :
+ *   "virgule"           → ,
+ *   "point"             → .
+ *   "point d'interrogation" / "point interrogation" → ?
+ *   "point d'exclamation" / "point exclamation"     → !
+ *   "deux points"       → :
+ *   "point-virgule" / "point virgule" → ;
+ *   "à la ligne" / "nouvelle ligne"   → \n
+ *   "nouveau paragraphe" / "nouvelle paragraphe" → \n\n
+ *   "ouvrir parenthèse" / "parenthèse ouvrante"  → (
+ *   "fermer parenthèse" / "parenthèse fermante"  → )
+ *   "tiret"             → -
+ *   "ouvrir guillemets" / "guillemets ouvrants"  → «\u00a0
+ *   "fermer guillemets" / "guillemets fermants"  → \u00a0»
+ *   "espace"            → (espace forcé)
+ *   "effacer"           → (supprime le dernier mot inséré)
  *
  * Contrôles : Dicter → (texte apparaît en direct) → Pause → Reprendre → Arrêter
  *
@@ -45,16 +62,151 @@ declare global {
   }
 }
 
+// ── Moteur de ponctuation vocale ───────────────────────────────────────────
+/**
+ * Résultat du traitement d'un fragment de texte.
+ * - text  : texte à insérer dans le champ (peut être vide si c'est une commande pure)
+ * - isCommand : true si le fragment était une commande vocale
+ * - deleteLastWord : true si la commande "effacer" a été prononcée
+ */
+interface PunctuationResult {
+  text: string;
+  isCommand: boolean;
+  deleteLastWord: boolean;
+}
+
+/**
+ * Table de correspondance commande vocale → ponctuation.
+ * L'ordre est important : les expressions multi-mots doivent précéder les mots simples.
+ * Chaque entrée : [regex_pattern, replacement, supprime_espace_avant]
+ *
+ * Convention :
+ *  - supprime_espace_avant = true  → la ponctuation se colle au mot précédent (virgule, point…)
+ *  - supprime_espace_avant = false → la ponctuation est précédée d'un espace (parenthèse ouvrante…)
+ */
+/**
+ * Crée un pattern qui capture l'espace avant ET après la commande vocale.
+ * Cela permet de supprimer les deux espaces lors du remplacement (ponctuation collante)
+ * ou de les conserver (ponctuation non-collante).
+ * Utilise (\s*) au lieu de \b pour gérer les caractères accentués.
+ */
+function wpGlue(pattern: string): RegExp {
+  // (\s*) avant + commande + (\s*) après — les deux groupes sont capturés
+  return new RegExp("(\\s*)(?:" + pattern + ")(\\s*)", "gi");
+}
+
+const PUNCTUATION_RULES: [RegExp, string, boolean][] = [
+  // Paragraphe — doit précéder "nouvelle ligne"
+  [wpGlue("nouveau paragraphe|nouvelle paragraphe|saut de paragraphe"), "\n\n", true],
+  // Nouvelle ligne
+  [wpGlue("à la ligne|nouvelle ligne|saut de ligne|retour à la ligne"), "\n", true],
+  // Point d'interrogation — doit précéder "point"
+  [wpGlue("point d['’]interrogation|point interrogation"), "?", true],
+  // Point d'exclamation — doit précéder "point"
+  [wpGlue("point d['’]exclamation|point exclamation"), "!", true],
+  // Point-virgule — doit précéder "point" et "virgule"
+  [wpGlue("point-virgule|point virgule"), ";", true],
+  // Deux-points
+  [wpGlue("deux[- ]points|deux points"), ":", true],
+  // Virgule
+  [wpGlue("virgule"), ",", true],
+  // Point (seul)
+  [wpGlue("point"), ".", true],
+  // Parenthèses
+  [wpGlue("ouvrir parenthèse|parenthèse ouvrante|ouvrir la parenthèse"), "(", false],
+  [wpGlue("fermer parenthèse|parenthèse fermante|fermer la parenthèse"), ")", true],
+  // Guillemets français
+  [wpGlue("ouvrir guillemets|guillemets ouvrants|ouvrir les guillemets"), "«\u00a0", false],
+  [wpGlue("fermer guillemets|guillemets fermants|fermer les guillemets"), "\u00a0»", true],
+  // Tiret
+  [wpGlue("tiret"), " -", true],
+  // Espace forcé
+  [wpGlue("espace"), " ", false],
+];
+
+/** Commande d'effacement du dernier mot */
+const DELETE_COMMAND = /\b(effacer|supprimer le dernier mot|annuler)\b/gi;
+
+/**
+ * Applique le moteur de ponctuation sur un fragment de texte final.
+ *
+ * Stratégie :
+ * 1. Détecter si le fragment entier est une commande d'effacement
+ * 2. Remplacer les commandes intégrées dans le texte (ex. "tension 14 virgule 5")
+ *    - ponctuation collante (glueLeft=true) : supprimer l'espace précédent via look-behind
+ *    - ponctuation non-collante (glueLeft=false) : ajouter un espace si nécessaire
+ * 3. Nettoyer les espaces multiples introduits par les remplacements
+ * 4. Capitaliser la lettre suivant un . ? ! \n
+ */
+function applyPunctuation(raw: string): PunctuationResult {
+  const trimmed = raw.trim();
+  if (!trimmed) return { text: "", isCommand: false, deleteLastWord: false };
+
+  // Commande d'effacement
+  if (DELETE_COMMAND.test(trimmed)) {
+    DELETE_COMMAND.lastIndex = 0;
+    return { text: "", isCommand: true, deleteLastWord: true };
+  }
+  DELETE_COMMAND.lastIndex = 0;
+
+  // Détecter si le fragment est une commande pure (uniquement une commande, rien d'autre)
+  let isPureCommand = false;
+  for (const [pattern] of PUNCTUATION_RULES) {
+    pattern.lastIndex = 0;
+    const match = trimmed.match(pattern);
+    if (match && match[0].trim().toLowerCase() === trimmed.toLowerCase()) {
+      isPureCommand = true;
+      break;
+    }
+    pattern.lastIndex = 0;
+  }
+
+  // Appliquer les remplacements
+  // Chaque pattern wpGlue capture (\s*) avant et (\s*) après la commande.
+  // - glueLeft=true  : supprimer les espaces autour → ponctuation colle au mot précédent
+  // - glueLeft=false : conserver un espace avant → ponctuation non-collante (parenthèse ouvrante)
+  let result = trimmed;
+  for (const [pattern, replacement, glueLeft] of PUNCTUATION_RULES) {
+    pattern.lastIndex = 0;
+    if (glueLeft) {
+      // Supprimer les espaces avant ET après la commande
+      result = result.replace(pattern, replacement);
+    } else {
+      // Garder un espace avant, supprimer l'espace après
+      result = result.replace(pattern, (_match, _before, _after) => " " + replacement);
+    }
+    pattern.lastIndex = 0;
+  }
+
+  // Supprimer les espaces multiples (sauf \n)
+  result = result.replace(/[ \t]{2,}/g, " ");
+  // Supprimer les espaces avant ponctuation collante résiduels
+  result = result.replace(/ ([,.:;?!)])/g, "$1");
+  // Supprimer les espaces après parenthèse ouvrante
+  result = result.replace(/\( /g, "(");
+  // Trim uniquement les espaces et tabulations (pas les \n)
+  result = result.replace(/^[ \t]+|[ \t]+$/g, "");
+
+  // Capitalisation après . ? ! \n (début de phrase)
+  result = result.replace(/(^|[.?!\n]\s*)([a-zàâäéèêëîïôùûüç])/g, (_, before, letter) => {
+    return before + letter.toUpperCase();
+  });
+
+  return { text: result, isCommand: isPureCommand, deleteLastWord: false };
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 function getSpeechRecognition(): (new () => SpeechRecognitionInstance) | null {
   return window.SpeechRecognition ?? window.webkitSpeechRecognition ?? null;
 }
 
-type RecordingState = "idle" | "listening" | "paused" | "stopping";
+type RecordingState = "idle" | "listening" | "paused";
 
 export interface LiveSpeechRecorderProps {
   /** Appelé à chaque fragment final reconnu — à concaténer dans le champ cible */
   onPartialResult: (text: string) => void;
+  /** Appelé quand la commande "effacer" est prononcée — supprimer le dernier mot du champ */
+  onDeleteLastWord?: () => void;
   /** Texte intermédiaire (interim) en cours de reconnaissance — à afficher en gris */
   onInterimResult?: (text: string) => void;
   /** Appelé quand la session se termine proprement */
@@ -67,8 +219,27 @@ export interface LiveSpeechRecorderProps {
   lang?: string;
 }
 
+// ── Tooltip avec liste des commandes ──────────────────────────────────────
+const COMMANDS_HELP = [
+  { cmd: "virgule", result: "," },
+  { cmd: "point", result: "." },
+  { cmd: "point d'interrogation", result: "?" },
+  { cmd: "point d'exclamation", result: "!" },
+  { cmd: "deux points", result: ":" },
+  { cmd: "point-virgule", result: ";" },
+  { cmd: "à la ligne", result: "↵" },
+  { cmd: "nouveau paragraphe", result: "¶" },
+  { cmd: "ouvrir parenthèse", result: "(" },
+  { cmd: "fermer parenthèse", result: ")" },
+  { cmd: "ouvrir guillemets", result: "«" },
+  { cmd: "fermer guillemets", result: "»" },
+  { cmd: "tiret", result: "–" },
+  { cmd: "effacer", result: "⌫ mot" },
+];
+
 export default function LiveSpeechRecorder({
   onPartialResult,
+  onDeleteLastWord,
   onInterimResult,
   onStop,
   className,
@@ -83,8 +254,6 @@ export default function LiveSpeechRecorder({
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pausedRef = useRef(false);
   const stoppingRef = useRef(false);
-  // Accumulate final transcripts across recognition restarts
-  const accumulatedRef = useRef("");
 
   // ── Timer ──────────────────────────────────────────────────────────────────
   const stopTimer = useCallback(() => {
@@ -111,10 +280,14 @@ export default function LiveSpeechRecorder({
         const result = event.results[i];
         const transcript = result[0].transcript;
         if (result.isFinal) {
-          // Append final text immediately to the field
-          const finalText = transcript.trim();
-          if (finalText) {
-            onPartialResult(finalText + " ");
+          const { text, deleteLastWord } = applyPunctuation(transcript);
+          if (deleteLastWord) {
+            onDeleteLastWord?.();
+          } else if (text) {
+            // Ajouter un espace de séparation si le texte ne se termine pas par
+            // une ponctuation collante ou un saut de ligne
+            const needsTrailingSpace = !/[\n,.:;?!()\u00bb]$/.test(text);
+            onPartialResult(text + (needsTrailingSpace ? " " : ""));
           }
         } else {
           interimTranscript += transcript;
@@ -124,14 +297,7 @@ export default function LiveSpeechRecorder({
     };
 
     rec.onerror = (event: SpeechRecognitionErrorEvent) => {
-      if (event.error === "no-speech") {
-        // Silence — normal, do not show error
-        return;
-      }
-      if (event.error === "aborted") {
-        // Intentional stop
-        return;
-      }
+      if (event.error === "no-speech" || event.error === "aborted") return;
       if (event.error === "not-allowed" || event.error === "service-not-allowed") {
         toast.error("Accès au microphone refusé. Vérifiez les permissions du navigateur.");
         handleStop();
@@ -147,13 +313,8 @@ export default function LiveSpeechRecorder({
 
     rec.onend = () => {
       onInterimResult?.("");
-      // Auto-restart if still in listening state (recognition stops after silence)
       if (!pausedRef.current && !stoppingRef.current) {
-        try {
-          recognitionRef.current?.start();
-        } catch {
-          // Already started or browser limitation — ignore
-        }
+        try { recognitionRef.current?.start(); } catch { /* ignore */ }
       } else if (stoppingRef.current) {
         stoppingRef.current = false;
         stopTimer();
@@ -164,7 +325,8 @@ export default function LiveSpeechRecorder({
     };
 
     return rec;
-  }, [lang, onPartialResult, onInterimResult, onStop, stopTimer]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang, onPartialResult, onDeleteLastWord, onInterimResult, onStop, stopTimer]);
 
   // ── Cleanup on unmount ────────────────────────────────────────────────────
   useEffect(() => {
@@ -184,7 +346,6 @@ export default function LiveSpeechRecorder({
     }
     stoppingRef.current = false;
     pausedRef.current = false;
-    accumulatedRef.current = "";
 
     const rec = createRecognition();
     if (!rec) return;
@@ -288,8 +449,16 @@ export default function LiveSpeechRecorder({
               <span className="text-xs">Dicter</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="top">
-            <p className="text-xs">Dictée en direct — le texte s'écrit pendant que vous parlez</p>
+          <TooltipContent side="top" className="max-w-xs">
+            <p className="text-xs font-semibold mb-1.5">Dictée en direct — commandes vocales disponibles :</p>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+              {COMMANDS_HELP.map(({ cmd, result }) => (
+                <div key={cmd} className="flex items-center gap-1.5 text-xs">
+                  <span className="text-muted-foreground/80 italic">"{cmd}"</span>
+                  <span className="font-mono font-bold text-foreground">{result}</span>
+                </div>
+              ))}
+            </div>
           </TooltipContent>
         </Tooltip>
       )}
@@ -309,7 +478,6 @@ export default function LiveSpeechRecorder({
         >
           {isListening && (
             <>
-              {/* Pulsation rouge animée */}
               <span className="relative flex h-2 w-2 flex-shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />

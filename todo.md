@@ -141,3 +141,10 @@
 - [x] Intégration dans les 3 volets : rawData du courrier de sortie, colonnes de conciliation, rawData de la correspondance
 - [x] Remplacement des boutons microphone existants par le nouveau composant
 - [x] 37/37 tests Vitest passent — TypeScript 0 erreur
+
+## Phase 17 — Ponctuation automatique par commandes vocales
+
+- [x] Moteur de remplacement des commandes vocales en ponctuation (virgule, point, point d'interrogation, point d'exclamation, deux-points, point-virgule, à la ligne, nouveau paragraphe, ouvrir/fermer parenthèse, tiret, guillemets)
+- [x] Appliquer le moteur sur chaque fragment final avant insertion dans le champ
+- [x] Afficher dans le tooltip du bouton Dicter la liste des commandes disponibles
+- [x] Tests et checkpoint final
