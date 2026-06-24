@@ -15,19 +15,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import {
-  Document,
-  HeadingLevel,
-  Packer,
-  Paragraph,
-  Table,
-  TableCell,
-  TableRow,
-  TextRun,
-  WidthType,
-  type FileChild,
-  type ParagraphChild,
-} from "docx";
-import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
@@ -36,6 +23,7 @@ import {
   CheckCircle,
   Copy,
   Download,
+  FilePenLine,
   FileUp,
   FileText,
   Loader2,
@@ -70,6 +58,19 @@ const VOLETS: Record<Volet, { label: string; icon: React.ReactNode; description:
     description: "Rédaction d'une correspondance médicale professionnelle entre praticiens.",
     color: "seal",
   },
+  observation: {
+    label: "Observation médicale",
+    icon: <FilePenLine className="w-6 h-6" />,
+    description: "Prise de notes, suivi journalier, transmissions ciblées.",
+    color: "indigo",
+  },
+};
+
+const VOLET_ICON_CLASSES: Record<string, string> = {
+  teal: "bg-teal-50 text-teal-600 dark:bg-teal-950/30 dark:text-teal-400",
+  slate: "bg-slate-50 text-slate-600 dark:bg-slate-950/30 dark:text-slate-400",
+  seal: "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400", // 'seal' est interprété comme 'blue'
+  indigo: "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400",
 };
 
 const STEPS = [
@@ -88,145 +89,6 @@ function highlightTags(text: string): string {
     TAG_REGEX,
     '<mark class="tag-a-completer" title="Cliquez pour compléter">[À COMPLÉTER PAR LE MÉDECIN]</mark>'
   );
-}
-
-function isMarkdownTableSeparator(line: string): boolean {
-  return /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);
-}
-
-function parseMarkdownTableRow(line: string): string[] {
-  return line
-    .trim()
-    .replace(/^\|/, "")
-    .replace(/\|$/, "")
-    .split("|")
-    .map((cell) => cell.trim());
-}
-
-function createDocxRuns(text: string, options: { bold?: boolean } = {}): ParagraphChild[] {
-  const runs: ParagraphChild[] = [];
-  const pattern = /(\*\*[^*]+\*\*|\*[^*]+\*)/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = pattern.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      runs.push(new TextRun({ text: text.slice(lastIndex, match.index), ...options }));
-    }
-
-    const token = match[0];
-    const isBold = token.startsWith("**");
-    runs.push(
-      new TextRun({
-        text: isBold ? token.slice(2, -2) : token.slice(1, -1),
-        bold: options.bold || isBold,
-        italics: !isBold,
-      })
-    );
-    lastIndex = match.index + token.length;
-  }
-
-  if (lastIndex < text.length) {
-    runs.push(new TextRun({ text: text.slice(lastIndex), ...options }));
-  }
-
-  return runs.length ? runs : [new TextRun({ text: "", ...options })];
-}
-
-function createDocxParagraph(text = "", options: { heading?: (typeof HeadingLevel)[keyof typeof HeadingLevel]; bullet?: boolean } = {}) {
-  return new Paragraph({
-    heading: options.heading,
-    children: createDocxRuns(options.bullet ? text.replace(/^[-*]\s+/, "") : text),
-    bullet: options.bullet ? { level: 0 } : undefined,
-    spacing: { after: 160 },
-  });
-}
-
-function createDocxCell(text: string, header = false) {
-  return new TableCell({
-    margins: { top: 120, bottom: 120, left: 120, right: 120 },
-    width: { size: 100, type: WidthType.PERCENTAGE },
-    children: [
-      new Paragraph({
-        children: createDocxRuns(text, { bold: header }),
-        spacing: { after: 0 },
-      }),
-    ],
-  });
-}
-
-async function createDocxBlobFromText(text: string): Promise<Blob> {
-  const lines = text.replace(/\r\n/g, "\n").split("\n");
-  const children: FileChild[] = [];
-
-  for (let index = 0; index < lines.length; index++) {
-    const line = lines[index] ?? "";
-    const nextLine = lines[index + 1] ?? "";
-
-    if (line.includes("|") && isMarkdownTableSeparator(nextLine)) {
-      const headers = parseMarkdownTableRow(line);
-      const rows: string[][] = [];
-      index += 2;
-
-      while (index < lines.length && lines[index]?.includes("|")) {
-        const row = lines[index] ?? "";
-        if (!isMarkdownTableSeparator(row)) rows.push(parseMarkdownTableRow(row));
-        index++;
-      }
-      index--;
-
-      children.push(
-        new Table({
-          width: { size: 100, type: WidthType.PERCENTAGE },
-          rows: [
-            new TableRow({
-              children: headers.map((header) => createDocxCell(header, true)),
-            }),
-            ...rows.map(
-              (row) =>
-                new TableRow({
-                  children: headers.map((_header, cellIndex) => createDocxCell(row[cellIndex] ?? "")),
-                })
-            ),
-          ],
-        })
-      );
-      continue;
-    }
-
-    const trimmed = line.trim();
-    if (!trimmed) {
-      children.push(createDocxParagraph(""));
-      continue;
-    }
-
-    const headingMatch = trimmed.match(/^(#{1,3})\s+(.+)$/);
-    if (headingMatch) {
-      const heading =
-        headingMatch[1].length === 1
-          ? HeadingLevel.HEADING_1
-          : headingMatch[1].length === 2
-            ? HeadingLevel.HEADING_2
-            : HeadingLevel.HEADING_3;
-      children.push(createDocxParagraph(headingMatch[2], { heading }));
-      continue;
-    }
-
-    if (/^[-*]\s+/.test(trimmed)) {
-      children.push(createDocxParagraph(trimmed, { bullet: true }));
-      continue;
-    }
-
-    children.push(createDocxParagraph(trimmed));
-  }
-
-  const document = new Document({
-    creator: "REDACTIO",
-    title: "Rapport REDACTIO",
-    sections: [{ children }],
-  });
-
-  return Packer.toBlob(document);
 }
 
 export default function Redaction() {
@@ -252,6 +114,7 @@ export default function Redaction() {
   const [interimRawData, setInterimRawData] = useState("");
   const [interimEntryData, setInterimEntryData] = useState("");
   const [interimExitData, setInterimExitData] = useState("");
+  const [observationText, setObservationText] = useState("");
   const [generatedDoc, setGeneratedDoc] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExtractingFile, setIsExtractingFile] = useState(false);
@@ -501,17 +364,29 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
   const handleDownloadWord = useCallback(async () => {
     if (!validated) return;
     try {
+      toast.info("Génération du document Word en cours...");
       const text = editor?.getText() ?? generatedDoc;
-      const blob = await createDocxBlobFromText(text);
+      const response = await fetch("/api/export/docx", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ content: text }),
+      });
+
+      if (!response.ok) {
+        throw new Error("La génération du document a échoué.");
+      }
+
+      const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `redactio_${selectedVolet}_${new Date().toISOString().slice(0, 10)}.docx`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success("Document Word téléchargé.");
-    } catch {
-      toast.error("Téléchargement Word impossible.");
+      toast.success("Document Word généré et téléchargé.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Téléchargement Word impossible.");
     }
   }, [validated, editor, generatedDoc, selectedVolet]);
 
@@ -523,6 +398,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     setTreatmentEntryData("");
     setTreatmentExitData("");
     setTreatmentExitDate("");
+    setObservationText("");
     setConciliationImportTarget("entry");
     setGeneratedDoc("");
     setValidated(false);
@@ -604,7 +480,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                   aria-pressed={selectedVolet === id}
                   aria-label={`Sélectionner ${volet.label}`}
                 >
-                  <div className={cn("volet-icon", `volet-icon-${volet.color}`)}>
+                  <div className={cn("volet-icon", VOLET_ICON_CLASSES[volet.color])}>
                     {volet.icon}
                   </div>
                   <div>
@@ -634,7 +510,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
         )}
 
         {/* ─── Étape 2 : Injection des données ─── */}
-        {step === 2 && selectedVolet && (
+        {step === 2 && selectedVolet && selectedVolet !== "observation" && (
           <div className="redaction-panel animate-fade-in">
             <div className="redaction-back-heading">
               <Button variant="ghost" size="icon" onClick={() => setStep(1)} aria-label="Retour">
@@ -671,6 +547,11 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
               <fieldset className="space-y-2">
                 <legend className="redaction-field-label">
                   Type de document
+                  {selectedVolet === "courrier_sortie"
+                    ? "Choix de service (spécialité)"
+                    : selectedVolet === "conciliation"
+                    ? "Type de conciliation"
+                    : "Type de correspondance"}
                 </legend>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {REDACTION_SUBTYPES[selectedVolet].map((option) => (
@@ -926,6 +807,75 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                 Générer le document
                 <ArrowRight className="w-4 h-4" />
               </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Étape 2 : Observation Médicale (Interface dédiée) ─── */}
+        {step === 2 && selectedVolet === "observation" && (
+          <div className="redaction-panel animate-fade-in">
+            <div className="redaction-back-heading">
+              <Button variant="ghost" size="icon" onClick={() => setStep(1)} aria-label="Retour">
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <div>
+                <h2 className="redaction-step-title">Observation Médicale</h2>
+                <p className="redaction-step-subtitle">Saisissez ou dictez vos notes libres.</p>
+              </div>
+            </div>
+
+            <div className="redaction-confidentiality" role="alert">
+              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-semibold">Consigne de confidentialité obligatoire</p>
+                <p>
+                  Ne saisissez <strong>aucun identifiant direct</strong> du patient.
+                </p>
+              </div>
+            </div>
+
+            <div className="redaction-field-group">
+              <div className="flex items-center justify-between">
+                <label htmlFor="observation-text" className="redaction-field-label">
+                  Contenu de l'observation
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground hidden sm:inline">Dictée vocale</span>
+                  <LiveSpeechRecorder
+                    onPartialResult={(text) => {
+                      setObservationText((prev) => {
+                        const sep = prev && !prev.endsWith(" ") && !prev.endsWith("\n") ? " " : "";
+                        return `${prev}${sep}${text}`.slice(0, RAW_DATA_MAX_CHARS);
+                      });
+                    }}
+                    onDeleteLastWord={() => setObservationText((prev) => prev.replace(/\S+\s*$/, ""))}
+                    onInterimResult={setInterimRawData}
+                    onStop={() => setInterimRawData("")}
+                  />
+                </div>
+              </div>
+              <MedicalAutocomplete
+                id="observation-text"
+                value={observationText}
+                onChange={setObservationText}
+                placeholder="Saisissez ou dictez vos notes ici..."
+                className="min-h-[320px]"
+                rows={14}
+                maxLength={RAW_DATA_MAX_CHARS}
+                interimText={interimRawData}
+              />
+              <p className="text-xs text-muted-foreground">
+                {observationText.length}/{RAW_DATA_MAX_CHARS.toLocaleString("fr-FR")} caractères
+              </p>
+            </div>
+
+            <div className="step-foot">
+              <Button variant="outline" onClick={() => setStep(1)}>
+                <ArrowLeft className="w-4 h-4 mr-1.5" />
+                Retour
+              </Button>
+              <span className="spacer" />
+              {/* Les boutons Copier/Télécharger pourraient être ici */}
             </div>
           </div>
         )}

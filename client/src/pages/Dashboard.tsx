@@ -8,6 +8,7 @@ import {
   Clock3,
   FileText,
   Grid2X2,
+  FilePenLine,
   HelpCircle,
   Info,
   LayoutDashboard,
@@ -41,6 +42,14 @@ const VOLETS = [
     icon: BookOpen,
     accent: "#C58A12",
     accentDeep: "#A0700C",
+  },
+  {
+    id: "observation",
+    label: "Observation médicale",
+    description: "Prise de notes, suivi journalier, transmissions ciblées.",
+    icon: FilePenLine,
+    accent: "#6366F1",
+    accentDeep: "#4F46E5",
   },
 ];
 

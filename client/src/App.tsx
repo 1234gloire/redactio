@@ -1,19 +1,19 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Link, Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Dashboard from "./pages/Dashboard";
-import Redaction from "./pages/Redaction";
-import Backoffice from "./pages/Backoffice";
-import Organisations from "./pages/Organisations";
-import Utilisateurs from "./pages/Utilisateurs";
 import Audit from "./pages/Audit";
-import Profil from "./pages/Profil";
+import Backoffice from "./pages/Backoffice";
+import Dashboard from "./pages/Dashboard";
+import Dictionnaire from "./pages/Dictionnaire";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
-import Dictionnaire from "./pages/Dictionnaire";
+import Organisations from "./pages/Organisations";
+import Profil from "./pages/Profil";
+import Redaction from "./pages/Redaction";
+import Utilisateurs from "./pages/Utilisateurs";
 
 function Router() {
   return (

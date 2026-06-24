@@ -7,11 +7,6 @@ import {
   type RedactionSubtype,
 } from "@shared/redactionOptions";
 import { getSessionCookieOptions } from "./_core/cookies";
-import { ENV } from "./_core/env";
-import { hashPassword, verifyPassword } from "./_core/passwords";
-import { getLocalOpenId, sdk } from "./_core/sdk";
-import { systemRouter } from "./_core/systemRouter";
-import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import {
   countMedicalTerms,
   createMedicalTerm,
@@ -46,13 +41,18 @@ import {
   upsertUser,
 } from "./db";
 import { pseudonymise } from "./pseudonymisation";
+import { ENV } from "./_core/env";
+import { hashPassword, verifyPassword } from "./_core/passwords";
+import { getLocalOpenId, sdk } from "./_core/sdk";
+import { systemRouter } from "./_core/systemRouter";
+import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { analyzeText, invalidateDictCache } from "./medicalAnalyzer";
 import { createAnthropicMessage } from "./_core/anthropic";
 import {
-  buildTemplateForSubtype,
   DEFAULT_PROMPT_BASE,
   DEFAULT_TEMPLATES,
   DEFAULT_TEST_CASES,
+  buildTemplateForSubtype,
 } from "./defaultPrompts";
 
 const RAW_DATA_MAX_CHARS = 200_000;
@@ -106,65 +106,48 @@ export const appRouter = router({
       )
       .mutation(async ({ ctx, input }) => {
         const email = input.email.trim().toLowerCase();
-        let user = await getUserByEmail(email);
-
         const expectedBootstrapEmail = ENV.localAdminEmail.trim().toLowerCase();
         const isBootstrapAdmin =
           Boolean(ENV.localAdminEmail && ENV.localAdminPassword) &&
           email === expectedBootstrapEmail;
 
+        // Logique simplifiée pour l'administrateur local
         if (isBootstrapAdmin) {
-          if (!user) {
-            const passwordHash = await hashPassword(ENV.localAdminPassword);
-            await upsertUser({
-              openId: getLocalOpenId(email),
-              name: ENV.localAdminName,
-              email,
-              passwordHash,
-              passwordUpdatedAt: new Date(),
-              loginMethod: "password",
-              role: "admin",
-              lastSignedIn: new Date(),
-            });
-            user = await getUserByEmail(email);
-          } else if (!user.passwordHash) {
-            await updateUser(user.id, {
-              passwordHash: await hashPassword(ENV.localAdminPassword),
-              passwordUpdatedAt: new Date(),
-              loginMethod: "password",
-              role: "admin",
-            });
-            user = await getUserByEmail(email);
+          if (input.password !== ENV.localAdminPassword) {
+            throw new TRPCError({ code: "UNAUTHORIZED", message: "Identifiants invalides." });
           }
+
+          // On récupère ou on crée l'utilisateur admin en base
+          let user = await getUserByEmail(email);
+          if (!user) {
+            user = { openId: getLocalOpenId(email), role: "admin" };
+          }
+          const passwordHash = await hashPassword(ENV.localAdminPassword);
+          await upsertUser({ ...user, name: ENV.localAdminName, email, passwordHash, loginMethod: "password" });
+          const finalUser = await getUserByEmail(email);
+
+          if (!finalUser) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+          const sessionToken = await sdk.createSessionToken(finalUser.openId, { name: finalUser.name ?? "", expiresInMs: ONE_YEAR_MS });
+          const cookieOptions = getSessionCookieOptions(ctx.req);
+          ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+          return { success: true };
         }
 
+        // Logique pour les autres utilisateurs (praticiens, etc.)
+        const user = await getUserByEmail(email);
         if (!user || !user.active || !user.passwordHash) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "Identifiants invalides.",
-          });
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Identifiants invalides." });
         }
 
         const isValid = await verifyPassword(input.password, user.passwordHash);
         if (!isValid) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "Identifiants invalides.",
-          });
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Identifiants invalides." });
         }
 
-        await updateUser(user.id, { lastSignedIn: new Date() });
-
-        const sessionToken = await sdk.createSessionToken(user.openId, {
-          name: user.name ?? "",
-          expiresInMs: ONE_YEAR_MS,
-        });
-
+        const sessionToken = await sdk.createSessionToken(user.openId, { name: user.name ?? "", expiresInMs: ONE_YEAR_MS });
         const cookieOptions = getSessionCookieOptions(ctx.req);
-        ctx.res.cookie(COOKIE_NAME, sessionToken, {
-          ...cookieOptions,
-          maxAge: ONE_YEAR_MS,
-        });
+        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
         return { success: true };
       }),
