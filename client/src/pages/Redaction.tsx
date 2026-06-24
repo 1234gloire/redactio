@@ -1,6 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import RedactioLayout from "@/components/RedactioLayout";
-<<<<<<< Updated upstream
+import VoiceRecorder from "@/components/VoiceRecorder";
 import {
   getDefaultSubtype,
   isValidVolet,
@@ -8,9 +8,6 @@ import {
   type RedactionSubtype,
   type Volet,
 } from "@shared/redactionOptions";
-=======
-import VoiceRecorder from "@/components/VoiceRecorder";
->>>>>>> Stashed changes
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,7 +40,6 @@ import {
   FileUp,
   FileText,
   Loader2,
-  Mic,
   RotateCcw,
   Stethoscope,
   X,
@@ -108,11 +104,6 @@ function parseMarkdownTableRow(line: string): string[] {
     .map((cell) => cell.trim());
 }
 
-function isLikelyMarkdownTableStart(currentLine: string, nextLine: string): boolean {
-  if (!currentLine.includes("|")) return false;
-  return isMarkdownTableSeparator(nextLine) || nextLine.includes("|");
-}
-
 function createDocxRuns(text: string, options: { bold?: boolean } = {}): ParagraphChild[] {
   const runs: ParagraphChild[] = [];
   const pattern = /(\*\*[^*]+\*\*|\*[^*]+\*)/g;
@@ -173,10 +164,10 @@ async function createDocxBlobFromText(text: string): Promise<Blob> {
     const line = lines[index] ?? "";
     const nextLine = lines[index + 1] ?? "";
 
-    if (isLikelyMarkdownTableStart(line, nextLine)) {
+    if (line.includes("|") && isMarkdownTableSeparator(nextLine)) {
       const headers = parseMarkdownTableRow(line);
       const rows: string[][] = [];
-      index += isMarkdownTableSeparator(nextLine) ? 2 : 1;
+      index += 2;
 
       while (index < lines.length && lines[index]?.includes("|")) {
         const row = lines[index] ?? "";
@@ -271,23 +262,6 @@ export default function Redaction() {
   const abortRef = useRef<AbortController | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [streamingText, setStreamingText] = useState("");
-
-  // ─── Dictée vocale ───────────────────────────────────────────────────────────
-  /**
-   * Appelé par VoiceRecorder quand la transcription est prête.
-   * Le texte est ajouté à la fin du contenu existant (mode append),
-   * séparé par un saut de ligne si le champ n'est pas vide.
-   */
-  const handleVoiceTranscript = useCallback((text: string) => {
-    setRawData((prev) => {
-      if (!prev.trim()) return text;
-      // Ajouter une séparation propre si le dernier caractère n'est pas déjà un saut de ligne
-      const separator = prev.endsWith("\n") ? "" : "\n";
-      return `${prev}${separator}${text}`;
-    });
-    toast.success("Dictée ajoutée au champ de saisie.");
-  }, []);
-  // ─────────────────────────────────────────────────────────────────────────────
 
   // Génération via streaming SSE
   const handleStreamGenerate = useCallback(async (
@@ -466,6 +440,31 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     }
   }, [conciliationImportTarget, selectedVolet]);
 
+  // ─── Dictée vocale ─────────────────────────────────────────────────────────
+  /**
+   * Appelé par VoiceRecorder quand la transcription est prête.
+   * Le texte est ajouté à la fin du contenu existant (mode append).
+   * Pour la conciliation, le texte est ajouté dans le champ actif selon conciliationImportTarget.
+   */
+  const handleVoiceTranscript = useCallback((text: string) => {
+    if (selectedVolet === "conciliation") {
+      const updateTreatment = conciliationImportTarget === "exit" ? setTreatmentExitData : setTreatmentEntryData;
+      updateTreatment((prev) => {
+        if (!prev.trim()) return text;
+        const separator = prev.endsWith("\n") ? "" : "\n";
+        return `${prev}${separator}${text}`.slice(0, RAW_DATA_MAX_CHARS);
+      });
+    } else {
+      setRawData((prev) => {
+        if (!prev.trim()) return text;
+        const separator = prev.endsWith("\n") ? "" : "\n";
+        return `${prev}${separator}${text}`.slice(0, RAW_DATA_MAX_CHARS);
+      });
+    }
+    toast.success("Dictée ajoutée au champ de saisie.");
+  }, [conciliationImportTarget, selectedVolet]);
+  // ─────────────────────────────────────────────────────────────────────────────
+
   const handleFileDrag = useCallback((event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.stopPropagation();
@@ -528,11 +527,14 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     editor?.commands.setContent("");
   }, [editor]);
 
-  if (authLoading) return null;
-  if (!isAuthenticated) {
-    setLocation("/");
-    return null;
-  }
+  // Redirection via useEffect pour éviter setState pendant le rendu
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      setLocation("/");
+    }
+  }, [authLoading, isAuthenticated, setLocation]);
+
+  if (authLoading || !isAuthenticated) return null;
 
   const progress = (step / 5) * 100;
 
@@ -644,7 +646,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                 <h2 className="text-lg font-semibold text-foreground">
                   {VOLETS[selectedVolet].label}
                 </h2>
-                <p className="text-sm text-muted-foreground">Saisissez ou dictez les données médicales du patient.</p>
+                <p className="text-sm text-muted-foreground">Saisissez les données médicales du patient.</p>
               </div>
             </div>
 
@@ -667,9 +669,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
               </div>
             </div>
 
-            {/* ── Bloc de saisie avec dictée vocale intégrée ── */}
             <div className="space-y-2">
-<<<<<<< Updated upstream
               <fieldset className="space-y-2">
                 <legend className="text-sm font-medium text-foreground">
                   Type de document
@@ -749,15 +749,25 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                 </div>
               ) : (
                 <>
-                  <label htmlFor="rawData" className="text-sm font-medium text-foreground">
-                    Données médicales brutes
-                    <span className="text-muted-foreground font-normal ml-1">(sans identifiant direct)</span>
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="rawData" className="text-sm font-medium text-foreground">
+                      Données médicales brutes
+                      <span className="text-muted-foreground font-normal ml-1">(sans identifiant direct)</span>
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground hidden sm:inline">Dictée vocale</span>
+                      <VoiceRecorder
+                        onTranscript={handleVoiceTranscript}
+                        disabled={isGenerating}
+                        size="icon"
+                      />
+                    </div>
+                  </div>
                   <Textarea
                     id="rawData"
                     value={rawData}
                     onChange={(e) => setRawData(e.target.value)}
-                    placeholder={`Exemple pour ${VOLETS[selectedVolet].label} :\n\nService : Cardiologie\nMotif d'hospitalisation : Décompensation cardiaque\nAntécédents : HTA, FA chronique, insuffisance cardiaque FE 35%\nTraitement habituel : Furosémide 40mg, Bisoprolol 5mg, Rivaroxaban 20mg\n...`}
+                    placeholder={`Exemple pour ${VOLETS[selectedVolet].label} :\n\nService : Cardiologie\nMotif d'hospitalisation : Décompensation cardiaque\nAntécédents : HTA, FA chronique, insuffisance cardiaque FE 35%\nTraitement habituel : Furosémide 40mg, Bisoprolol 5mg, Rivaroxaban 20mg\n...\n\nVous pouvez aussi utiliser le bouton microphone pour dicter directement.`}
                     className="min-h-[280px] font-mono text-sm resize-y"
                     aria-describedby="rawData-help"
                     maxLength={RAW_DATA_MAX_CHARS}
@@ -769,58 +779,11 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                   {currentInputLength}/{RAW_DATA_MAX_CHARS.toLocaleString("fr-FR")} caractères
                 </p>
                 {currentInputLength > 0 && (
-=======
-              {/* En-tête du champ avec bouton dictée */}
-              <div className="flex items-center justify-between">
-                <label htmlFor="rawData" className="text-sm font-medium text-foreground">
-                  Données médicales brutes
-                  <span className="text-muted-foreground font-normal ml-1">(sans identifiant direct)</span>
-                </label>
-                {/* Dictée vocale — visible pour les 3 volets */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground hidden sm:inline">
-                    <Mic className="w-3 h-3 inline mr-1" />
-                    Dictée vocale
-                  </span>
-                  <VoiceRecorder
-                    onTranscript={handleVoiceTranscript}
-                    disabled={isGenerating}
-                    size="icon"
-                  />
-                </div>
-              </div>
-
-              {/* Zone de texte — saisie clavier + dictée vocale */}
-              <div className="relative">
-                <Textarea
-                  id="rawData"
-                  value={rawData}
-                  onChange={(e) => setRawData(e.target.value)}
-                  placeholder={`Exemple pour ${VOLETS[selectedVolet].label} :\n\nService : Cardiologie\nMotif d'hospitalisation : Décompensation cardiaque\nAntécédents : HTA, FA chronique, insuffisance cardiaque FE 35%\nTraitement habituel : Furosémide 40mg, Bisoprolol 5mg, Rivaroxaban 20mg\n...\n\nVous pouvez aussi utiliser le bouton microphone pour dicter directement.`}
-                  className="min-h-[280px] font-mono text-sm resize-y pr-4"
-                  aria-describedby="rawData-help rawData-voice-hint"
-                  maxLength={8000}
-                />
-              </div>
-
-              {/* Barre d'info sous le textarea */}
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="flex items-center gap-3">
-                  <p id="rawData-help" className="text-xs text-muted-foreground">
-                    {rawData.length}/8000 caractères
-                  </p>
-                  <p id="rawData-voice-hint" className="text-xs text-muted-foreground hidden sm:block">
-                    · Cliquez sur le micro pour dicter
-                  </p>
-                </div>
-                {rawData.length > 0 && (
->>>>>>> Stashed changes
                   <Badge variant="secondary" className="text-xs">
                     Pseudonymisation automatique activée
                   </Badge>
                 )}
               </div>
-<<<<<<< Updated upstream
               <div
                 className={cn(
                   "flex flex-col gap-3 rounded-md border border-dashed p-3 transition-colors sm:flex-row sm:items-center sm:justify-between",
@@ -899,17 +862,6 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                 >
                   {isExtractingFile ? "Extraction…" : "Parcourir"}
                 </Button>
-=======
-
-              {/* Aide contextuelle dictée vocale */}
-              <div className="flex items-start gap-2 p-3 rounded-md bg-muted/40 border border-border/60 text-xs text-muted-foreground">
-                <Mic className="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary" />
-                <span>
-                  <strong className="text-foreground">Dictée vocale disponible</strong> pour les 3 volets (Courrier de sortie, Conciliation médicamenteuse, Correspondance médicale).
-                  Cliquez sur le bouton microphone pour démarrer l'enregistrement. La transcription est ajoutée automatiquement à la suite du texte saisi.
-                  Durée maximale : 5 minutes par dictée.
-                </span>
->>>>>>> Stashed changes
               </div>
             </div>
 

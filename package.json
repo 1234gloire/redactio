@@ -59,6 +59,7 @@
     "@trpc/react-query": "^11.6.0",
     "@trpc/server": "^11.6.0",
     "@types/multer": "^2.1.0",
+    "@types/pdf-parse": "^1.1.5",
     "axios": "^1.12.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -74,10 +75,7 @@
     "input-otp": "^1.4.2",
     "jose": "6.1.0",
     "lucide-react": "^0.453.0",
-<<<<<<< Updated upstream
     "mammoth": "^1.12.0",
-=======
->>>>>>> Stashed changes
     "multer": "^2.2.0",
     "mysql2": "^3.15.0",
     "nanoid": "^5.1.5",
