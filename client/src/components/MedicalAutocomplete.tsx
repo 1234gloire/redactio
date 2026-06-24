@@ -37,6 +37,8 @@ interface MedicalAutocompleteProps {
   maxLength?: number;
   disabled?: boolean;
   "aria-describedby"?: string;
+  /** Texte intermédiaire (interim) de la reconnaissance vocale — affiché en gris sous le champ */
+  interimText?: string;
 }
 
 /** Extrait le mot en cours de saisie (dernier mot non vide) */
@@ -62,6 +64,7 @@ export function MedicalAutocomplete({
   maxLength,
   disabled = false,
   "aria-describedby": ariaDescribedBy,
+  interimText = "",
 }: MedicalAutocompleteProps) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -197,6 +200,18 @@ export function MedicalAutocomplete({
           className
         )}
       />
+
+      {/* Texte intermédiaire de la reconnaissance vocale */}
+      {interimText && (
+        <div
+          className="mt-1 px-3 py-1.5 rounded-md bg-muted/40 border border-dashed border-muted-foreground/25 text-sm text-muted-foreground italic leading-relaxed"
+          aria-live="polite"
+          aria-label="Texte en cours de reconnaissance"
+        >
+          <span className="text-xs font-medium not-italic text-muted-foreground/60 mr-1.5">En cours :</span>
+          {interimText}
+        </div>
+      )}
 
       {/* Dropdown des suggestions */}
       {showSuggestions && suggestions.length > 0 && (

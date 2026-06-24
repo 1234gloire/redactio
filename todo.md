@@ -128,3 +128,16 @@
 - [x] Callback OAuth redirige vers /?auth_error=callback_failed au lieu de retourner un JSON 500 — évite la page d'erreur du portail Manus
 - [x] Toast d'erreur convivial dans Home.tsx quand auth_error=callback_failed — message clair avec bouton de reconnexion
 - [x] 37/37 tests Vitest passent — TypeScript 0 erreur
+
+## Phase 16 — Reconnaissance vocale temps réel (Web Speech API)
+
+- [x] Composant LiveSpeechRecorder : reconnaissance vocale temps réel via Web Speech API (SpeechRecognition)
+- [x] Transcription continue : texte intermédiaire (interim) affiché en italique gris + texte final inséré en noir
+- [x] Langue française par défaut (fr-FR), avec détection automatique si non disponible
+- [x] États visuels : idle → écoute (pulsation rouge) → pause → arrêt
+- [x] Bouton Pause/Reprise pour suspendre sans perdre le contexte
+- [x] Mode append : le texte dicté s'ajoute à la suite du texte existant dans le champ
+- [x] Fallback gracieux si Web Speech API non disponible (message d'info + bouton Whisper)
+- [x] Intégration dans les 3 volets : rawData du courrier de sortie, colonnes de conciliation, rawData de la correspondance
+- [x] Remplacement des boutons microphone existants par le nouveau composant
+- [x] 37/37 tests Vitest passent — TypeScript 0 erreur

@@ -1,6 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import RedactioLayout from "@/components/RedactioLayout";
-import VoiceRecorderWithPreview from "@/components/VoiceRecorderWithPreview";
+import LiveSpeechRecorder from "@/components/LiveSpeechRecorder";
 import MedicalAutocomplete from "@/components/MedicalAutocomplete";
 import {
   getDefaultSubtype,
@@ -250,6 +250,10 @@ export default function Redaction() {
   const [treatmentExitData, setTreatmentExitData] = useState("");
   const [treatmentExitDate, setTreatmentExitDate] = useState("");
   const [conciliationImportTarget, setConciliationImportTarget] = useState<ConciliationImportTarget>("entry");
+  // Textes intermédiaires (interim) de la reconnaissance vocale
+  const [interimRawData, setInterimRawData] = useState("");
+  const [interimEntryData, setInterimEntryData] = useState("");
+  const [interimExitData, setInterimExitData] = useState("");
   const [generatedDoc, setGeneratedDoc] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExtractingFile, setIsExtractingFile] = useState(false);
@@ -710,16 +714,16 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                         </label>
                         <div className="flex items-center gap-1.5">
                           <span className="text-xs text-muted-foreground hidden sm:inline">Dictée</span>
-                          <VoiceRecorderWithPreview
-                            onInsert={(text) => {
+                          <LiveSpeechRecorder
+                            onPartialResult={(text) => {
                               setConciliationImportTarget("entry");
                               setTreatmentEntryData((prev) => {
-                                if (!prev.trim()) return text;
-                                return `${prev}${prev.endsWith("\n") ? "" : "\n"}${text}`.slice(0, RAW_DATA_MAX_CHARS);
+                                const sep = prev && !prev.endsWith(" ") && !prev.endsWith("\n") ? " " : "";
+                                return `${prev}${sep}${text}`.slice(0, RAW_DATA_MAX_CHARS);
                               });
                             }}
-                            fieldLabel="Traitement d'entrée"
-                            insertMode="append"
+                            onInterimResult={setInterimEntryData}
+                            onStop={() => setInterimEntryData("")}
                           />
                         </div>
                       </div>
@@ -732,6 +736,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                         className="min-h-[220px]"
                         rows={10}
                         maxLength={RAW_DATA_MAX_CHARS}
+                        interimText={interimEntryData}
                       />
                     </div>
                     {/* Colonne Traitement de sortie */}
@@ -743,16 +748,16 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                         </label>
                         <div className="flex items-center gap-1.5">
                           <span className="text-xs text-muted-foreground hidden sm:inline">Dictée</span>
-                          <VoiceRecorderWithPreview
-                            onInsert={(text) => {
+                          <LiveSpeechRecorder
+                            onPartialResult={(text) => {
                               setConciliationImportTarget("exit");
                               setTreatmentExitData((prev) => {
-                                if (!prev.trim()) return text;
-                                return `${prev}${prev.endsWith("\n") ? "" : "\n"}${text}`.slice(0, RAW_DATA_MAX_CHARS);
+                                const sep = prev && !prev.endsWith(" ") && !prev.endsWith("\n") ? " " : "";
+                                return `${prev}${sep}${text}`.slice(0, RAW_DATA_MAX_CHARS);
                               });
                             }}
-                            fieldLabel="Traitement de sortie"
-                            insertMode="append"
+                            onInterimResult={setInterimExitData}
+                            onStop={() => setInterimExitData("")}
                           />
                         </div>
                       </div>
@@ -765,6 +770,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                         className="min-h-[220px]"
                         rows={10}
                         maxLength={RAW_DATA_MAX_CHARS}
+                        interimText={interimExitData}
                       />
                     </div>
                   </div>
@@ -793,10 +799,15 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                     </label>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground hidden sm:inline">Dictée vocale</span>
-                      <VoiceRecorderWithPreview
-                        onInsert={(text) => handleVoiceTranscript(text)}
-                        fieldLabel="Données médicales brutes"
-                        insertMode="append"
+                      <LiveSpeechRecorder
+                        onPartialResult={(text) => {
+                          setRawData((prev) => {
+                            const sep = prev && !prev.endsWith(" ") && !prev.endsWith("\n") ? " " : "";
+                            return `${prev}${sep}${text}`.slice(0, RAW_DATA_MAX_CHARS);
+                          });
+                        }}
+                        onInterimResult={setInterimRawData}
+                        onStop={() => setInterimRawData("")}
                         disabled={isGenerating}
                       />
                     </div>
@@ -810,6 +821,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                     rows={12}
                     aria-describedby="rawData-help"
                     maxLength={RAW_DATA_MAX_CHARS}
+                    interimText={interimRawData}
                   />
                 </>
               )}
