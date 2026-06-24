@@ -12,8 +12,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Textarea } from "@/components/ui/textarea";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import {
@@ -45,7 +43,7 @@ import {
   Stethoscope,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type DragEvent } from "react";
 import { useLocation } from "wouter";
 import { cn } from "../lib/utils";
 import { toast } from "sonner";
@@ -58,19 +56,19 @@ const VOLETS: Record<Volet, { label: string; icon: React.ReactNode; description:
     label: "Courrier de sortie",
     icon: <FileText className="w-6 h-6" />,
     description: "Rédaction du courrier de sortie d'hospitalisation à destination du médecin traitant ou d'un correspondant.",
-    color: "blue",
+    color: "teal",
   },
   conciliation: {
     label: "Conciliation médicamenteuse",
     icon: <Stethoscope className="w-6 h-6" />,
     description: "Bilan de conciliation médicamenteuse à l'admission, au transfert ou à la sortie.",
-    color: "emerald",
+    color: "slate",
   },
   correspondance: {
     label: "Correspondance médicale",
     icon: <BookOpen className="w-6 h-6" />,
     description: "Rédaction d'une correspondance médicale professionnelle entre praticiens.",
-    color: "violet",
+    color: "seal",
   },
 };
 
@@ -541,27 +539,34 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
 
   if (authLoading || !isAuthenticated) return null;
 
-  const progress = (step / 5) * 100;
+  const progressStyle = {
+    "--redaction-progress": `${(step / 5) * 100}%`,
+  } as CSSProperties;
 
   return (
     <RedactioLayout>
-      <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
+      <div className="redaction-shell">
         {/* En-tête avec étapes */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold text-foreground">Nouvelle rédaction</h1>
-            <Button variant="ghost" size="sm" onClick={handleReset} aria-label="Recommencer">
+        <div className="redaction-header">
+          <div className="redaction-title-row">
+            <h1 className="redaction-page-title">Nouvelle rédaction</h1>
+            <Button variant="outline" size="sm" onClick={handleReset} aria-label="Recommencer" className="redaction-restart">
               <RotateCcw className="w-4 h-4 mr-1.5" />
               Recommencer
             </Button>
           </div>
 
           {/* Indicateur d'étapes */}
-          <div className="space-y-2">
-            <Progress value={progress} className="h-1.5" aria-label={`Étape ${step} sur 5`} />
-            <div className="flex items-center justify-between" role="list" aria-label="Étapes du parcours">
+          <div className="redaction-stepper" style={progressStyle} role="list" aria-label="Étapes du parcours">
               {STEPS.map((s) => (
-                <div key={s.id} className="step-indicator" role="listitem">
+                <div
+                  key={s.id}
+                  className={cn("step-indicator", {
+                    current: step === s.id,
+                    done: step > s.id,
+                  })}
+                  role="listitem"
+                >
                   <div
                     className={cn("step-dot", {
                       active: step === s.id,
@@ -572,30 +577,22 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                   >
                     {step > s.id ? <Check className="w-3 h-3" /> : s.id}
                   </div>
-                  <span
-                    className={cn("text-xs hidden sm:block", {
-                      "text-primary font-semibold": step === s.id,
-                      "text-muted-foreground": step !== s.id,
-                    })}
-                  >
-                    {s.label}
-                  </span>
+                  <span className="step-label">{s.label}</span>
                 </div>
               ))}
-            </div>
           </div>
         </div>
 
         {/* ─── Étape 1 : Choix du volet ─── */}
         {step === 1 && (
-          <div className="space-y-4 animate-fade-in">
+          <div className="redaction-panel animate-fade-in">
             <div>
-              <h2 className="text-lg font-semibold text-foreground">Choisissez un volet</h2>
-              <p className="text-sm text-muted-foreground mt-1">
+              <h2 className="redaction-step-title">Choisissez un volet</h2>
+              <p className="redaction-step-subtitle">
                 Sélectionnez le type de document à rédiger.
               </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="redaction-volets">
               {(Object.entries(VOLETS) as [Volet, typeof VOLETS[Volet]][]).map(([id, volet]) => (
                 <button
                   key={id}
@@ -607,31 +604,27 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                   aria-pressed={selectedVolet === id}
                   aria-label={`Sélectionner ${volet.label}`}
                 >
-                  <div className={cn(
-                    "w-12 h-12 rounded-xl flex items-center justify-center",
-                    volet.color === "blue" && "bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400",
-                    volet.color === "emerald" && "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400",
-                    volet.color === "violet" && "bg-violet-50 dark:bg-violet-950/30 text-violet-600 dark:text-violet-400",
-                  )}>
+                  <div className={cn("volet-icon", `volet-icon-${volet.color}`)}>
                     {volet.icon}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground text-sm">{volet.label}</h3>
-                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{volet.description}</p>
+                    <h3>{volet.label}</h3>
+                    <p>{volet.description}</p>
                   </div>
                   {selectedVolet === id && (
-                    <div className="absolute top-3 right-3">
-                      <CheckCircle className="w-5 h-5 text-primary" />
+                    <div className="volet-check">
+                      <Check className="w-3.5 h-3.5" />
                     </div>
                   )}
                 </button>
               ))}
             </div>
-            <div className="flex justify-end">
+            <div className="step-foot">
+              <span className="spacer" />
               <Button
                 onClick={() => setStep(2)}
                 disabled={!selectedVolet}
-                className="gap-2"
+                className="gap-2 redaction-primary-button"
               >
                 Continuer
                 <ArrowRight className="w-4 h-4" />
@@ -642,41 +635,41 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
 
         {/* ─── Étape 2 : Injection des données ─── */}
         {step === 2 && selectedVolet && (
-          <div className="space-y-4 animate-fade-in">
-            <div className="flex items-center gap-3">
+          <div className="redaction-panel animate-fade-in">
+            <div className="redaction-back-heading">
               <Button variant="ghost" size="icon" onClick={() => setStep(1)} aria-label="Retour">
                 <ArrowLeft className="w-4 h-4" />
               </Button>
               <div>
-                <h2 className="text-lg font-semibold text-foreground">
+                <h2 className="redaction-step-title">
                   {VOLETS[selectedVolet].label}
                 </h2>
-                <p className="text-sm text-muted-foreground">Saisissez les données médicales du patient.</p>
+                <p className="redaction-step-subtitle">Saisissez les données médicales du patient.</p>
               </div>
             </div>
 
             {/* Avertissement renforcé */}
             <div
-              className="flex items-start gap-3 p-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30"
+              className="redaction-confidentiality"
               role="alert"
             >
-              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-              <div className="text-sm text-amber-800 dark:text-amber-200 space-y-1">
+              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+              <div className="space-y-1">
                 <p className="font-semibold">Consigne de confidentialité obligatoire</p>
                 <p>
                   Ne saisissez <strong>aucun identifiant direct</strong> du patient : ni nom, ni prénom,
                   ni numéro de sécurité sociale, ni date de naissance, ni adresse, ni numéro de téléphone.
                 </p>
-                <p className="text-xs opacity-80">
+                <p className="text-xs">
                   Le filtre de pseudonymisation détectera et masquera automatiquement les identifiants
                   structurés, mais vous restez responsable de ne pas saisir d'identité directe.
                 </p>
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="redaction-field-group">
               <fieldset className="space-y-2">
-                <legend className="text-sm font-medium text-foreground">
+                <legend className="redaction-field-label">
                   Type de document
                 </legend>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -686,7 +679,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                       type="button"
                       onClick={() => setSelectedSubtype(option.id)}
                       className={cn(
-                        "flex min-h-11 items-center justify-between gap-3 rounded-md border px-3 py-2 text-left text-sm transition-colors",
+                        "flex min-h-11 items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-colors",
                         selectedSubtype === option.id
                           ? "border-primary bg-primary/5 text-primary"
                           : "border-border bg-background text-foreground hover:bg-muted/60"
@@ -701,14 +694,14 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
               </fieldset>
             </div>
 
-            <div className="space-y-2">
+            <div className="redaction-field-group">
               {selectedVolet === "conciliation" ? (
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     {/* Colonne Traitement d'entrée */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label htmlFor="treatmentEntryData" className="text-sm font-medium text-foreground">
+                        <label htmlFor="treatmentEntryData" className="redaction-field-label">
                           Traitement d'entrée
                           <span className="text-muted-foreground font-normal ml-1">(bilan médicamenteux)</span>
                         </label>
@@ -743,7 +736,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                     {/* Colonne Traitement de sortie */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label htmlFor="treatmentExitData" className="text-sm font-medium text-foreground">
+                        <label htmlFor="treatmentExitData" className="redaction-field-label">
                           Traitement de sortie
                           <span className="text-muted-foreground font-normal ml-1">(ordonnance finale)</span>
                         </label>
@@ -777,7 +770,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label htmlFor="treatmentExitDate" className="text-sm font-medium text-foreground">
+                    <label htmlFor="treatmentExitDate" className="redaction-field-label">
                       Date de rédaction de la sortie
                       <span className="text-muted-foreground font-normal ml-1">(optionnel)</span>
                     </label>
@@ -795,7 +788,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
               ) : (
                 <>
                   <div className="flex items-center justify-between">
-                    <label htmlFor="rawData" className="text-sm font-medium text-foreground">
+                    <label htmlFor="rawData" className="redaction-field-label">
                       Données médicales brutes
                       <span className="text-muted-foreground font-normal ml-1">(sans identifiant direct)</span>
                     </label>
@@ -840,10 +833,10 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
               </div>
               <div
                 className={cn(
-                  "flex flex-col gap-3 rounded-md border border-dashed p-3 transition-colors sm:flex-row sm:items-center sm:justify-between",
+                  "redaction-dropzone",
                   isFileDragOver
-                    ? "border-primary bg-primary/5"
-                    : "border-border bg-muted/30"
+                    ? "is-over"
+                    : ""
                 )}
                 onDragEnter={handleFileDrag}
                 onDragOver={handleFileDrag}
@@ -858,7 +851,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                   onChange={(event) => handleFileUpload(event.target.files?.[0] ?? null)}
                 />
                 <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-background text-muted-foreground">
+                  <div className="redaction-dropzone-icon">
                     {isExtractingFile ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
@@ -919,15 +912,16 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
               </div>
             </div>
 
-            <div className="flex justify-between">
+            <div className="step-foot">
               <Button variant="outline" onClick={() => setStep(1)}>
                 <ArrowLeft className="w-4 h-4 mr-1.5" />
                 Retour
               </Button>
+              <span className="spacer" />
               <Button
                 onClick={() => { setStep(3); handleGenerate(); }}
                 disabled={!canGenerate}
-                className="gap-2"
+                className="gap-2 redaction-primary-button"
               >
                 Générer le document
                 <ArrowRight className="w-4 h-4" />
@@ -938,10 +932,10 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
 
         {/* ─── Étape 3 : Génération en cours ─── */}
         {step === 3 && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="text-center space-y-4 py-8">
+          <div className="redaction-panel animate-fade-in">
+            <div className="redaction-generation">
               <div className="flex items-center justify-center">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <div className="redaction-spinner-ring">
                   <Loader2 className="w-8 h-8 text-primary animate-spin" />
                 </div>
               </div>
@@ -971,11 +965,11 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
 
         {/* ─── Étape 4 : Relecture et édition ─── */}
         {step === 4 && (
-          <div className="space-y-4 animate-fade-in">
+          <div className="redaction-panel animate-fade-in">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-foreground">Relecture et édition</h2>
-                <p className="text-sm text-muted-foreground">
+                <h2 className="redaction-step-title">Relecture et édition</h2>
+                <p className="redaction-step-subtitle">
                   Relisez, corrigez et complétez le document avant validation.
                 </p>
               </div>
@@ -1064,7 +1058,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
 
         {/* ─── Étape 5 : Export ─── */}
         {step === 5 && validated && (
-          <div className="space-y-6 animate-fade-in">
+          <div className="redaction-panel animate-fade-in">
             <div className="text-center space-y-2">
               <div className="flex items-center justify-center">
                 <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/30 flex items-center justify-center">
