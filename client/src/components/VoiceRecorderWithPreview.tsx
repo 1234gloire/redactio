@@ -1,45 +1,45 @@
 /**
- * VoiceRecorderWithPreview — Composant de dictée vocale avec prévisualisation
- * avant insertion dans le champ cible. Conforme aux exigences REDACTIO :
- * - Enregistrement via MediaRecorder (WebM/Opus)
- * - Transcription via Whisper (/api/voice/transcribe)
- * - Prévisualisation dans une modal avant insertion
- * - Aucun contenu médical n'est journalisé côté serveur
+ * VoiceRecorderWithPreview — Dictée vocale avec contrôles complets et prévisualisation.
+ *
+ * Contrôles : Start → Pause → Reprise → Stop → Modal prévisualisation → Insérer / Annuler
+ * Indicateur visuel : onde sonore animée (Web Audio API), pulsation orange en pause,
+ * spinner pendant la transcription.
+ *
+ * Aucun audio n'est stocké côté serveur — traitement en mémoire uniquement.
  */
-import { useState, useRef, useCallback } from "react";
-import { Mic, MicOff, Loader2, Eye, Check, X, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { Check, Eye, Loader2, Mic, MicOff, Pause, Play, RotateCcw, Square, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
-type RecordingState = "idle" | "recording" | "transcribing" | "preview";
+type RecordingState = "idle" | "recording" | "paused" | "transcribing" | "preview";
 
 interface VoiceRecorderWithPreviewProps {
-  /** Appelé quand l'utilisateur valide la transcription — insère le texte */
+  /** Appelé quand l'utilisateur valide la transcription */
   onInsert: (text: string) => void;
-  /** Libellé du champ cible affiché dans la modal de prévisualisation */
+  /** Libellé du champ cible affiché dans la modal */
   fieldLabel?: string;
   /** Mode d'insertion : 'append' ajoute à la suite, 'replace' remplace */
   insertMode?: "append" | "replace";
-  /** Classe CSS supplémentaire pour le bouton déclencheur */
+  /** Classe CSS supplémentaire */
   className?: string;
   /** Désactiver le composant */
   disabled?: boolean;
-  /** Taille du bouton */
-  size?: "sm" | "default" | "lg";
 }
 
-const MAX_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+const MAX_DURATION_MS = 5 * 60 * 1000;
 
 export function VoiceRecorderWithPreview({
   onInsert,
@@ -47,217 +47,327 @@ export function VoiceRecorderWithPreview({
   insertMode = "append",
   className,
   disabled = false,
-  size = "sm",
 }: VoiceRecorderWithPreviewProps) {
   const [state, setState] = useState<RecordingState>("idle");
+  const [elapsed, setElapsed] = useState(0);
   const [previewText, setPreviewText] = useState("");
   const [editedText, setEditedText] = useState("");
-  const [duration, setDuration] = useState(0);
-  const [showPreview, setShowPreview] = useState(false);
+  const [bars, setBars] = useState([0.3, 0.6, 1.0, 0.6, 0.3]);
+  const [mimeType, setMimeType] = useState("");
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const maxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
-  const startTimer = useCallback(() => {
-    setDuration(0);
-    timerRef.current = setInterval(() => {
-      setDuration(d => d + 1);
-    }, 1000);
+  // Nettoyage
+  useEffect(() => {
+    return () => {
+      stopTimer();
+      stopWave();
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      audioCtxRef.current?.close();
+    };
   }, []);
 
-  const stopTimer = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    if (maxTimerRef.current) {
-      clearTimeout(maxTimerRef.current);
-      maxTimerRef.current = null;
-    }
-  }, []);
-
-  const formatDuration = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${m}:${sec.toString().padStart(2, "0")}`;
+  // ── Timer ──────────────────────────────────────────────────────────────────
+  const stopTimer = () => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    if (maxTimerRef.current) { clearTimeout(maxTimerRef.current); maxTimerRef.current = null; }
+  };
+  const pauseTimer = () => { if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; } };
+  const startTimer = () => {
+    timerRef.current = setInterval(() => setElapsed((s) => s + 1), 1000);
   };
 
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
-    }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
-      streamRef.current = null;
-    }
-    stopTimer();
-  }, [stopTimer]);
+  // ── Onde sonore ────────────────────────────────────────────────────────────
+  const startWave = (stream: MediaStream) => {
+    try {
+      const ctx = new AudioContext();
+      audioCtxRef.current = ctx;
+      const source = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 32;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const animate = () => {
+        analyser.getByteFrequencyData(data);
+        setBars([data[1], data[3], data[5], data[3], data[1]].map((v) => Math.max(0.15, v / 255)));
+        animFrameRef.current = requestAnimationFrame(animate);
+      };
+      animate();
+    } catch { /* fallback CSS */ }
+  };
 
-  const transcribeAudio = useCallback(async (audioBlob: Blob) => {
+  const stopWave = () => {
+    if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null; }
+    analyserRef.current = null;
+    setBars([0.3, 0.6, 1.0, 0.6, 0.3]);
+  };
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  const getMime = (): string => {
+    for (const t of ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/mp4"]) {
+      if (MediaRecorder.isTypeSupported(t)) return t;
+    }
+    return "";
+  };
+
+  const fmt = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
+
+  // ── Transcription ──────────────────────────────────────────────────────────
+  const transcribeBlob = useCallback(async (blob: Blob, mime: string) => {
     setState("transcribing");
+    stopWave();
     try {
       const formData = new FormData();
-      formData.append("audio", audioBlob, "recording.webm");
+      const ext = mime.includes("webm") ? "webm" : mime.includes("ogg") ? "ogg" : mime.includes("mp4") ? "mp4" : "audio";
+      formData.append("audio", blob, `recording.${ext}`);
       formData.append("language", "fr");
 
-      const res = await fetch("/api/voice/transcribe", {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
-
+      const res = await fetch("/api/voice/transcribe", { method: "POST", body: formData, credentials: "include" });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Erreur de transcription" }));
+        const err = await res.json().catch(() => ({ error: "Erreur réseau" }));
         throw new Error(err.error || `HTTP ${res.status}`);
       }
-
       const data = await res.json();
       const text: string = data.text?.trim() || "";
-
       if (!text) {
-        toast.warning("Aucun texte détecté dans l'enregistrement.");
+        toast.warning("Aucun texte détecté. Veuillez réessayer.");
         setState("idle");
+        setElapsed(0);
         return;
       }
-
       setPreviewText(text);
       setEditedText(text);
       setState("preview");
-      setShowPreview(true);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erreur de transcription";
-      toast.error(`Transcription échouée : ${msg}`);
+      toast.error(`Transcription échouée : ${err instanceof Error ? err.message : "Erreur inconnue"}`);
       setState("idle");
     }
   }, []);
 
-  const handleStartRecording = useCallback(async () => {
-    if (disabled) return;
-
+  // ── Actions ────────────────────────────────────────────────────────────────
+  const handleStart = useCallback(async () => {
+    if (disabled || state !== "idle") return;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      toast.error("La dictée vocale n'est pas supportée par ce navigateur.");
+      return;
+    }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { channelCount: 1, sampleRate: 16000, echoCancellation: true, noiseSuppression: true },
+      });
       streamRef.current = stream;
       chunksRef.current = [];
 
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : "audio/ogg";
-
-      const recorder = new MediaRecorder(stream, { mimeType });
+      const mime = getMime();
+      setMimeType(mime);
+      const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
       mediaRecorderRef.current = recorder;
 
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: mimeType });
-        transcribeAudio(blob);
+        stopTimer();
+        stream.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+        const blob = new Blob(chunksRef.current, { type: mime || "audio/webm" });
+        chunksRef.current = [];
+        if (blob.size < 1000) {
+          toast.error("Enregistrement trop court. Veuillez réessayer.");
+          setState("idle");
+          setElapsed(0);
+          return;
+        }
+        transcribeBlob(blob, mime || "audio/webm");
       };
 
-      recorder.start(250); // chunks toutes les 250ms
+      recorder.start(250);
       setState("recording");
+      setElapsed(0);
       startTimer();
+      startWave(stream);
 
-      // Arrêt automatique après 5 minutes
       maxTimerRef.current = setTimeout(() => {
-        stopRecording();
-        toast.info("Enregistrement arrêté automatiquement (limite 5 min).");
+        toast.warning("Durée maximale atteinte (5 min). Arrêt automatique.");
+        handleStop();
       }, MAX_DURATION_MS);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Accès au microphone refusé";
-      toast.error(`Impossible d'accéder au microphone : ${msg}`);
+      if (err instanceof Error) {
+        if (err.name === "NotAllowedError") toast.error("Accès au microphone refusé.");
+        else if (err.name === "NotFoundError") toast.error("Aucun microphone détecté.");
+        else toast.error(`Microphone inaccessible : ${err.message}`);
+      }
       setState("idle");
     }
-  }, [disabled, startTimer, stopRecording, transcribeAudio]);
+  }, [disabled, state, transcribeBlob]);
 
-  const handleStopRecording = useCallback(() => {
-    stopRecording();
-    // onstop sera appelé automatiquement par MediaRecorder
-  }, [stopRecording]);
+  const handlePause = useCallback(() => {
+    if (state !== "recording") return;
+    if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.pause();
+    pauseTimer();
+    stopWave();
+    setState("paused");
+  }, [state]);
+
+  const handleResume = useCallback(() => {
+    if (state !== "paused") return;
+    if (mediaRecorderRef.current?.state === "paused") mediaRecorderRef.current.resume();
+    startTimer();
+    if (streamRef.current) startWave(streamRef.current);
+    setState("recording");
+  }, [state]);
+
+  const handleStop = useCallback(() => {
+    if (state !== "recording" && state !== "paused") return;
+    if (mediaRecorderRef.current?.state === "paused") mediaRecorderRef.current.resume();
+    mediaRecorderRef.current?.stop();
+    stopTimer();
+    stopWave();
+    setState("transcribing");
+  }, [state]);
 
   const handleInsert = useCallback(() => {
-    const textToInsert = editedText.trim();
-    if (!textToInsert) {
-      toast.warning("Le texte de transcription est vide.");
-      return;
-    }
-    onInsert(textToInsert);
-    setShowPreview(false);
+    const text = editedText.trim();
+    if (!text) { toast.warning("Le texte est vide."); return; }
+    onInsert(text);
     setState("idle");
     setPreviewText("");
     setEditedText("");
-    toast.success(
-      insertMode === "append"
-        ? "Transcription ajoutée au champ."
-        : "Champ remplacé par la transcription."
-    );
+    setElapsed(0);
+    toast.success(insertMode === "append" ? "Transcription ajoutée." : "Champ remplacé.");
   }, [editedText, onInsert, insertMode]);
 
   const handleCancel = useCallback(() => {
-    setShowPreview(false);
     setState("idle");
     setPreviewText("");
     setEditedText("");
+    setElapsed(0);
   }, []);
 
   const handleRetry = useCallback(() => {
-    setShowPreview(false);
-    setState("idle");
-    setPreviewText("");
-    setEditedText("");
-    // Relancer immédiatement l'enregistrement
-    setTimeout(() => handleStartRecording(), 100);
-  }, [handleStartRecording]);
+    handleCancel();
+    setTimeout(() => handleStart(), 150);
+  }, [handleCancel, handleStart]);
 
-  // ── Rendu du bouton déclencheur ─────────────────────────────────────────────
+  // ── Rendu ──────────────────────────────────────────────────────────────────
   const isRecording = state === "recording";
+  const isPaused = state === "paused";
   const isTranscribing = state === "transcribing";
+  const isActive = isRecording || isPaused;
   const isIdle = state === "idle";
 
   return (
     <>
-      <Button
-        type="button"
-        variant={isRecording ? "destructive" : "outline"}
-        size={size}
-        disabled={disabled || isTranscribing}
-        onClick={isRecording ? handleStopRecording : handleStartRecording}
-        className={cn(
-          "gap-1.5 transition-all duration-200",
-          isRecording && "animate-pulse",
-          className
+      <div className={cn("flex items-center gap-2 flex-wrap", className)}>
+
+        {/* START */}
+        {isIdle && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleStart}
+                disabled={disabled}
+                aria-label="Démarrer la dictée vocale"
+                className="gap-1.5 border-primary/40 text-primary hover:bg-primary/5 hover:border-primary transition-all duration-150"
+              >
+                <Mic className="w-3.5 h-3.5" />
+                <span className="text-xs">Dicter</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top"><p className="text-xs">Démarrer la dictée vocale</p></TooltipContent>
+          </Tooltip>
         )}
-        title={
-          isRecording
-            ? `Arrêter l'enregistrement (${formatDuration(duration)})`
-            : isTranscribing
-            ? "Transcription en cours..."
-            : "Démarrer la dictée vocale"
-        }
-      >
-        {isTranscribing ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : isRecording ? (
-          <MicOff className="h-3.5 w-3.5" />
-        ) : (
-          <Mic className="h-3.5 w-3.5" />
+
+        {/* Indicateur onde sonore + chrono */}
+        {isActive && (
+          <div
+            className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-mono",
+              isRecording
+                ? "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400"
+                : "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400"
+            )}
+            role="status"
+            aria-live="polite"
+          >
+            <span className={cn("w-2 h-2 rounded-full flex-shrink-0", isRecording ? "bg-red-500 animate-pulse" : "bg-amber-500")} />
+            {isRecording && (
+              <div className="flex items-center gap-0.5 h-4" aria-hidden="true">
+                {bars.map((h, i) => (
+                  <div key={i} className="w-0.5 bg-red-500 dark:bg-red-400 rounded-full transition-all duration-75" style={{ height: `${Math.round(h * 16)}px` }} />
+                ))}
+              </div>
+            )}
+            {isPaused && <span className="font-semibold text-amber-600 dark:text-amber-400">PAUSE</span>}
+            <span className="tabular-nums">{fmt(elapsed)}</span>
+          </div>
         )}
+
+        {/* PAUSE */}
         {isRecording && (
-          <span className="text-xs font-mono tabular-nums">
-            {formatDuration(duration)}
-          </span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button type="button" variant="outline" size="sm" onClick={handlePause}
+                aria-label="Mettre en pause"
+                className="gap-1.5 border-amber-400 text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-700 dark:hover:bg-amber-950/30 transition-all duration-150">
+                <Pause className="w-3.5 h-3.5" />
+                <span className="text-xs">Pause</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top"><p className="text-xs">Mettre en pause</p></TooltipContent>
+          </Tooltip>
         )}
-        {isTranscribing && <span className="text-xs">Transcription...</span>}
-      </Button>
+
+        {/* REPRENDRE */}
+        {isPaused && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button type="button" variant="outline" size="sm" onClick={handleResume}
+                aria-label="Reprendre l'enregistrement"
+                className="gap-1.5 border-green-400 text-green-700 hover:bg-green-50 dark:text-green-400 dark:border-green-700 dark:hover:bg-green-950/30 transition-all duration-150">
+                <Play className="w-3.5 h-3.5" />
+                <span className="text-xs">Reprendre</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top"><p className="text-xs">Reprendre l'enregistrement</p></TooltipContent>
+          </Tooltip>
+        )}
+
+        {/* STOP */}
+        {isActive && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button type="button" variant="destructive" size="sm" onClick={handleStop}
+                aria-label="Arrêter et transcrire"
+                className="gap-1.5 transition-all duration-150 active:scale-95">
+                <Square className="w-3.5 h-3.5" />
+                <span className="text-xs">Arrêter</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top"><p className="text-xs">Arrêter et transcrire</p></TooltipContent>
+          </Tooltip>
+        )}
+
+        {/* TRANSCRIPTION EN COURS */}
+        {isTranscribing && (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-primary/20 bg-primary/5 text-xs text-primary">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <span>Transcription en cours…</span>
+          </div>
+        )}
+      </div>
 
       {/* ── Modal de prévisualisation ──────────────────────────────────────── */}
-      <Dialog open={showPreview} onOpenChange={(open) => { if (!open) handleCancel(); }}>
+      <Dialog open={state === "preview"} onOpenChange={(open) => { if (!open) handleCancel(); }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -274,15 +384,12 @@ export function VoiceRecorderWithPreview({
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            {/* Texte original Whisper */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   Texte transcrit (modifiable)
                 </span>
-                <Badge variant="secondary" className="text-xs">
-                  Whisper FR
-                </Badge>
+                <Badge variant="secondary" className="text-xs">Whisper FR</Badge>
               </div>
               <Textarea
                 value={editedText}
@@ -293,12 +400,10 @@ export function VoiceRecorderWithPreview({
                 autoFocus
               />
               <p className="text-xs text-muted-foreground">
-                {editedText.trim().split(/\s+/).filter(Boolean).length} mots ·{" "}
-                {editedText.length} caractères
+                {editedText.trim().split(/\s+/).filter(Boolean).length} mots · {editedText.length} caractères
               </p>
             </div>
 
-            {/* Diff si le texte a été modifié */}
             {editedText !== previewText && (
               <div className="rounded-md border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-3">
                 <p className="text-xs text-amber-700 dark:text-amber-400">
@@ -309,33 +414,15 @@ export function VoiceRecorderWithPreview({
           </div>
 
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleRetry}
-              className="gap-1.5"
-            >
+            <Button type="button" variant="outline" size="sm" onClick={handleRetry} className="gap-1.5">
               <RotateCcw className="h-3.5 w-3.5" />
               Recommencer
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleCancel}
-              className="gap-1.5"
-            >
+            <Button type="button" variant="outline" size="sm" onClick={handleCancel} className="gap-1.5">
               <X className="h-3.5 w-3.5" />
               Annuler
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              onClick={handleInsert}
-              disabled={!editedText.trim()}
-              className="gap-1.5"
-            >
+            <Button type="button" size="sm" onClick={handleInsert} disabled={!editedText.trim()} className="gap-1.5">
               <Check className="h-3.5 w-3.5" />
               {insertMode === "append" ? "Insérer à la suite" : "Remplacer le contenu"}
             </Button>

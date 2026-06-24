@@ -86,6 +86,19 @@
 
 ## Phase 11 — Enrichissement dictionnaire & back-office
 
-- [ ] Enrichir le dictionnaire médical français (objectif 1000+ termes : médicaments DCI, CIM-10, CCAM, anatomie, biologie)
-- [ ] Pagination API tRPC dictionnaire médical (page/offset + total)
-- [ ] Page dédiée au dictionnaire médical dans le back-office (recherche, ajout, édition de termes)
+- [x] Enrichir le dictionnaire médical français (objectif 1000+ termes : médicaments DCI, CIM-10, CCAM, anatomie, biologie) — 1039 termes en base (7 catégories)
+- [x] Pagination API tRPC dictionnaire médical (page/offset + total) — router medical.list avec page, pageSize, query, category
+- [x] Page dédiée au dictionnaire médical dans le back-office (recherche, ajout, édition de termes) — /dictionnaire avec CRUD complet + filtres par catégorie
+
+## Phase 12 — Expérience dictée vocale améliorée
+
+- [ ] Indicateur visuel animé (onde sonore / pulsation) pendant l'enregistrement
+- [ ] Bouton Start (lancer l'enregistrement)
+- [ ] Bouton Pause (suspendre sans perdre l'audio)
+- [ ] Bouton Reprise (reprendre après pause)
+- [ ] Bouton Stop (terminer et déclencher la transcription)
+- [ ] Chronomètre visible (mm:ss) avec état pause
+- [ ] Appliquer dans VoiceRecorder (champ rawData des 3 volets)
+- [ ] Appliquer dans VoiceRecorderWithPreview (colonnes de conciliation)
+- [ ] Vérifier TypeScript 0 erreur
+- [ ] Tests visuels et checkpoint

@@ -1,6 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import RedactioLayout from "@/components/RedactioLayout";
-import VoiceRecorder from "@/components/VoiceRecorder";
 import VoiceRecorderWithPreview from "@/components/VoiceRecorderWithPreview";
 import MedicalAutocomplete from "@/components/MedicalAutocomplete";
 import {
@@ -721,7 +720,6 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                             }}
                             fieldLabel="Traitement d'entrée"
                             insertMode="append"
-                            size="sm"
                           />
                         </div>
                       </div>
@@ -755,7 +753,6 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                             }}
                             fieldLabel="Traitement de sortie"
                             insertMode="append"
-                            size="sm"
                           />
                         </div>
                       </div>
@@ -801,7 +798,6 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                         fieldLabel="Données médicales brutes"
                         insertMode="append"
                         disabled={isGenerating}
-                        size="sm"
                       />
                     </div>
                   </div>
