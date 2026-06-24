@@ -48,13 +48,13 @@ interface Props {
 // ─── Couleurs par catégorie ───────────────────────────────────────────────────
 
 const CATEGORY_COLORS: Record<string, string> = {
-  medicament: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  pathologie: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
-  symptome: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
-  anatomie: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
-  biologie: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300",
-  procedure: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300",
-  autre: "bg-gray-100 text-gray-800 dark:bg-gray-800/40 dark:text-gray-300",
+  medicament: "bg-primary/10 text-primary",
+  pathologie: "bg-destructive/10 text-destructive",
+  symptome: "bg-warning/15 text-warning-foreground",
+  anatomie: "bg-secondary text-secondary-foreground",
+  biologie: "bg-muted text-muted-foreground",
+  procedure: "bg-primary/10 text-primary",
+  autre: "bg-muted text-muted-foreground",
 };
 
 const CATEGORY_LABELS: Record<string, string> = {

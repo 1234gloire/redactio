@@ -64,13 +64,13 @@ const CATEGORY_LABELS: Record<Category, string> = {
 };
 
 const CATEGORY_COLORS: Record<Category, string> = {
-  medicament: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-  pathologie: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-  symptome: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300",
-  anatomie: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
-  biologie: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-  procedure: "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300",
-  autre: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300",
+  medicament: "bg-primary/10 text-primary",
+  pathologie: "bg-destructive/10 text-destructive",
+  symptome: "bg-warning/15 text-warning-foreground",
+  anatomie: "bg-secondary text-secondary-foreground",
+  biologie: "bg-muted text-muted-foreground",
+  procedure: "bg-primary/10 text-primary",
+  autre: "bg-muted text-muted-foreground",
 };
 
 interface TermForm {

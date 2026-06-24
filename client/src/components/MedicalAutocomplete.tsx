@@ -17,13 +17,13 @@ interface Suggestion {
 }
 
 const CATEGORY_LABELS: Record<string, { label: string; color: string }> = {
-  medicament: { label: "Méd.", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300" },
-  pathologie: { label: "Path.", color: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300" },
-  symptome: { label: "Sympt.", color: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300" },
-  anatomie: { label: "Anat.", color: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300" },
-  biologie: { label: "Bio.", color: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300" },
-  procedure: { label: "Proc.", color: "bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300" },
-  autre: { label: "Autre", color: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300" },
+  medicament: { label: "Méd.", color: "bg-primary/10 text-primary" },
+  pathologie: { label: "Path.", color: "bg-destructive/10 text-destructive" },
+  symptome: { label: "Sympt.", color: "bg-warning/15 text-warning-foreground" },
+  anatomie: { label: "Anat.", color: "bg-secondary text-secondary-foreground" },
+  biologie: { label: "Bio.", color: "bg-muted text-muted-foreground" },
+  procedure: { label: "Proc.", color: "bg-primary/10 text-primary" },
+  autre: { label: "Autre", color: "bg-muted text-muted-foreground" },
 };
 
 interface MedicalAutocompleteProps {

@@ -4,48 +4,63 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ─── Tokens de design REDACTIO — Thème hospitalier ─────────────────────────── */
+/* ─── Tokens de design REDACTIO — charte produit ─────────────────────────────── */
 @theme inline {
-  /* Palette principale — bleu médical sobre */
-  --color-primary: oklch(0.42 0.14 240);
-  --color-primary-foreground: oklch(0.98 0.005 240);
-  --color-primary-hover: oklch(0.36 0.14 240);
+  /* Palette principale */
+  --color-primary: #0e9c8e;
+  --color-primary-foreground: #ffffff;
+  --color-primary-hover: #0a7b70;
 
-  /* Palette secondaire — gris bleuté */
-  --color-secondary: oklch(0.94 0.02 240);
-  --color-secondary-foreground: oklch(0.25 0.04 240);
+  /* Palette secondaire */
+  --color-secondary: #e7f4f2;
+  --color-secondary-foreground: #0a7b70;
 
   /* Fond et surface */
-  --color-background: oklch(0.97 0.005 240);
-  --color-foreground: oklch(0.18 0.03 240);
-  --color-card: oklch(1 0 0);
-  --color-card-foreground: oklch(0.18 0.03 240);
-  --color-popover: oklch(1 0 0);
-  --color-popover-foreground: oklch(0.18 0.03 240);
+  --color-background: #eef3f5;
+  --color-foreground: #0c1e2e;
+  --color-card: #ffffff;
+  --color-card-foreground: #0c1e2e;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0c1e2e;
 
   /* Bordures et muted */
-  --color-border: oklch(0.88 0.015 240);
-  --color-input: oklch(0.88 0.015 240);
-  --color-ring: oklch(0.42 0.14 240);
-  --color-muted: oklch(0.94 0.01 240);
-  --color-muted-foreground: oklch(0.55 0.03 240);
+  --color-border: #d9e2e7;
+  --color-input: #d9e2e7;
+  --color-ring: #0e9c8e;
+  --color-muted: #eef3f5;
+  --color-muted-foreground: #5a6b78;
 
   /* Sémantique */
-  --color-accent: oklch(0.92 0.04 240);
-  --color-accent-foreground: oklch(0.25 0.08 240);
-  --color-destructive: oklch(0.55 0.22 25);
-  --color-destructive-foreground: oklch(0.98 0.005 25);
+  --color-accent: #e7f4f2;
+  --color-accent-foreground: #0a7b70;
+  --color-destructive: #b42318;
+  --color-destructive-foreground: #ffffff;
 
   /* Alertes médicales */
-  --color-warning: oklch(0.78 0.15 80);
-  --color-warning-foreground: oklch(0.25 0.08 80);
-  --color-success: oklch(0.62 0.15 155);
-  --color-success-foreground: oklch(0.98 0.005 155);
+  --color-warning: #c58a12;
+  --color-warning-foreground: #7a5a0e;
+  --color-success: #0e9c8e;
+  --color-success-foreground: #ffffff;
 
   /* Balise [À COMPLÉTER PAR LE MÉDECIN] */
-  --color-tag-bg: oklch(0.95 0.08 80);
-  --color-tag-border: oklch(0.78 0.15 80);
-  --color-tag-text: oklch(0.35 0.12 80);
+  --color-tag-bg: #fbf3de;
+  --color-tag-border: #ebd9a8;
+  --color-tag-text: #7a5a0e;
+
+  /* Couleurs de marque */
+  --color-ink: #0c1e2e;
+  --color-slate: #1e3a5f;
+  --color-slate-soft: #2c4d74;
+  --color-soin: #0e9c8e;
+  --color-soin-deep: #0a7b70;
+  --color-soin-tint: #e7f4f2;
+  --color-paper: #fbfaf8;
+  --color-mist: #eef3f5;
+  --color-mist-deep: #e6edf1;
+  --color-line: #d9e2e7;
+  --color-line-soft: #e8eef1;
+  --color-seal: #c58a12;
+  --color-seal-bg: #fbf3de;
 
   /* Typographie */
   --font-sans: "Hanken Grotesk", "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -66,27 +81,27 @@
 
 /* ─── Mode sombre ────────────────────────────────────────────────────────────── */
 .dark {
-  --color-background: oklch(0.13 0.025 240);
-  --color-foreground: oklch(0.92 0.01 240);
-  --color-card: oklch(0.17 0.025 240);
-  --color-card-foreground: oklch(0.92 0.01 240);
-  --color-popover: oklch(0.17 0.025 240);
-  --color-popover-foreground: oklch(0.92 0.01 240);
-  --color-primary: oklch(0.62 0.14 240);
-  --color-primary-foreground: oklch(0.13 0.025 240);
-  --color-secondary: oklch(0.22 0.03 240);
-  --color-secondary-foreground: oklch(0.85 0.02 240);
-  --color-muted: oklch(0.22 0.025 240);
-  --color-muted-foreground: oklch(0.62 0.03 240);
-  --color-accent: oklch(0.25 0.04 240);
-  --color-accent-foreground: oklch(0.85 0.03 240);
-  --color-border: oklch(0.28 0.03 240);
-  --color-input: oklch(0.28 0.03 240);
-  --color-ring: oklch(0.62 0.14 240);
-  --color-destructive: oklch(0.62 0.22 25);
-  --color-tag-bg: oklch(0.28 0.08 80);
-  --color-tag-border: oklch(0.55 0.15 80);
-  --color-tag-text: oklch(0.88 0.12 80);
+  --color-background: var(--color-ink);
+  --color-foreground: var(--color-mist);
+  --color-card: #10283c;
+  --color-card-foreground: var(--color-mist);
+  --color-popover: #10283c;
+  --color-popover-foreground: var(--color-mist);
+  --color-primary: #5fd3c6;
+  --color-primary-foreground: var(--color-ink);
+  --color-secondary: #17334a;
+  --color-secondary-foreground: #bdeee8;
+  --color-muted: #17334a;
+  --color-muted-foreground: #a8bac5;
+  --color-accent: #173e4a;
+  --color-accent-foreground: #d8f6f2;
+  --color-border: var(--color-slate-soft);
+  --color-input: var(--color-slate-soft);
+  --color-ring: #5fd3c6;
+  --color-destructive: #ff8a7a;
+  --color-tag-bg: #4b3710;
+  --color-tag-border: var(--color-seal);
+  --color-tag-text: var(--color-seal-bg);
 }
 
 /* ─── Base ───────────────────────────────────────────────────────────────────── */
@@ -181,14 +196,14 @@
     font-family: var(--font-serif);
     font-size: 1.9rem;
     font-weight: 600;
-    color: #0c1e2e;
+    color: var(--color-ink);
     letter-spacing: 0;
   }
 
   .redaction-restart {
     border-radius: 0.55rem;
-    background: #fff;
-    color: #5a6b78;
+    background: var(--color-card);
+    color: var(--color-muted-foreground);
   }
 
   .redaction-stepper {
@@ -197,7 +212,7 @@
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 0;
     padding-top: 0.45rem;
-    border-top: 6px solid #c6dce8;
+    border-top: 6px solid color-mix(in srgb, var(--color-slate) 22%, white);
   }
 
   .redaction-stepper::before {
@@ -208,7 +223,7 @@
     width: var(--redaction-progress, 20%);
     height: 6px;
     border-radius: 999px;
-    background: #005f93;
+    background: var(--color-slate);
   }
 
   .redaction-panel {
@@ -222,13 +237,13 @@
     font-size: 1.45rem;
     font-weight: 600;
     line-height: 1.2;
-    color: #0c1e2e;
+    color: var(--color-ink);
     letter-spacing: 0;
   }
 
   .redaction-step-subtitle {
     margin-top: 0.35rem;
-    color: #5a6b78;
+    color: var(--color-muted-foreground);
     font-size: 0.98rem;
   }
 
@@ -248,16 +263,16 @@
     display: flex;
     align-items: flex-start;
     gap: 0.8rem;
-    border: 1px solid #ebd9a8;
+    border: 1px solid var(--color-tag-border);
     border-radius: 0.75rem;
-    background: #fbf3de;
+    background: var(--color-seal-bg);
     padding: 1rem 1.1rem;
-    color: #7a5a0e;
+    color: var(--color-warning-foreground);
     font-size: 0.92rem;
   }
 
   .redaction-confidentiality svg {
-    color: #c58a12;
+    color: var(--color-seal);
   }
 
   .redaction-field-group {
@@ -269,7 +284,7 @@
   .redaction-field-label {
     font-size: 0.84rem;
     font-weight: 600;
-    color: #0c1e2e;
+    color: var(--color-ink);
   }
 
   .redaction-dropzone {
@@ -277,9 +292,9 @@
     flex-direction: column;
     gap: 0.85rem;
     justify-content: space-between;
-    border: 1px dashed #d9e2e7;
+    border: 1px dashed var(--color-line);
     border-radius: 0.75rem;
-    background: rgb(238 243 245 / 0.55);
+    background: color-mix(in srgb, var(--color-mist) 55%, transparent);
     padding: 0.9rem;
     transition: border-color 0.15s ease, background 0.15s ease;
   }
@@ -292,8 +307,8 @@
   }
 
   .redaction-dropzone.is-over {
-    border-color: #0e9c8e;
-    background: #e7f4f2;
+    border-color: var(--color-soin);
+    background: var(--color-soin-tint);
   }
 
   .redaction-dropzone-icon {
@@ -303,8 +318,8 @@
     height: 2.25rem;
     flex-shrink: 0;
     border-radius: 0.5rem;
-    background: #fff;
-    color: #5a6b78;
+    background: var(--color-card);
+    color: var(--color-muted-foreground);
   }
 
   .redaction-generation {
@@ -323,18 +338,18 @@
     width: 4rem;
     height: 4rem;
     border-radius: 999px;
-    background: #e6edf1;
+    background: var(--color-mist-deep);
   }
 
   .redaction-primary-button {
-    background: #0e9c8e;
-    color: #fff;
+    background: var(--color-soin);
+    color: var(--color-primary-foreground);
     border-radius: 0.65rem;
-    box-shadow: 0 8px 22px -10px rgb(14 156 142 / 0.7);
+    box-shadow: 0 8px 22px -10px color-mix(in srgb, var(--color-soin) 70%, transparent);
   }
 
   .redaction-primary-button:hover:not(:disabled) {
-    background: #0a7b70;
+    background: var(--color-soin-deep);
   }
 
   .step-foot {
@@ -344,7 +359,7 @@
     gap: 0.75rem;
     padding-top: 1.4rem;
     margin-top: 0.25rem;
-    border-top: 1px solid #e8eef1;
+    border-top: 1px solid var(--color-line-soft);
   }
 
   .spacer {
@@ -390,14 +405,14 @@
   /* Bannière d'avertissement permanente */
   .redactio-warning-banner {
     @apply flex items-center gap-2 px-4 py-2 text-sm font-medium;
-    background: oklch(0.95 0.06 25 / 0.15);
-    border-bottom: 1px solid oklch(0.75 0.15 25 / 0.3);
-    color: oklch(0.45 0.18 25);
+    background: var(--color-seal-bg);
+    border-bottom: 1px solid var(--color-tag-border);
+    color: var(--color-warning-foreground);
   }
   .dark .redactio-warning-banner {
-    background: oklch(0.25 0.08 25 / 0.3);
-    border-bottom-color: oklch(0.55 0.18 25 / 0.4);
-    color: oklch(0.78 0.18 25);
+    background: color-mix(in srgb, var(--color-seal) 18%, var(--color-background));
+    border-bottom-color: color-mix(in srgb, var(--color-seal) 45%, var(--color-border));
+    color: var(--color-tag-text);
   }
 
   /* Balise [À COMPLÉTER PAR LE MÉDECIN] dans l'éditeur */
@@ -414,20 +429,20 @@
     transition: background 0.15s ease;
   }
   .tag-a-completer:hover {
-    background: oklch(0.90 0.10 80);
+    background: color-mix(in srgb, var(--color-tag-bg) 82%, var(--color-seal));
   }
 
   /* Indicateur de masquage */
   .mask-badge {
     @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium;
-    background: oklch(0.92 0.04 240);
-    color: oklch(0.35 0.10 240);
-    border: 1px solid oklch(0.80 0.06 240);
+    background: var(--color-soin-tint);
+    color: var(--color-soin-deep);
+    border: 1px solid color-mix(in srgb, var(--color-soin) 35%, var(--color-line));
   }
   .dark .mask-badge {
-    background: oklch(0.25 0.04 240);
-    color: oklch(0.75 0.08 240);
-    border-color: oklch(0.35 0.06 240);
+    background: color-mix(in srgb, var(--color-primary) 12%, var(--color-card));
+    color: var(--color-primary);
+    border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
   }
 
   /* Étapes du parcours praticien */
@@ -438,7 +453,7 @@
     justify-content: center;
     gap: 0.55rem;
     padding-top: 0.65rem;
-    color: #8497a2;
+    color: color-mix(in srgb, var(--color-muted-foreground) 72%, white);
     font-size: 0.82rem;
     font-weight: 500;
   }
@@ -449,9 +464,9 @@
     width: 2.125rem;
     height: 2.125rem;
     border-radius: 999px;
-    border: 2px solid #d9e2e7;
-    background: #fff;
-    color: #8497a2;
+    border: 2px solid var(--color-line);
+    background: var(--color-card);
+    color: color-mix(in srgb, var(--color-muted-foreground) 72%, white);
     font-family: var(--font-mono);
     font-size: 0.82rem;
     font-weight: 500;
@@ -459,30 +474,30 @@
   }
 
   .step-dot.active {
-    border-color: #005f93;
-    background: #005f93;
-    color: #fff;
+    border-color: var(--color-slate);
+    background: var(--color-slate);
+    color: var(--color-card);
   }
 
   .step-dot.completed {
-    border-color: #0e9c8e;
-    background: #0e9c8e;
-    color: #fff;
+    border-color: var(--color-soin);
+    background: var(--color-soin);
+    color: var(--color-card);
   }
 
   .step-dot.pending {
-    border-color: #d9e2e7;
-    background: #eef3f5;
-    color: #8497a2;
+    border-color: var(--color-line);
+    background: var(--color-mist);
+    color: color-mix(in srgb, var(--color-muted-foreground) 72%, white);
   }
 
   .step-indicator.current .step-label {
-    color: #005f93;
+    color: var(--color-slate);
     font-weight: 700;
   }
 
   .step-indicator.done .step-label {
-    color: #5a6b78;
+    color: var(--color-muted-foreground);
   }
 
   /* Éditeur TipTap */
@@ -495,7 +510,7 @@
   }
   .tiptap-editor:focus {
     border-color: var(--color-ring);
-    box-shadow: 0 0 0 2px oklch(0.42 0.14 240 / 0.15);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-ring) 16%, transparent);
   }
   .tiptap-editor p { margin-bottom: 0.75em; }
   .tiptap-editor h1 { font-size: 1.25em; font-weight: 700; margin-bottom: 0.5em; }
@@ -524,22 +539,22 @@
     gap: 1rem;
     padding: 1.5rem 1.35rem 1.25rem;
     cursor: pointer;
-    border: 1.5px solid #d9e2e7;
+    border: 1.5px solid var(--color-line);
     border-radius: 0.875rem;
-    background: #fff;
+    background: var(--color-card);
     transition: transform 0.18s ease, box-shadow 0.22s ease, border-color 0.18s ease;
   }
 
   .volet-card:hover {
-    border-color: #c6d3dc;
-    box-shadow: 0 20px 44px -26px rgb(12 30 46 / 0.3);
+    border-color: color-mix(in srgb, var(--color-slate) 24%, white);
+    box-shadow: 0 20px 44px -26px color-mix(in srgb, var(--color-ink) 30%, transparent);
     transform: translateY(-3px);
   }
 
   .volet-card.selected {
-    border-color: #0e9c8e;
-    background: #fff;
-    box-shadow: 0 0 0 3px #e7f4f2, 0 20px 44px -26px rgb(12 30 46 / 0.3);
+    border-color: var(--color-soin);
+    background: var(--color-card);
+    box-shadow: 0 0 0 3px var(--color-soin-tint), 0 20px 44px -26px color-mix(in srgb, var(--color-ink) 30%, transparent);
   }
 
   .dark .volet-card.selected {
@@ -548,7 +563,7 @@
 
   .volet-card h3 {
     margin-bottom: 0.35rem;
-    color: #0c1e2e;
+    color: var(--color-ink);
     font-family: var(--font-serif);
     font-size: 1.16rem;
     font-weight: 600;
@@ -556,7 +571,7 @@
   }
 
   .volet-card p {
-    color: #5a6b78;
+    color: var(--color-muted-foreground);
     font-size: 0.86rem;
     line-height: 1.55;
   }
@@ -567,7 +582,7 @@
     width: 3rem;
     height: 3rem;
     border-radius: 0.75rem;
-    color: #fff;
+    color: var(--color-card);
     transition: transform 0.2s ease;
   }
 
@@ -576,15 +591,15 @@
   }
 
   .volet-icon-teal {
-    background: #0e9c8e;
+    background: var(--color-soin);
   }
 
   .volet-icon-slate {
-    background: #1e3a5f;
+    background: var(--color-slate);
   }
 
   .volet-icon-seal {
-    background: #c58a12;
+    background: var(--color-seal);
   }
 
   .volet-check {
@@ -596,8 +611,8 @@
     width: 1.5rem;
     height: 1.5rem;
     border-radius: 999px;
-    background: #0e9c8e;
-    color: #fff;
+    background: var(--color-soin);
+    color: var(--color-card);
   }
 
   /* Badge de statut de prompt */
@@ -605,25 +620,25 @@
     @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold;
   }
   .status-badge.brouillon {
-    background: oklch(0.92 0.02 240);
-    color: oklch(0.45 0.05 240);
+    background: var(--color-mist-deep);
+    color: var(--color-muted-foreground);
   }
   .status-badge.candidat {
-    background: oklch(0.92 0.08 80);
-    color: oklch(0.45 0.12 80);
+    background: var(--color-seal-bg);
+    color: var(--color-warning-foreground);
   }
   .status-badge.publie {
-    background: oklch(0.92 0.08 155);
-    color: oklch(0.35 0.12 155);
+    background: var(--color-soin-tint);
+    color: var(--color-soin-deep);
   }
   .status-badge.retire {
-    background: oklch(0.92 0.04 25);
-    color: oklch(0.45 0.10 25);
+    background: color-mix(in srgb, var(--color-destructive) 10%, white);
+    color: var(--color-destructive);
   }
-  .dark .status-badge.brouillon { background: oklch(0.25 0.02 240); color: oklch(0.70 0.04 240); }
-  .dark .status-badge.candidat { background: oklch(0.28 0.06 80); color: oklch(0.78 0.12 80); }
-  .dark .status-badge.publie { background: oklch(0.25 0.06 155); color: oklch(0.72 0.12 155); }
-  .dark .status-badge.retire { background: oklch(0.25 0.04 25); color: oklch(0.72 0.10 25); }
+  .dark .status-badge.brouillon { background: var(--color-muted); color: var(--color-muted-foreground); }
+  .dark .status-badge.candidat { background: color-mix(in srgb, var(--color-seal) 15%, var(--color-card)); color: var(--color-tag-text); }
+  .dark .status-badge.publie { background: color-mix(in srgb, var(--color-primary) 12%, var(--color-card)); color: var(--color-primary); }
+  .dark .status-badge.retire { background: color-mix(in srgb, var(--color-destructive) 14%, var(--color-card)); color: var(--color-destructive); }
 }
 
 /* ─── Utilitaires ────────────────────────────────────────────────────────────── */

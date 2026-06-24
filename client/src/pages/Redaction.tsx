@@ -1094,9 +1094,9 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
               </CardContent>
             </Card>
 
-            <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
+            <Card className="border-primary/20 bg-primary/5">
               <CardContent className="pt-4">
-                <p className="text-xs text-blue-700/80 dark:text-blue-300/80">
+                <p className="text-xs text-primary">
                   <strong>Rappel :</strong> Ce document sera purgé de la mémoire à la fermeture de la session.
                   Aucune donnée médicale n'est conservée sur la plateforme.
                 </p>
