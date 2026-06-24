@@ -105,12 +105,19 @@
 
 ## Phase 13 — Dictionnaire médical dans la prévisualisation
 
-- [ ] Endpoint tRPC medical.analyzeText : tokenisation + matching contre la BDD (termes exacts + variantes)
-- [ ] Algorithme de distance de Levenshtein pour les suggestions d'auto-correction
-- [ ] Composant MedicalTextHighlighter : surlignage inline des termes reconnus (vert) et termes à corriger (orange)
-- [ ] Tooltip sur chaque terme surligné : définition, catégorie, synonymes depuis la BDD
-- [ ] Bouton "Appliquer toutes les corrections" dans la modal de prévisualisation
-- [ ] Correction individuelle terme par terme (clic sur le terme orange → suggestion)
-- [ ] Intégration dans VoiceRecorderWithPreview : analyse automatique après transcription Whisper
-- [ ] Tests Vitest : analyzeText + distance de Levenshtein
-- [ ] Checkpoint final
+- [x] Endpoint tRPC medical.analyzeText : tokenisation + matching contre la BDD (termes exacts + variantes) — server/medicalAnalyzer.ts
+- [x] Algorithme de distance de Levenshtein pour les suggestions d'auto-correction — levenshtein() dans medicalAnalyzer.ts
+- [x] Composant MedicalTextHighlighter : surlignage inline des termes reconnus (vert) et termes à corriger (orange) — client/src/components/MedicalTextHighlighter.tsx
+- [x] Tooltip sur chaque terme surligné : définition, catégorie, synonymes depuis la BDD — Tooltip Radix sur chaque span surligné
+- [x] Bouton "Appliquer toutes les corrections" dans la modal de prévisualisation — bouton dans MedicalTextHighlighter
+- [x] Correction individuelle terme par terme (clic sur le terme orange → suggestion) — clic sur span orange dans MedicalTextHighlighter
+- [x] Intégration dans VoiceRecorderWithPreview : analyse automatique après transcription Whisper — onglet "Analyse médicale" ouvert par défaut après transcription
+- [x] Tests Vitest : analyzeText + distance de Levenshtein — 12 tests dans medicalAnalyzer.test.ts (37/37 total)
+- [x] Checkpoint final — vb2a0addc
+
+## Phase 14 — Fix critique OAuth & checkpoint final
+
+- [x] Fix critique OAuth : restaurer getLoginUrl() avec VITE_OAUTH_PORTAL_URL + /app-auth (const.ts)
+- [x] TypeScript 0 erreur confirmé après fix
+- [x] 37/37 tests Vitest passent
+- [x] Checkpoint final — fix OAuth sauvegardé
