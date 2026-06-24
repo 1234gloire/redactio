@@ -13,6 +13,9 @@ import { getLocalOpenId, sdk } from "./_core/sdk";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import {
+  countMedicalTerms,
+  incrementMedicalTermUsage,
+  searchMedicalTerms,
   createAuditLog,
   createOrganisation,
   createPromptBase,
@@ -735,8 +738,34 @@ export const appRouter = router({
     }),
   }),
 
+  // u2500u2500u2500 Dictionnaire mu00e9dical (autocomplete) u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500u2500
   // ─── Journal d'audit (admin uniquement) ───────────────────────────────────
-  audit: router({
+  medical: router({
+    search: protectedProcedure
+      .input(
+        z.object({
+          query: z.string().min(1).max(100),
+          category: z
+            .enum(["medicament", "pathologie", "symptome", "anatomie", "biologie", "procedure", "autre"])
+            .optional(),
+          limit: z.number().min(1).max(50).default(10),
+        })
+      )
+      .query(async ({ input }) => {
+        return searchMedicalTerms(input.query, input.category, input.limit);
+      }),
+    trackUsage: protectedProcedure
+      .input(z.object({ id: z.number().int().positive() }))
+      .mutation(async ({ input }) => {
+        await incrementMedicalTermUsage(input.id);
+        return { success: true };
+      }),
+    stats: adminProcedure.query(async () => {
+      const count = await countMedicalTerms();
+      return { count };
+    }),
+  }),
+    audit: router({
     list: adminProcedure
       .input(z.object({ limit: z.number().min(1).max(500).default(100) }))
       .query(async ({ input }) => {

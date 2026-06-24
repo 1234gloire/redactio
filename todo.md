@@ -71,3 +71,14 @@
 - [x] Intégration dictée vocale dans les 3 volets : Courrier de sortie, Conciliation médicamenteuse, Correspondance médicale
 - [x] Mode append : la transcription s'ajoute à la suite du texte existant
 - [x] Aide contextuelle visible dans le bloc de saisie
+
+## Phase 10 — Dictée conciliation + Prévisualisation + Dictionnaire médical
+
+- [ ] Schéma BDD : table medical_terms (terme, catégorie, synonymes, source)
+- [ ] Migration SQL et import du dictionnaire médical français (~5000 termes)
+- [ ] API tRPC : recherche de termes médicaux (autocomplete, pagination)
+- [ ] Composant VoiceRecorderWithPreview : modal de prévisualisation avant insertion
+- [ ] Boutons microphone dédiés sur chaque colonne de conciliation (entrée + sortie)
+- [ ] Composant MedicalAutocomplete : suggestions de termes médicaux dans les champs
+- [ ] Intégration autocomplete dans les champs de conciliation (entrée et sortie)
+- [ ] Page dédiée au dictionnaire médical dans le back-office (recherche, ajout, édition)

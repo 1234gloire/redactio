@@ -1,6 +1,8 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import RedactioLayout from "@/components/RedactioLayout";
 import VoiceRecorder from "@/components/VoiceRecorder";
+import VoiceRecorderWithPreview from "@/components/VoiceRecorderWithPreview";
+import MedicalAutocomplete from "@/components/MedicalAutocomplete";
 import {
   getDefaultSubtype,
   isValidVolet,
@@ -700,33 +702,71 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
               {selectedVolet === "conciliation" ? (
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    {/* Colonne Traitement d'entrée */}
                     <div className="space-y-2">
-                      <label htmlFor="treatmentEntryData" className="text-sm font-medium text-foreground">
-                        Traitement d'entrée
-                        <span className="text-muted-foreground font-normal ml-1">(bilan médicamenteux)</span>
-                      </label>
-                      <Textarea
+                      <div className="flex items-center justify-between">
+                        <label htmlFor="treatmentEntryData" className="text-sm font-medium text-foreground">
+                          Traitement d'entrée
+                          <span className="text-muted-foreground font-normal ml-1">(bilan médicamenteux)</span>
+                        </label>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs text-muted-foreground hidden sm:inline">Dictée</span>
+                          <VoiceRecorderWithPreview
+                            onInsert={(text) => {
+                              setConciliationImportTarget("entry");
+                              setTreatmentEntryData((prev) => {
+                                if (!prev.trim()) return text;
+                                return `${prev}${prev.endsWith("\n") ? "" : "\n"}${text}`.slice(0, RAW_DATA_MAX_CHARS);
+                              });
+                            }}
+                            fieldLabel="Traitement d'entrée"
+                            insertMode="append"
+                            size="sm"
+                          />
+                        </div>
+                      </div>
+                      <MedicalAutocomplete
                         id="treatmentEntryData"
                         value={treatmentEntryData}
-                        onChange={(e) => setTreatmentEntryData(e.target.value)}
+                        onChange={setTreatmentEntryData}
                         onFocus={() => setConciliationImportTarget("entry")}
                         placeholder={`Exemple :\nAMLODIPINE 5 mg gélule : 1 le matin\nZOPICLONE 7,5 mg cp : 1 au coucher\nKARDEGIC 75 mg : 1 sachet à midi`}
-                        className="min-h-[220px] font-mono text-sm resize-y"
+                        className="min-h-[220px]"
+                        rows={10}
                         maxLength={RAW_DATA_MAX_CHARS}
                       />
                     </div>
+                    {/* Colonne Traitement de sortie */}
                     <div className="space-y-2">
-                      <label htmlFor="treatmentExitData" className="text-sm font-medium text-foreground">
-                        Traitement de sortie
-                        <span className="text-muted-foreground font-normal ml-1">(ordonnance finale)</span>
-                      </label>
-                      <Textarea
+                      <div className="flex items-center justify-between">
+                        <label htmlFor="treatmentExitData" className="text-sm font-medium text-foreground">
+                          Traitement de sortie
+                          <span className="text-muted-foreground font-normal ml-1">(ordonnance finale)</span>
+                        </label>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs text-muted-foreground hidden sm:inline">Dictée</span>
+                          <VoiceRecorderWithPreview
+                            onInsert={(text) => {
+                              setConciliationImportTarget("exit");
+                              setTreatmentExitData((prev) => {
+                                if (!prev.trim()) return text;
+                                return `${prev}${prev.endsWith("\n") ? "" : "\n"}${text}`.slice(0, RAW_DATA_MAX_CHARS);
+                              });
+                            }}
+                            fieldLabel="Traitement de sortie"
+                            insertMode="append"
+                            size="sm"
+                          />
+                        </div>
+                      </div>
+                      <MedicalAutocomplete
                         id="treatmentExitData"
                         value={treatmentExitData}
-                        onChange={(e) => setTreatmentExitData(e.target.value)}
+                        onChange={setTreatmentExitData}
                         onFocus={() => setConciliationImportTarget("exit")}
                         placeholder={`Exemple :\nAMLODIPINE 5 mg gélule : 1 le matin\nAPIXABAN 5 mg cp : 1 matin et 1 soir\nKARDEGIC 75 mg : arrêté`}
-                        className="min-h-[220px] font-mono text-sm resize-y"
+                        className="min-h-[220px]"
+                        rows={10}
                         maxLength={RAW_DATA_MAX_CHARS}
                       />
                     </div>
@@ -756,19 +796,22 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                     </label>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground hidden sm:inline">Dictée vocale</span>
-                      <VoiceRecorder
-                        onTranscript={handleVoiceTranscript}
+                      <VoiceRecorderWithPreview
+                        onInsert={(text) => handleVoiceTranscript(text)}
+                        fieldLabel="Données médicales brutes"
+                        insertMode="append"
                         disabled={isGenerating}
-                        size="icon"
+                        size="sm"
                       />
                     </div>
                   </div>
-                  <Textarea
+                  <MedicalAutocomplete
                     id="rawData"
                     value={rawData}
-                    onChange={(e) => setRawData(e.target.value)}
+                    onChange={setRawData}
                     placeholder={`Exemple pour ${VOLETS[selectedVolet].label} :\n\nService : Cardiologie\nMotif d'hospitalisation : Décompensation cardiaque\nAntécédents : HTA, FA chronique, insuffisance cardiaque FE 35%\nTraitement habituel : Furosémide 40mg, Bisoprolol 5mg, Rivaroxaban 20mg\n...\n\nVous pouvez aussi utiliser le bouton microphone pour dicter directement.`}
-                    className="min-h-[280px] font-mono text-sm resize-y"
+                    className="min-h-[280px]"
+                    rows={12}
                     aria-describedby="rawData-help"
                     maxLength={RAW_DATA_MAX_CHARS}
                   />

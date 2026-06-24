@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   AuditLog,
@@ -16,6 +16,9 @@ import {
   TestCase,
   User,
   auditLogs,
+  InsertMedicalTerm,
+  MedicalTerm,
+  medicalTerms,
   organisations,
   promptBases,
   promptTemplates,
@@ -294,6 +297,56 @@ export async function createAuditLog(data: InsertAuditLog): Promise<void> {
   if (!db) return;
   // Garantie : aucun champ de contenu médical ne doit figurer dans metadata
   await db.insert(auditLogs).values(data);
+}
+
+// ─── Dictionnaire médical ─────────────────────────────────────────────────────
+
+/**
+ * Recherche des termes médicaux par préfixe (autocomplete).
+ * Limite à 20 résultats, triés par fréquence d'usage décroissante.
+ */
+export async function searchMedicalTerms(
+  query: string,
+  category?: string,
+  limit = 20
+): Promise<MedicalTerm[]> {
+  const db = await getDb();
+  if (!db || !query.trim()) return [];
+  const q = `${query.trim()}%`;
+  const conditions = [like(medicalTerms.term, q), eq(medicalTerms.active, true)];
+  if (category) {
+    conditions.push(eq(medicalTerms.category, category as MedicalTerm["category"]));
+  }
+  return db
+    .select()
+    .from(medicalTerms)
+    .where(and(...conditions))
+    .orderBy(desc(medicalTerms.usageCount))
+    .limit(limit);
+}
+
+/**
+ * Incrémente le compteur d'utilisation d'un terme médical.
+ */
+export async function incrementMedicalTermUsage(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(medicalTerms)
+    .set({ usageCount: sql`${medicalTerms.usageCount} + 1` })
+    .where(eq(medicalTerms.id, id));
+}
+
+/**
+ * Retourne le nombre total de termes médicaux en base.
+ */
+export async function countMedicalTerms(): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(medicalTerms);
+  return result[0]?.count ?? 0;
 }
 
 export async function listAuditLogs(limit = 100): Promise<AuditLog[]> {

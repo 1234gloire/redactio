@@ -199,3 +199,39 @@ export const auditLogs = mysqlTable("audit_logs", {
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = typeof auditLogs.$inferInsert;
+
+// ─── Dictionnaire médical français ───────────────────────────────────────────
+export const medicalTerms = mysqlTable("medical_terms", {
+  id: int("id").autoincrement().primaryKey(),
+  // Terme principal (DCI, nom de spécialité, terme clinique, etc.)
+  term: varchar("term", { length: 512 }).notNull(),
+  // Catégorie : medicament, pathologie, symptome, anatomie, biologie, procedure, autre
+  category: mysqlEnum("category", [
+    "medicament",
+    "pathologie",
+    "symptome",
+    "anatomie",
+    "biologie",
+    "procedure",
+    "autre",
+  ])
+    .default("autre")
+    .notNull(),
+  // Synonymes et abréviations (JSON array de strings)
+  synonyms: json("synonyms"),
+  // Définition courte (optionnelle)
+  definition: text("definition"),
+  // Source : HAS, VIDAL, CIM10, SNOMED, LOINC, manuel
+  source: varchar("source", { length: 64 }).default("manuel"),
+  // Code de référence (CIM-10, ATC, etc.)
+  code: varchar("code", { length: 64 }),
+  // Actif / archivé
+  active: boolean("active").default(true).notNull(),
+  // Fréquence d'utilisation (pour trier les suggestions)
+  usageCount: int("usageCount").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type MedicalTerm = typeof medicalTerms.$inferSelect;
+export type InsertMedicalTerm = typeof medicalTerms.$inferInsert;
