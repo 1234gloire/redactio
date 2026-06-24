@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700&family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -47,7 +48,8 @@
   --color-tag-text: oklch(0.35 0.12 80);
 
   /* Typographie */
-  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-sans: "Hanken Grotesk", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-serif: "Spectral", Georgia, serif;
   --font-mono: "JetBrains Mono", "Fira Code", monospace;
 
   /* Rayons */
@@ -103,6 +105,25 @@
   body {
     @apply bg-background text-foreground font-sans;
     line-height: 1.6;
+  }
+
+  .redactio-app {
+    font-family: var(--font-sans);
+  }
+
+  .redactio-app h1,
+  .redactio-app h2,
+  .redactio-app h3,
+  .redactio-app .font-serif {
+    font-family: var(--font-serif);
+    letter-spacing: 0;
+  }
+
+  .redactio-app textarea.font-mono,
+  .redactio-app .font-mono,
+  .redactio-app code,
+  .redactio-app pre {
+    font-family: var(--font-mono);
   }
 
   /* Focus visible pour accessibilité RGAA AA */

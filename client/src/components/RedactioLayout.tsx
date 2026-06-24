@@ -162,7 +162,7 @@ export default function RedactioLayout({ children }: RedactioLayoutProps) {
     : "?";
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="redactio-app min-h-screen flex flex-col bg-background">
       {/* ─── Bannière d'avertissement permanente ─── */}
       <div className="redactio-warning-banner" role="alert" aria-live="polite">
         <AlertTriangle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
