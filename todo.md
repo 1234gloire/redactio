@@ -61,3 +61,13 @@
 - [x] Streaming SSE réel (fetch + ReadableStream) — remplacement de la mutation tRPC
 - [x] Correction des ancres imbriquées <Link><a> dans RedactioLayout
 - [x] Enregistrement de l'endpoint /api/generate/stream dans Express
+
+## Phase 9 — Dictée vocale & correctifs
+
+- [x] Correction erreur ancres imbriquées Dashboard.tsx (cards volets et admin)
+- [x] Composant VoiceRecorder (MediaRecorder + états visuels + chronomètre + arrêt auto 5min)
+- [x] Endpoint /api/voice/transcribe (multer + Whisper API via voiceTranscription helper)
+- [x] Enregistrement de l'endpoint dans Express (index.ts)
+- [x] Intégration dictée vocale dans les 3 volets : Courrier de sortie, Conciliation médicamenteuse, Correspondance médicale
+- [x] Mode append : la transcription s'ajoute à la suite du texte existant
+- [x] Aide contextuelle visible dans le bloc de saisie
