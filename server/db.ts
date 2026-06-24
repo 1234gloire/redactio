@@ -349,6 +349,65 @@ export async function countMedicalTerms(): Promise<number> {
   return result[0]?.count ?? 0;
 }
 
+/**
+ * Liste paginée des termes médicaux (back-office).
+ */
+export async function listMedicalTermsPaginated(
+  page = 1,
+  pageSize = 30,
+  query?: string,
+  category?: string
+): Promise<{ items: MedicalTerm[]; total: number }> {
+  const db = await getDb();
+  if (!db) return { items: [], total: 0 };
+  const offset = (page - 1) * pageSize;
+  const conditions: ReturnType<typeof eq>[] = [];
+  if (query?.trim()) {
+    conditions.push(like(medicalTerms.term, `%${query.trim()}%`) as any);
+  }
+  if (category) {
+    conditions.push(eq(medicalTerms.category, category as MedicalTerm["category"]) as any);
+  }
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+  const [items, countResult] = await Promise.all([
+    db.select().from(medicalTerms)
+      .where(whereClause)
+      .orderBy(desc(medicalTerms.usageCount), medicalTerms.term)
+      .limit(pageSize)
+      .offset(offset),
+    db.select({ count: sql<number>`count(*)` }).from(medicalTerms).where(whereClause),
+  ]);
+  return { items, total: countResult[0]?.count ?? 0 };
+}
+
+/**
+ * Crée un nouveau terme médical.
+ */
+export async function createMedicalTerm(data: InsertMedicalTerm): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const result = await db.insert(medicalTerms).values(data);
+  return (result[0] as any).insertId;
+}
+
+/**
+ * Met à jour un terme médical existant.
+ */
+export async function updateMedicalTerm(id: number, data: Partial<InsertMedicalTerm>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(medicalTerms).set(data).where(eq(medicalTerms.id, id));
+}
+
+/**
+ * Supprime (désactive) un terme médical.
+ */
+export async function deactivateMedicalTerm(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(medicalTerms).set({ active: false }).where(eq(medicalTerms.id, id));
+}
+
 export async function listAuditLogs(limit = 100): Promise<AuditLog[]> {
   const db = await getDb();
   if (!db) return [];

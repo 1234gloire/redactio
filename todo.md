@@ -74,11 +74,18 @@
 
 ## Phase 10 — Dictée conciliation + Prévisualisation + Dictionnaire médical
 
-- [ ] Schéma BDD : table medical_terms (terme, catégorie, synonymes, source)
-- [ ] Migration SQL et import du dictionnaire médical français (~5000 termes)
-- [ ] API tRPC : recherche de termes médicaux (autocomplete, pagination)
-- [ ] Composant VoiceRecorderWithPreview : modal de prévisualisation avant insertion
-- [ ] Boutons microphone dédiés sur chaque colonne de conciliation (entrée + sortie)
-- [ ] Composant MedicalAutocomplete : suggestions de termes médicaux dans les champs
-- [ ] Intégration autocomplete dans les champs de conciliation (entrée et sortie)
-- [ ] Page dédiée au dictionnaire médical dans le back-office (recherche, ajout, édition)
+- [x] Schéma BDD : table medical_terms (terme, catégorie, synonymes, source)
+- [x] Migration SQL et import du dictionnaire médical français (430 termes couvrant 7 catégories)
+- [x] API tRPC : recherche de termes médicaux (autocomplete, pagination) — router medical.search + medical.count + medical.incrementUsage
+- [x] Composant VoiceRecorderWithPreview : modal de prévisualisation avant insertion (Dialog + édition du texte avant insertion)
+- [x] Boutons microphone dédiés sur chaque colonne de conciliation (entrée + sortie) — VoiceRecorderWithPreview dans les 2 colonnes
+- [x] Composant MedicalAutocomplete : suggestions de termes médicaux dans les champs (Popover + debounce 300ms)
+- [x] Intégration autocomplete dans les champs de conciliation (entrée et sortie) + champ rawData des 3 volets
+- [x] Tests Vitest dictionnaire médical (11 tests) — 25/25 tests au total
+- [x] Checkpoint final v6a2c5a0c
+
+## Phase 11 — Enrichissement dictionnaire & back-office
+
+- [ ] Enrichir le dictionnaire médical français (objectif 1000+ termes : médicaments DCI, CIM-10, CCAM, anatomie, biologie)
+- [ ] Pagination API tRPC dictionnaire médical (page/offset + total)
+- [ ] Page dédiée au dictionnaire médical dans le back-office (recherche, ajout, édition de termes)

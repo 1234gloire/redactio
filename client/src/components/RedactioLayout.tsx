@@ -7,6 +7,7 @@ import {
   ChevronRight,
   FileText,
   LayoutDashboard,
+  Library,
   LogOut,
   Menu,
   Moon,
@@ -76,6 +77,12 @@ const NAV_ITEMS: NavItem[] = [
     href: "/audit",
     icon: <Shield className="w-4 h-4" />,
     roles: ["admin", "responsable_conformite"],
+  },
+  {
+    label: "Dictionnaire médical",
+    href: "/dictionnaire",
+    icon: <Library className="w-4 h-4" />,
+    roles: ["admin"],
   },
 ];
 

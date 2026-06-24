@@ -13,6 +13,7 @@ import Audit from "./pages/Audit";
 import Profil from "./pages/Profil";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
+import Dictionnaire from "./pages/Dictionnaire";
 
 function Router() {
   return (
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/utilisateurs" component={Utilisateurs} />
       <Route path="/audit" component={Audit} />
       <Route path="/profil" component={Profil} />
+      <Route path="/dictionnaire" component={Dictionnaire} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

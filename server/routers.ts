@@ -14,8 +14,12 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import {
   countMedicalTerms,
+  createMedicalTerm,
+  deactivateMedicalTerm,
   incrementMedicalTermUsage,
+  listMedicalTermsPaginated,
   searchMedicalTerms,
+  updateMedicalTerm,
   createAuditLog,
   createOrganisation,
   createPromptBase,
@@ -764,6 +768,72 @@ export const appRouter = router({
       const count = await countMedicalTerms();
       return { count };
     }),
+    // ─── Back-office : liste paginée, CRUD ───────────────────────────────────
+    list: adminProcedure
+      .input(
+        z.object({
+          page: z.number().int().min(1).default(1),
+          pageSize: z.number().int().min(1).max(100).default(30),
+          query: z.string().max(100).optional(),
+          category: z
+            .enum(["medicament", "pathologie", "symptome", "anatomie", "biologie", "procedure", "autre"])
+            .optional(),
+        })
+      )
+      .query(async ({ input }) => {
+        return listMedicalTermsPaginated(input.page, input.pageSize, input.query, input.category);
+      }),
+    create: adminProcedure
+      .input(
+        z.object({
+          term: z.string().min(1).max(255),
+          category: z.enum(["medicament", "pathologie", "symptome", "anatomie", "biologie", "procedure", "autre"]),
+          synonyms: z.array(z.string()).default([]),
+          definition: z.string().max(1000).optional(),
+          source: z.string().max(100).optional(),
+          code: z.string().max(50).optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const id = await createMedicalTerm({
+          term: input.term,
+          category: input.category,
+          synonyms: JSON.stringify(input.synonyms),
+          definition: input.definition ?? null,
+          source: input.source ?? null,
+          code: input.code ?? null,
+          active: true,
+          usageCount: 0,
+        });
+        return { id };
+      }),
+    update: adminProcedure
+      .input(
+        z.object({
+          id: z.number().int().positive(),
+          term: z.string().min(1).max(255).optional(),
+          category: z.enum(["medicament", "pathologie", "symptome", "anatomie", "biologie", "procedure", "autre"]).optional(),
+          synonyms: z.array(z.string()).optional(),
+          definition: z.string().max(1000).optional(),
+          source: z.string().max(100).optional(),
+          code: z.string().max(50).optional(),
+          active: z.boolean().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { id, synonyms, ...rest } = input;
+        await updateMedicalTerm(id, {
+          ...rest,
+          ...(synonyms !== undefined ? { synonyms: JSON.stringify(synonyms) } : {}),
+        });
+        return { success: true };
+      }),
+    deactivate: adminProcedure
+      .input(z.object({ id: z.number().int().positive() }))
+      .mutation(async ({ input }) => {
+        await deactivateMedicalTerm(input.id);
+        return { success: true };
+      }),
   }),
     audit: router({
     list: adminProcedure
