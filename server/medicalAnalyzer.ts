@@ -134,19 +134,119 @@ interface DictEntry {
 let _dictCache: DictEntry[] | null = null;
 let _dictCacheTs = 0;
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const FALLBACK_DICTIONARY: DictEntry[] = [
+  {
+    id: -1,
+    term: "paracétamol",
+    termLower: "paracétamol",
+    category: "medicament",
+    definition: "Antalgique et antipyrétique.",
+    synonyms: ["paracetamol", "doliprane", "dafalgan", "efferalgan"],
+    synonymsLower: ["paracetamol", "doliprane", "dafalgan", "efferalgan"],
+  },
+  {
+    id: -2,
+    term: "amoxicilline",
+    termLower: "amoxicilline",
+    category: "medicament",
+    definition: "Antibiotique de la famille des bêta-lactamines.",
+    synonyms: ["amoxiciline", "clamoxyl"],
+    synonymsLower: ["amoxiciline", "clamoxyl"],
+  },
+  {
+    id: -3,
+    term: "hypertension artérielle",
+    termLower: "hypertension artérielle",
+    category: "pathologie",
+    definition: "Élévation chronique de la pression artérielle.",
+    synonyms: ["hta", "hypertension"],
+    synonymsLower: ["hta", "hypertension"],
+  },
+  {
+    id: -4,
+    term: "diabète",
+    termLower: "diabète",
+    category: "pathologie",
+    definition: "Trouble chronique de la régulation glycémique.",
+    synonyms: ["diabete", "diabète type 2", "dt2"],
+    synonymsLower: ["diabete", "diabète type 2", "dt2"],
+  },
+  {
+    id: -5,
+    term: "insuffisance cardiaque",
+    termLower: "insuffisance cardiaque",
+    category: "pathologie",
+    definition: "Incapacité du cœur à assurer un débit adapté aux besoins de l'organisme.",
+    synonyms: ["ic", "décompensation cardiaque", "decompensation cardiaque"],
+    synonymsLower: ["ic", "décompensation cardiaque", "decompensation cardiaque"],
+  },
+  {
+    id: -6,
+    term: "dyspnée",
+    termLower: "dyspnée",
+    category: "symptome",
+    definition: "Sensation de gêne respiratoire.",
+    synonyms: ["dyspnee", "essoufflement"],
+    synonymsLower: ["dyspnee", "essoufflement"],
+  },
+  {
+    id: -7,
+    term: "douleur thoracique",
+    termLower: "douleur thoracique",
+    category: "symptome",
+    definition: "Douleur localisée au thorax.",
+    synonyms: ["dlr thoracique", "douleurs thoraciques"],
+    synonymsLower: ["dlr thoracique", "douleurs thoraciques"],
+  },
+  {
+    id: -8,
+    term: "fibrillation atriale",
+    termLower: "fibrillation atriale",
+    category: "pathologie",
+    definition: "Trouble du rythme supraventriculaire.",
+    synonyms: ["fa", "fibrillation auriculaire"],
+    synonymsLower: ["fa", "fibrillation auriculaire"],
+  },
+  {
+    id: -9,
+    term: "coronarographie",
+    termLower: "coronarographie",
+    category: "procedure",
+    definition: "Examen radiologique invasif des artères coronaires.",
+    synonyms: ["coro"],
+    synonymsLower: ["coro"],
+  },
+  {
+    id: -10,
+    term: "créatinine",
+    termLower: "créatinine",
+    category: "biologie",
+    definition: "Marqueur biologique utilisé pour évaluer la fonction rénale.",
+    synonyms: ["creatinine"],
+    synonymsLower: ["creatinine"],
+  },
+];
 
 async function loadDictionary(): Promise<DictEntry[]> {
   const now = Date.now();
   if (_dictCache && now - _dictCacheTs < CACHE_TTL_MS) return _dictCache;
 
   const db = await getDb();
-  if (!db) return [];
+  if (!db) return FALLBACK_DICTIONARY;
 
-  const rows = await db
-    .select()
-    .from(medicalTerms)
-    .where(and(eq(medicalTerms.active, true)))
-    .orderBy(sql`LENGTH(${medicalTerms.term}) DESC`); // termes longs en premier pour éviter les faux positifs
+  let rows: Array<typeof medicalTerms.$inferSelect>;
+  try {
+    rows = await db
+      .select()
+      .from(medicalTerms)
+      .where(and(eq(medicalTerms.active, true)))
+      .orderBy(sql`LENGTH(${medicalTerms.term}) DESC`); // termes longs en premier pour éviter les faux positifs
+  } catch {
+    // Ne jamais faire échouer la dictée si la table de dictionnaire n'est pas encore migrée ou accessible.
+    return FALLBACK_DICTIONARY;
+  }
+
+  if (rows.length === 0) return FALLBACK_DICTIONARY;
 
   _dictCache = rows.map((r) => {
     let synonyms: string[] = [];
