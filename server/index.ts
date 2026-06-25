@@ -1,6 +1,5 @@
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import express from "express";
-import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -9,17 +8,16 @@ import { registerExportRoutes } from "./exportRoute";
 import { registerStreamGeneration } from "./streamGeneration";
 import { registerVoiceTranscription } from "./voiceTranscriptionRoute";
 import { appRouter } from "./routers";
-import { createTrpcContext } from "./_core/context";
+import { createContext } from "./_core/context";
 
 const PORT = process.env.PORT ?? 3001;
 const app = express();
 
 // --- Middlewares essentiels ---
-app.use(cors({ origin: process.env.NODE_ENV === "production" ? "https://votre-domaine.fr" : "http://localhost:5173", credentials: true }));
 app.use(express.json());
 
 // --- Enregistrement des routes API ---
-app.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext: createTrpcContext }));
+app.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext }));
 registerStreamGeneration(app);
 registerVoiceTranscription(app);
 registerFileExtraction(app);

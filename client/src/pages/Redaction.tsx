@@ -38,6 +38,11 @@ import { toast } from "sonner";
 
 const RAW_DATA_MAX_CHARS = 200_000;
 type ConciliationImportTarget = "entry" | "exit";
+type PseudonymisationInfo = {
+  maskCount: number;
+  detectedCategories: string[];
+  hasPotentialOvermasking: boolean;
+};
 
 const VOLETS: Record<Volet, { label: string; icon: React.ReactNode; description: string; color: string }> = {
   courrier_sortie: {
@@ -124,11 +129,10 @@ export default function Redaction() {
   const [isExtractingFile, setIsExtractingFile] = useState(false);
   const [isFileDragOver, setIsFileDragOver] = useState(false);
   const [validated, setValidated] = useState(false);
-  const [pseudoInfo, setPseudoInfo] = useState<{
-    maskCount: number;
-    detectedCategories: string[];
-    hasPotentialOvermasking: boolean;
-  } | null>(null);
+  const [pseudoInfo, setPseudoInfo] = useState<PseudonymisationInfo | null>(null);
+  const [observationSafeText, setObservationSafeText] = useState("");
+  const [observationPseudoInfo, setObservationPseudoInfo] = useState<PseudonymisationInfo | null>(null);
+  const [isSecuringObservation, setIsSecuringObservation] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [streamingText, setStreamingText] = useState("");
@@ -394,21 +398,59 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     }
   }, [validated, editor, generatedDoc, selectedVolet]);
 
-  const handleDownloadObservationWord = useCallback(async () => {
-    if (selectedVolet !== "observation") return;
+  const handleSecureObservation = useCallback(async () => {
+    if (selectedVolet !== "observation" || !observationText.trim()) return;
+    setIsSecuringObservation(true);
     try {
-      toast.info("Génération du document Word en cours...");
-      const response = await fetch("/api/export/docx", {
+      const response = await fetch("/api/security/pseudonymise", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ content: observationText }),
       });
-      console.log("status:", response.status, "content-type:", response.headers.get("content-type"));
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error ?? "La pseudonymisation de l'observation a échoué.");
+      }
+
+      const result = await response.json() as PseudonymisationInfo & { filteredText: string };
+      setObservationSafeText(result.filteredText);
+      setObservationPseudoInfo({
+        maskCount: result.maskCount,
+        detectedCategories: result.detectedCategories,
+        hasPotentialOvermasking: result.hasPotentialOvermasking,
+      });
+      setStep(3);
+
+      if (result.maskCount > 0) {
+        toast.success(`${result.maskCount} identifiant${result.maskCount > 1 ? "s" : ""} masqué${result.maskCount > 1 ? "s" : ""} avant export.`);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Pseudonymisation impossible.");
+    } finally {
+      setIsSecuringObservation(false);
+    }
+  }, [observationText, selectedVolet]);
+
+  const getObservationExportText = useCallback(
+    () => observationSafeText || observationText,
+    [observationSafeText, observationText]
+  );
+
+  const handleDownloadObservationWord = useCallback(async () => {
+    if (selectedVolet !== "observation") return;
+    try {
+      toast.info("Génération du document Word en cours...");
+      const content = getObservationExportText();
+      const response = await fetch("/api/export/docx", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ content }),
+      });
       if (!response.ok) throw new Error("La génération du document a échoué.");
 
       const blob = await response.blob();
-      console.log("blob size:", blob.size, "type:", blob.type);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -419,12 +461,12 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Téléchargement Word impossible.");
     }
-  }, [observationText, selectedVolet]);
+  }, [getObservationExportText, selectedVolet]);
 
   const handleDownloadTxt = useCallback(() => {
     if (selectedVolet !== "observation") return;
     try {
-      const text = observationText;
+      const text = getObservationExportText();
       const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -436,13 +478,13 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     } catch (err) {
       toast.error("Téléchargement .txt impossible.");
     }
-  }, [observationText, selectedVolet]);
+  }, [getObservationExportText, selectedVolet]);
 
   const handleCopyObservation = useCallback(() => {
-    navigator.clipboard.writeText(observationText).then(() => {
+    navigator.clipboard.writeText(getObservationExportText()).then(() => {
       toast.success("Observation copiée dans le presse-papier.");
     });
-  }, [observationText]);
+  }, [getObservationExportText]);
 
   const handleReset = useCallback(() => {
     setStep(1);
@@ -453,6 +495,8 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     setTreatmentExitData("");
     setTreatmentExitDate("");
     setObservationText("");
+    setObservationSafeText("");
+    setObservationPseudoInfo(null);
     setConciliationImportTarget("entry");
     setGeneratedDoc("");
     setValidated(false);
@@ -874,7 +918,11 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
               <div className="space-y-1">
                 <p className="font-semibold">Consigne de confidentialité obligatoire</p>
                 <p>
-                  Ne saisissez <strong>aucun identifiant direct</strong> du patient.
+                  Ne saisissez <strong>aucun identifiant direct</strong> du patient : ni nom, ni prénom,
+                  ni numéro de sécurité sociale, ni date de naissance, ni adresse, ni numéro de téléphone.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Le filtre de pseudonymisation détectera et masquera automatiquement les identifiants structurés avant copie ou export.
                 </p>
               </div>
             </div>
@@ -910,6 +958,11 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
               <p className="text-xs text-muted-foreground">
                 {observationText.length}/{RAW_DATA_MAX_CHARS.toLocaleString("fr-FR")} caractères
               </p>
+              {observationText.length > 0 && (
+                <Badge variant="secondary" className="w-fit text-xs">
+                  Pseudonymisation automatique activée avant export
+                </Badge>
+              )}
             </div>
 
             <div className="step-foot">
@@ -918,9 +971,18 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                 Retour
               </Button>
               <span className="spacer" />
-              <Button onClick={() => setStep(3)} disabled={!observationText.trim()} className="gap-2 redaction-primary-button">
-                Continuer
-                <ArrowRight className="w-4 h-4" />
+              <Button onClick={handleSecureObservation} disabled={!observationText.trim() || isSecuringObservation} className="gap-2 redaction-primary-button">
+                {isSecuringObservation ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Sécurisation…
+                  </>
+                ) : (
+                  <>
+                    Continuer
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </Button>
             </div>
 
@@ -1064,9 +1126,30 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
               </div>
               <h2 className="text-lg font-semibold text-foreground">Observation prête pour l'export</h2>
               <p className="text-sm text-muted-foreground">
-                Vous pouvez maintenant copier ou télécharger vos notes.
+                Vous pouvez maintenant copier ou télécharger vos notes pseudonymisées.
               </p>
             </div>
+
+            {observationPseudoInfo && (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-3 text-sm">
+                    <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    <div>
+                      <p className="font-medium text-foreground">
+                        Pseudonymisation appliquée avant export
+                      </p>
+                      <p className="text-muted-foreground">
+                        {observationPseudoInfo.maskCount} identifiant{observationPseudoInfo.maskCount > 1 ? "s" : ""} masqué{observationPseudoInfo.maskCount > 1 ? "s" : ""}.
+                        {observationPseudoInfo.detectedCategories.length > 0 && (
+                          <> Catégories : {observationPseudoInfo.detectedCategories.join(", ")}.</>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardHeader>

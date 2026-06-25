@@ -8,15 +8,42 @@
 import { Express, Request, Response } from "express";
 import { Document, Packer, Paragraph, TextRun } from "docx";
 import { sdk } from "./_core/sdk";
+import { pseudonymise } from "./pseudonymisation";
+
+const RAW_DATA_MAX_CHARS = 200_000;
 
 export function registerExportRoutes(app: Express): void {
-  app.post("/api/export/docx", async (req: Request, res: Response) => {
-    // 1. Vérification de l'authentification  
-    console.log("[DOCX] cookies:", req.headers.cookie);
-
+  app.post("/api/security/pseudonymise", async (req: Request, res: Response) => {
     try {
       const user = await sdk.authenticateRequest(req);
-        console.log("[DOCX] user:", user);
+      if (!user) {
+        return res.status(401).json({ error: "Non authentifié" });
+      }
+    } catch {
+      return res.status(401).json({ error: "Session invalide" });
+    }
+
+    const { content } = req.body;
+    if (!content || typeof content !== "string") {
+      return res.status(400).json({ error: "Contenu manquant ou invalide." });
+    }
+    if (content.length > RAW_DATA_MAX_CHARS) {
+      return res.status(400).json({ error: `Contenu trop long (max ${RAW_DATA_MAX_CHARS} caractères).` });
+    }
+
+    const result = pseudonymise(content);
+    return res.json({
+      filteredText: result.filteredText,
+      maskCount: result.maskCount,
+      detectedCategories: result.detectedCategories,
+      hasPotentialOvermasking: result.hasPotentialOvermasking,
+    });
+  });
+
+  app.post("/api/export/docx", async (req: Request, res: Response) => {
+    // 1. Vérification de l'authentification  
+    try {
+      const user = await sdk.authenticateRequest(req);
 
       if (!user) {
         // Important : Toujours renvoyer une erreur JSON claire si non authentifié
