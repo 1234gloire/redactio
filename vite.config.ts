@@ -182,5 +182,9 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
+    proxy: {
+      // Proxy API requests to the backend server
+      "/api": "http://localhost:3001",
+    },
   },
 });

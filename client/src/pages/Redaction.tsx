@@ -73,13 +73,21 @@ const VOLET_ICON_CLASSES: Record<string, string> = {
   indigo: "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400",
 };
 
-const STEPS = [
+const STEPS_DEFAULT = [
   { id: 1, label: "Volet" },
   { id: 2, label: "Données" },
   { id: 3, label: "Génération" },
   { id: 4, label: "Relecture" },
   { id: 5, label: "Export" },
 ];
+
+const STEPS_OBSERVATION = [
+  { id: 1, label: "Volet" },
+  { id: 2, label: "Données" },
+  { id: 3, label: "Exporter" },
+];
+
+
 
 // Regex pour détecter les balises [À COMPLÉTER PAR LE MÉDECIN]
 const TAG_REGEX = /\[À COMPLÉTER PAR LE MÉDECIN\]/g;
@@ -386,6 +394,56 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     }
   }, [validated, editor, generatedDoc, selectedVolet]);
 
+  const handleDownloadObservationWord = useCallback(async () => {
+    if (selectedVolet !== "observation") return;
+    try {
+      toast.info("Génération du document Word en cours...");
+      const response = await fetch("/api/export/docx", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ content: observationText }),
+      });
+      console.log("status:", response.status, "content-type:", response.headers.get("content-type"));
+      if (!response.ok) throw new Error("La génération du document a échoué.");
+
+      const blob = await response.blob();
+      console.log("blob size:", blob.size, "type:", blob.type);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `redactio_observation_${new Date().toISOString().slice(0, 10)}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Document Word (.docx) téléchargé.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Téléchargement Word impossible.");
+    }
+  }, [observationText, selectedVolet]);
+
+  const handleDownloadTxt = useCallback(() => {
+    if (selectedVolet !== "observation") return;
+    try {
+      const text = observationText;
+      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `redactio_observation_${new Date().toISOString().slice(0, 10)}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Document texte (.txt) téléchargé.");
+    } catch (err) {
+      toast.error("Téléchargement .txt impossible.");
+    }
+  }, [observationText, selectedVolet]);
+
+  const handleCopyObservation = useCallback(() => {
+    navigator.clipboard.writeText(observationText).then(() => {
+      toast.success("Observation copiée dans le presse-papier.");
+    });
+  }, [observationText]);
+
   const handleReset = useCallback(() => {
     setStep(1);
     setSelectedVolet(null);
@@ -411,8 +469,10 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
 
   if (authLoading || !isAuthenticated) return null;
 
+  const STEPS = selectedVolet === "observation" ? STEPS_OBSERVATION : STEPS_DEFAULT;
+
   const progressStyle = {
-    "--redaction-progress": `${(step / 5) * 100}%`,
+    "--redaction-progress": `${(step / STEPS.length) * 100}%`,
   } as CSSProperties;
 
   return (
@@ -858,13 +918,17 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                 Retour
               </Button>
               <span className="spacer" />
-              {/* Les boutons Copier/Télécharger pourraient être ici */}
+              <Button onClick={() => setStep(3)} disabled={!observationText.trim()} className="gap-2 redaction-primary-button">
+                Continuer
+                <ArrowRight className="w-4 h-4" />
+              </Button>
             </div>
+
           </div>
         )}
 
         {/* ─── Étape 3 : Génération en cours ─── */}
-        {step === 3 && (
+        {step === 3 && selectedVolet !== "observation" && (
           <div className="redaction-panel animate-fade-in">
             <div className="redaction-generation">
               <div className="flex items-center justify-center">
@@ -988,6 +1052,64 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
             )}
           </div>
         )}
+
+        {/* ─── Étape 3 : Export pour Observation Médicale ─── */}
+        {step === 3 && selectedVolet === "observation" && (
+          <div className="redaction-panel animate-fade-in">
+            <div className="text-center space-y-2">
+              <div className="flex items-center justify-center">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/30 flex items-center justify-center">
+                  <CheckCircle className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                </div>
+              </div>
+              <h2 className="text-lg font-semibold text-foreground">Observation prête pour l'export</h2>
+              <p className="text-sm text-muted-foreground">
+                Vous pouvez maintenant copier ou télécharger vos notes.
+              </p>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Options d'export</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button
+                  className="w-full gap-2"
+                  variant="outline"
+                  onClick={handleCopyObservation}
+                >
+                  <Copy className="w-4 h-4" />
+                  Copier le texte
+                </Button>
+                <Button
+                  className="w-full gap-2"
+                  variant="outline"
+                  onClick={handleDownloadTxt}
+                >
+                  <Download className="w-4 h-4" />
+                  Télécharger en texte (.txt)
+                </Button>
+                <Button
+                  className="w-full gap-2"
+                  variant="outline"
+                  onClick={handleDownloadObservationWord}
+                >
+                  <Download className="w-4 h-4" />
+                  Télécharger en Word (.docx)
+                </Button>
+
+              </CardContent>
+            </Card>
+
+            <div className="flex justify-center">
+              <Button variant="outline" onClick={handleReset} className="gap-2">
+                <RotateCcw className="w-4 h-4" />
+                Nouvelle rédaction
+              </Button>
+            </div>
+          </div>
+        )}
+
 
         {/* ─── Étape 5 : Export ─── */}
         {step === 5 && validated && (

@@ -5,6 +5,7 @@ import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
+import { registerExportRoutes } from "../exportRoute";
 import { registerFileExtraction } from "../fileExtraction";
 import { registerStreamGeneration } from "../streamGeneration";
 import { registerVoiceTranscription } from "../voiceTranscriptionRoute";
@@ -41,6 +42,7 @@ async function startServer() {
   registerOAuthRoutes(app);
   registerFileExtraction(app);
   registerStreamGeneration(app);
+  registerExportRoutes(app);
   registerVoiceTranscription(app);
   // tRPC API
   app.use(
