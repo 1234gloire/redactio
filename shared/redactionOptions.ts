@@ -14,6 +14,9 @@ export const REDACTION_SUBTYPES = {
     { id: "transfert_inter_service", label: "Transfert inter-service" },
     { id: "consultation_specialisee", label: "Consultation spécialisée" },
   ],
+  observation: [
+    { id: "observation_libre", label: "Observation libre" },
+  ],
 } as const;
 
 export type Volet = keyof typeof REDACTION_SUBTYPES;

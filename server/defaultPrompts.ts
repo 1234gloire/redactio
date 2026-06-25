@@ -500,6 +500,10 @@ DONNÉES MÉDICAMENTEUSES DU PATIENT (pseudonymisées) :
 - Rédige une demande ou synthèse pour consultation spécialisée.
 - Mets en avant la question posée au spécialiste, le contexte clinique, les antécédents pertinents, les examens disponibles, le traitement en cours et les attentes du demandeur.
 - Si la spécialité exacte n'est pas fournie, insère [À COMPLÉTER PAR LE MÉDECIN].`,
+  observation_libre: `PROMPT SPÉCIFIQUE — OBSERVATION LIBRE :
+- Ce volet est destiné à la prise de notes médicales libres.
+- Ne produis pas de décision médicale automatisée.
+- Structure uniquement les informations fournies, sans inventer de donnée clinique.`,
 };
 
 const SUBTYPE_FULL_TEMPLATES: Partial<Record<RedactionSubtype, string>> = {

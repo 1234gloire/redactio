@@ -117,13 +117,11 @@ export const appRouter = router({
             throw new TRPCError({ code: "UNAUTHORIZED", message: "Identifiants invalides." });
           }
 
-          // On récupère ou on crée l'utilisateur admin en base
-          let user = await getUserByEmail(email);
-          if (!user) {
-            user = { openId: getLocalOpenId(email), role: "admin" };
-          }
+          // On récupère ou on crée l'utilisateur admin en base.
+          const existingUser = await getUserByEmail(email);
+          const openId = existingUser?.openId ?? getLocalOpenId(email);
           const passwordHash = await hashPassword(ENV.localAdminPassword);
-          await upsertUser({ ...user, name: ENV.localAdminName, email, passwordHash, loginMethod: "password" });
+          await upsertUser({ openId, role: "admin", name: ENV.localAdminName, email, passwordHash, loginMethod: "password" });
           const finalUser = await getUserByEmail(email);
 
           if (!finalUser) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });

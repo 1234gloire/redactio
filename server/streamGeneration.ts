@@ -89,6 +89,10 @@ export function registerStreamGeneration(app: Express) {
       res.status(400).json({ error: "Volet invalide." });
       return;
     }
+    if (volet === "observation") {
+      res.status(400).json({ error: "Le volet observation est réservé aux notes libres et ne déclenche pas de génération IA." });
+      return;
+    }
     const selectedSubtype: RedactionSubtype = subtype && isValidSubtypeForVolet(volet, subtype)
       ? subtype
       : getDefaultSubtype(volet);
