@@ -28,6 +28,7 @@ import {
   FileText,
   Loader2,
   RotateCcw,
+  Shield,
   Stethoscope,
   X,
 } from "lucide-react";
@@ -72,11 +73,25 @@ const VOLETS: Record<Volet, { label: string; icon: React.ReactNode; description:
 };
 
 const VOLET_ICON_CLASSES: Record<string, string> = {
-  teal: "bg-teal-50 text-teal-600 dark:bg-teal-950/30 dark:text-teal-400",
-  slate: "bg-slate-50 text-slate-600 dark:bg-slate-950/30 dark:text-slate-400",
-  seal: "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400", // 'seal' est interprété comme 'blue'
-  indigo: "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400",
+  teal: "volet-icon-teal",
+  slate: "volet-icon-slate",
+  seal: "volet-icon-seal",
+  indigo: "volet-icon-indigo",
 };
+
+function getSubtypeLabel(volet: Volet) {
+  if (volet === "courrier_sortie") return "Service / spécialité";
+  if (volet === "conciliation") return "Type de conciliation";
+  if (volet === "correspondance") return "Type de correspondance";
+  return "Type de document";
+}
+
+function getSubtypeHint(volet: Volet) {
+  if (volet === "courrier_sortie") return "oriente la structure du document";
+  if (volet === "conciliation") return "étape du parcours de soins";
+  if (volet === "correspondance") return "oriente le ton et la structure";
+  return "oriente le document";
+}
 
 const STEPS_DEFAULT = [
   { id: 1, label: "Volet" },
@@ -299,6 +314,11 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
           const separator = current.trim().length > 0 ? "\n\n--- Contenu importé ---\n\n" : "";
           return `${current}${separator}${extractedText}`.slice(0, RAW_DATA_MAX_CHARS);
         });
+      } else if (selectedVolet === "observation") {
+        setObservationText((current) => {
+          const separator = current.trim().length > 0 ? "\n\n--- Contenu importé ---\n\n" : "";
+          return `${current}${separator}${extractedText}`.slice(0, RAW_DATA_MAX_CHARS);
+        });
       } else {
         setRawData((current) => {
           const separator = current.trim().length > 0 ? "\n\n--- Contenu importé ---\n\n" : "";
@@ -324,6 +344,12 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     if (selectedVolet === "conciliation") {
       const updateTreatment = conciliationImportTarget === "exit" ? setTreatmentExitData : setTreatmentEntryData;
       updateTreatment((prev) => {
+        if (!prev.trim()) return text;
+        const separator = prev.endsWith("\n") ? "" : "\n";
+        return `${prev}${separator}${text}`.slice(0, RAW_DATA_MAX_CHARS);
+      });
+    } else if (selectedVolet === "observation") {
+      setObservationText((prev) => {
         if (!prev.trim()) return text;
         const separator = prev.endsWith("\n") ? "" : "\n";
         return `${prev}${separator}${text}`.slice(0, RAW_DATA_MAX_CHARS);
@@ -521,6 +547,18 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
 
   return (
     <RedactioLayout>
+      <div className="redaction-compliance-bar" aria-label="Conformité données de santé">
+        <span className="redaction-compliance-lead">
+          <Shield className="h-3.5 w-3.5" />
+          <span>Conforme aux exigences de protection des données de santé</span>
+        </span>
+        <span className="redaction-compliance-items">
+          <span><Check className="h-3 w-3" /> RGPD</span>
+          <span><Check className="h-3 w-3" /> HDS</span>
+          <span><Check className="h-3 w-3" /> Secret médical</span>
+          <span><Check className="h-3 w-3" /> Pseudonymisation</span>
+        </span>
+      </div>
       <div className="redaction-shell">
         {/* En-tête avec étapes */}
         <div className="redaction-header">
@@ -620,7 +658,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                 <h2 className="redaction-step-title">
                   {VOLETS[selectedVolet].label}
                 </h2>
-                <p className="redaction-step-subtitle">Saisissez les données médicales du patient.</p>
+                <p className="redaction-step-subtitle">Saisissez les données médicales — sans identifiant direct du patient.</p>
               </div>
             </div>
 
@@ -646,12 +684,10 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
             <div className="redaction-field-group">
               <fieldset className="space-y-2">
                 <legend className="redaction-field-label">
-                  Type de document
-                  {selectedVolet === "courrier_sortie"
-                    ? "Choix de service (spécialité)"
-                    : selectedVolet === "conciliation"
-                    ? "Type de conciliation"
-                    : "Type de correspondance"}
+                  {getSubtypeLabel(selectedVolet)}
+                  <span className="text-muted-foreground font-normal ml-1">
+                    ({getSubtypeHint(selectedVolet)})
+                  </span>
                 </legend>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {REDACTION_SUBTYPES[selectedVolet].map((option) => (
@@ -963,6 +999,49 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                   Pseudonymisation automatique activée avant export
                 </Badge>
               )}
+            </div>
+
+            <div
+              className={cn("redaction-dropzone", isFileDragOver ? "is-over" : "")}
+              onDragEnter={handleFileDrag}
+              onDragOver={handleFileDrag}
+              onDragLeave={handleFileDrag}
+              onDrop={handleFileDrop}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept=".txt,.md,.csv,.json,.xml,.html,.rtf,.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/*"
+                onChange={(event) => handleFileUpload(event.target.files?.[0] ?? null)}
+              />
+              <div className="flex items-center gap-3">
+                <div className="redaction-dropzone-icon">
+                  {isExtractingFile ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileUp className="h-4 w-4" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    Glissez-déposez un fichier ici
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Bilan biologique brut, PDF, Word .docx, TXT, CSV ou JSON — il sera ajouté à l'observation.
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2 self-start sm:self-auto"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isExtractingFile}
+              >
+                {isExtractingFile ? "Extraction…" : "Parcourir"}
+              </Button>
             </div>
 
             <div className="step-foot">

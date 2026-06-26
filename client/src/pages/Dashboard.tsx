@@ -12,6 +12,7 @@ import {
   HelpCircle,
   Info,
   LayoutDashboard,
+  Mic,
   Shield,
   Stethoscope,
   Users,
@@ -48,8 +49,8 @@ const VOLETS = [
     label: "Observation médicale",
     description: "Prise de notes, suivi journalier, transmissions ciblées.",
     icon: FilePenLine,
-    accent: "#6366F1",
-    accentDeep: "#4F46E5",
+    accent: "#5B54CC",
+    accentDeep: "#4842A8",
   },
 ];
 
@@ -159,6 +160,20 @@ export default function Dashboard() {
         </aside>
 
         <main className="rd-main">
+          <div className="rd-cbar" aria-label="Conformité données de santé">
+            <div className="rd-cbar-inner">
+              <span className="rd-cbar-lead">
+                <Shield size={14} strokeWidth={2} />
+                <span>Conforme aux exigences de protection des données de santé</span>
+              </span>
+              <span className="rd-cbar-items">
+                <span><Check size={12} strokeWidth={2} /> RGPD</span>
+                <span><Check size={12} strokeWidth={2} /> HDS</span>
+                <span><Check size={12} strokeWidth={2} /> Secret médical</span>
+                <span><Check size={12} strokeWidth={2} /> Pseudonymisation</span>
+              </span>
+            </div>
+          </div>
           <div className="rd-warning" role="alert" aria-live="polite">
             <AlertTriangle size={18} strokeWidth={2} />
             <span>
@@ -175,6 +190,11 @@ export default function Dashboard() {
               Choisissez un outil pour démarrer une nouvelle rédaction. Vos saisies restent en mémoire de session
               et sont effacées à la déconnexion.
             </p>
+            <span className="rd-dictee-pill">
+              <span className="rd-dictee-new">Nouveau</span>
+              <Mic size={14} strokeWidth={2} />
+              Dictée vocale disponible dans les 4 outils
+            </span>
 
             <div className="rd-block-cap">Démarrer une rédaction</div>
             <div className="rd-cards">
@@ -196,8 +216,14 @@ export default function Dashboard() {
                     </span>
                     <span className="rd-card-name">{volet.label}</span>
                     <span className="rd-card-description">{volet.description}</span>
-                    <span className="rd-card-action">
-                      Démarrer <ArrowRight className="rd-card-arrow" size={15} strokeWidth={2} />
+                    <span className="rd-card-foot">
+                      <span className="rd-card-action">
+                        Démarrer <ArrowRight className="rd-card-arrow" size={15} strokeWidth={2} />
+                      </span>
+                      <span className="rd-mic">
+                        <Mic size={11} strokeWidth={2} />
+                        dictée
+                      </span>
                     </span>
                   </Link>
                 );
@@ -244,11 +270,16 @@ export default function Dashboard() {
               <section className="rd-panel" id="confidentialite" aria-labelledby="privacy-title">
                 <h2 className="rd-privacy-title" id="privacy-title">
                   <Shield size={18} strokeWidth={1.9} />
-                  Confidentialité par conception
+                  Conformité données de santé
                 </h2>
                 <p className="rd-privacy-sub">
-                  La conformité RGPD intégrée au fonctionnement de la plateforme.
+                  Les exigences RGPD et de protection des données de santé, intégrées au fonctionnement de la plateforme.
                 </p>
+                <div className="rd-badge-row">
+                  <span className="rd-cbadge">RGPD</span>
+                  <span className="rd-cbadge">HDS</span>
+                  <span className="rd-cbadge">Secret médical</span>
+                </div>
                 <ul className="rd-privacy-list">
                   <li>
                     <Check size={16} strokeWidth={2.2} />
@@ -259,7 +290,7 @@ export default function Dashboard() {
                   <li>
                     <Check size={16} strokeWidth={2.2} />
                     <span>
-                      <b>Pseudonymisation automatique</b> avant tout envoi au moteur d'IA.
+                      <b>Pseudonymisation automatique</b> du texte comme de la dictée, avant tout envoi au moteur d'IA.
                     </span>
                   </li>
                   <li>
@@ -329,7 +360,7 @@ const dashboardStyles = `
 
 .rd-app {
   display: grid;
-  grid-template-columns: 268px 1fr;
+  grid-template-columns: 272px 1fr;
   min-height: 100vh;
 }
 
@@ -471,6 +502,52 @@ const dashboardStyles = `
   flex-direction: column;
 }
 
+.rd-cbar {
+  background: var(--rd-ink);
+  color: #CFE0DA;
+}
+
+.rd-cbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+  padding: .6em 40px;
+  text-align: center;
+}
+
+.rd-cbar-lead {
+  display: inline-flex;
+  align-items: center;
+  gap: .5em;
+  font-weight: 600;
+  color: #fff;
+  font-size: .8rem;
+}
+
+.rd-cbar-lead svg,
+.rd-cbar-items svg {
+  color: #8FD8CE;
+  flex-shrink: 0;
+}
+
+.rd-cbar-items {
+  display: inline-flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-family: var(--rd-mono);
+  font-size: .68rem;
+  letter-spacing: .03em;
+  color: #9FC0B9;
+}
+
+.rd-cbar-items span {
+  display: inline-flex;
+  align-items: center;
+  gap: .32em;
+}
+
 .rd-warning {
   display: flex;
   align-items: center;
@@ -492,8 +569,8 @@ const dashboardStyles = `
 }
 
 .rd-content {
-  padding: 40px 36px 48px;
-  max-width: 1080px;
+  padding: 40px;
+  max-width: 1120px;
   width: 100%;
 }
 
@@ -518,6 +595,31 @@ const dashboardStyles = `
   max-width: 52ch;
 }
 
+.rd-dictee-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .5em;
+  margin-top: 16px;
+  background: #E7F4F2;
+  color: var(--rd-soin-deep);
+  border: 1px solid #BFE6E0;
+  border-radius: 999px;
+  padding: .45em .95em;
+  font-size: .82rem;
+  font-weight: 600;
+}
+
+.rd-dictee-new {
+  font-family: var(--rd-mono);
+  font-size: .62rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  background: var(--rd-soin);
+  color: #fff;
+  border-radius: 5px;
+  padding: .15em .45em;
+}
+
 .rd-block-cap {
   font-family: var(--rd-mono);
   font-size: .68rem;
@@ -539,14 +641,14 @@ const dashboardStyles = `
 
 .rd-cards {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .rd-card {
   background: var(--rd-bg);
   border: 1px solid var(--rd-line);
-  border-radius: 14px;
+  border-radius: 15px;
   padding: 24px 22px 20px;
   position: relative;
   overflow: hidden;
@@ -604,6 +706,30 @@ const dashboardStyles = `
   gap: .45em;
   font-weight: 600;
   font-size: .88rem;
+  color: var(--rd-ac-deep);
+}
+
+.rd-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rd-mic {
+  display: inline-flex;
+  align-items: center;
+  gap: .3em;
+  font-family: var(--rd-mono);
+  font-size: .6rem;
+  letter-spacing: .04em;
+  color: var(--rd-muted);
+  background: var(--rd-mist);
+  border-radius: 6px;
+  padding: .3em .5em;
+}
+
+.rd-mic svg {
   color: var(--rd-ac-deep);
 }
 
@@ -692,6 +818,26 @@ const dashboardStyles = `
   margin-bottom: 16px;
 }
 
+.rd-badge-row {
+  display: flex;
+  gap: .5rem;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.rd-cbadge {
+  display: inline-flex;
+  align-items: center;
+  gap: .38em;
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--rd-slate);
+  background: var(--rd-mist);
+  border: 1px solid var(--rd-line);
+  border-radius: 999px;
+  padding: .32em .7em;
+}
+
 .rd-privacy-list {
   list-style: none;
   display: flex;
@@ -752,6 +898,12 @@ const dashboardStyles = `
   border-radius: 6px;
 }
 
+@media (max-width: 1080px) {
+  .rd-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 980px) {
   .rd-app {
     grid-template-columns: 1fr;
@@ -774,7 +926,8 @@ const dashboardStyles = `
   }
 
   .rd-content,
-  .rd-warning {
+  .rd-warning,
+  .rd-cbar-inner {
     padding-left: 22px;
     padding-right: 22px;
   }
