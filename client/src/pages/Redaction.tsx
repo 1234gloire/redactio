@@ -152,6 +152,7 @@ function renderMarkdownTable(headerLine: string, bodyLines: string[]): string {
     .filter((cells) => cells.some((cell) => cell.length > 0));
 
   return [
+    '<div class="tableWrapper">',
     "<table>",
     "<tbody>",
     "<tr>",
@@ -164,6 +165,7 @@ function renderMarkdownTable(headerLine: string, bodyLines: string[]): string {
     ]),
     "</tbody>",
     "</table>",
+    "</div>",
   ].join("");
 }
 
