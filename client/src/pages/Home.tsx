@@ -57,8 +57,8 @@ const products = [
     title: "Courrier de sortie",
     description: "Rédaction structurée du courrier de sortie d'hospitalisation.",
     icon: FileText,
-    accent: "#3ECCC4",
-    deep: "#7CE7DF",
+    accent: "#0E9C8E",
+    deep: "#0A7B70",
     tag: "Format lettre de liaison",
     items: ["Motif et synthèse", "Traitement de sortie", "Suivi et surveillance"],
   },
@@ -66,8 +66,8 @@ const products = [
     title: "Conciliation médicamenteuse",
     description: "Le bilan de conciliation à l'admission, au transfert ou à la sortie.",
     icon: Stethoscope,
-    accent: "#F59F0A",
-    deep: "#FFD48A",
+    accent: "#1E3A5F",
+    deep: "#1E3A5F",
     tag: "Volet médicamenteux",
     items: ["Traitement d'entrée", "Traitement de sortie", "Divergences explicitées"],
   },
@@ -75,8 +75,8 @@ const products = [
     title: "Correspondance médicale",
     description: "Les courriers entre professionnels de santé, du bon ton et au bon format.",
     icon: BookOpen,
-    accent: "#279B65",
-    deep: "#8FE2B8",
+    accent: "#C58A12",
+    deep: "#A0700C",
     tag: "Ville · hôpital",
     items: ["Courrier d'adresse pour consultation", "Synthèse du dossier au confrère", "Formules et structure professionnelles"],
   },
@@ -532,7 +532,7 @@ function FooterCol({ title, links }: { title: string; links: [string, string][] 
 
 const landingStyles = `
 @import url('https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
-.redactio-landing{--ink:#122524;--panel:#fff;--panel-2:#F5FBFA;--border:#D5E9E7;--text:#122524;--muted:#708986;--muted-strong:#3B5451;--accent:#4EA39E;--accent-2:#71C9C4;--amber:#F59F0A;--green:#279B65;--surface:#fff;--surface-soft:#F2F8F7;--shadow:0 22px 54px -36px rgba(18,37,36,.34);--sans:'Hanken Grotesk',system-ui,-apple-system,sans-serif;--display:'Spectral',Georgia,serif;--mono:'JetBrains Mono',monospace;color:var(--text);background:#F7FBFA;font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+.redactio-landing{--ink:#0B1B29;--slate:#1E3A5F;--slate-soft:#2C4D74;--soin:#0E9C8E;--soin-deep:#0A7B70;--soin-tint:#E7F4F2;--obs:#5B54CC;--obs-deep:#4842A8;--obs-tint:#ECEBFA;--paper:#FBFAF8;--bg:#FFFFFF;--mist:#EEF3F5;--mist-deep:#E2EAEE;--line:#D9E2E7;--line-soft:#E8EEF1;--seal:#C58A12;--seal-soft:#E1AB20;--seal-bg:#FBF3DE;--muted:#5A6B78;--muted-light:#8497A2;--panel:#fff;--panel-2:#FBFAF8;--border:#D9E2E7;--text:#0B1B29;--muted-strong:#1E3A5F;--accent:#0E9C8E;--accent-2:#E7F4F2;--amber:#C58A12;--green:#0E9C8E;--surface:#fff;--surface-soft:#EEF3F5;--shadow:0 22px 54px -36px rgba(11,27,41,.34);--sans:'Hanken Grotesk',system-ui,-apple-system,sans-serif;--display:'Spectral',Georgia,serif;--mono:'JetBrains Mono',monospace;color:var(--text);background:#FFFFFF;font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 .redactio-landing *{box-sizing:border-box}.redactio-landing a{color:inherit;text-decoration:none}.lp-wrap{max-width:1180px;margin:0 auto;padding:0 28px}.lp-nav{position:sticky;top:0;z-index:60;background:rgba(247,251,250,.88);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}.lp-nav-inner{height:70px;display:flex;align-items:center;justify-content:space-between;gap:24px}.lp-brand{display:flex;align-items:center;gap:.7em}.lp-brand-mark{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--accent),#71C9C4);display:grid;place-items:center;color:#fff;flex-shrink:0;box-shadow:0 12px 24px -18px rgba(78,163,158,.72)}.lp-brand-name{display:block;font-family:var(--display);font-weight:800;letter-spacing:.04em;font-size:1.05rem;line-height:1;color:var(--text)}.lp-brand-sub{display:block;font-family:var(--mono);font-size:.58rem;letter-spacing:.14em;color:var(--accent);text-transform:uppercase;margin-top:4px}.lp-links{display:flex;align-items:center;gap:1.8rem}.lp-links a{font-size:.92rem;font-weight:700;color:var(--muted)}.lp-links a:hover{color:var(--text)}.lp-nav-cta{display:flex;align-items:center;gap:.9rem}.lp-login{font-size:.92rem;font-weight:800;color:var(--text)}.lp-menu{display:none;background:none;border:0;color:var(--text)}
 .lp-btn{display:inline-flex;align-items:center;justify-content:center;gap:.5em;font-weight:800;font-size:.95rem;padding:.86em 1.45em;border-radius:12px;border:1px solid transparent;white-space:nowrap;transition:transform .18s ease,box-shadow .25s ease,background .2s ease,border-color .2s ease;cursor:pointer}.lp-btn-primary{background:var(--accent);color:#fff;box-shadow:0 18px 34px -24px rgba(78,163,158,.9)}.lp-btn-primary:hover{background:#428F8A;transform:translateY(-2px)}.lp-btn-slate{background:#fff;border-color:var(--border);color:var(--text)}.lp-btn-slate:hover{border-color:var(--accent);background:#F2FAF9;transform:translateY(-2px)}.lp-btn-ghost,.lp-btn-dark-ghost{background:#fff;color:var(--text);border-color:var(--border)}.lp-btn-ghost:hover,.lp-btn-dark-ghost:hover{border-color:var(--accent);background:#F2FAF9}.lp-btn-light{background:#fff;color:var(--text);border-color:var(--border)}.lp-arr{transition:transform .18s}.lp-btn:hover .lp-arr{transform:translateX(3px)}
 .lp-hero{background:radial-gradient(circle at 78% 8%,rgba(113,201,196,.22),transparent 34%),linear-gradient(180deg,#F7FBFA 0%,#F3F9F8 100%);padding:72px 0 98px;overflow:hidden}.lp-hero-grid{display:grid;grid-template-columns:1.04fr .96fr;gap:54px;align-items:center}.lp-segment{display:inline-flex;background:#EEF7F6;border:1px solid var(--border);border-radius:999px;padding:4px;gap:4px;margin-bottom:28px;box-shadow:0 8px 22px -20px rgba(18,37,36,.28)}.lp-segment button{font-weight:800;font-size:.86rem;border:0;background:transparent;color:var(--muted);padding:.62em 1.05em;border-radius:999px;cursor:pointer;display:flex;align-items:center;gap:.5em}.lp-segment button[aria-selected=true]{background:var(--accent-2);color:var(--text);box-shadow:0 10px 22px -20px rgba(78,163,158,.9)}.lp-hero h1{font-family:var(--display);font-weight:800;font-size:clamp(2.65rem,5.6vw,4.55rem);line-height:1.02;letter-spacing:0;margin:0 0 .38em;color:var(--text)}.lp-hero h1 em{font-style:normal;color:var(--accent)}.lp-hero-lead{font-size:1.12rem;color:var(--muted-strong);max-width:44ch;margin-bottom:1.7em;min-height:3.4em}.lp-hero-actions{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5em}.lp-trust{display:flex;gap:1.3rem;flex-wrap:wrap;font-size:.84rem;color:var(--muted);font-weight:700}.lp-trust span{display:inline-flex;align-items:center;gap:.45em}.lp-trust svg{color:var(--accent)}
