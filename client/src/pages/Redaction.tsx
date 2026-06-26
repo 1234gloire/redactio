@@ -179,12 +179,22 @@ function renderGeneratedDocumentHtml(documentText: string): string {
 
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
-    const nextLine = lines[index + 1] ?? "";
+    let separatorIndex = index + 1;
+    while (separatorIndex < lines.length && !lines[separatorIndex].trim()) {
+      separatorIndex += 1;
+    }
 
-    if (line.includes("|") && isMarkdownTableSeparator(nextLine)) {
+    if (line.includes("|") && isMarkdownTableSeparator(lines[separatorIndex] ?? "")) {
       const bodyLines: string[] = [];
-      index += 2;
-      while (index < lines.length && lines[index].includes("|") && !isMarkdownTableSeparator(lines[index])) {
+      index = separatorIndex + 1;
+      while (index < lines.length) {
+        if (!lines[index].trim()) {
+          index += 1;
+          continue;
+        }
+        if (!lines[index].includes("|") || isMarkdownTableSeparator(lines[index])) {
+          break;
+        }
         bodyLines.push(lines[index]);
         index += 1;
       }
