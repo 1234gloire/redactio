@@ -7,6 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Audit from "./pages/Audit";
 import Backoffice from "./pages/Backoffice";
 import Dashboard from "./pages/Dashboard";
+import Conformite from "./pages/Conformite";
 import Dictionnaire from "./pages/Dictionnaire";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/conformite" component={Conformite} />
       <Route path="/redaction" component={Redaction} />
       <Route path="/backoffice" component={Backoffice} />
       <Route path="/organisations" component={Organisations} />

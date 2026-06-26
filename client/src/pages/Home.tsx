@@ -11,6 +11,8 @@ import {
   FileText,
   Lock,
   Menu,
+  Mic,
+  ClipboardCheck,
   Shield,
   Stethoscope,
   Users,
@@ -23,25 +25,25 @@ const heroCopy = {
   prat: {
     title: (
       <>
-        Le courrier de sortie, <em>rédigé</em> pendant que vous passez au patient suivant.
+        Vos écrits hospitaliers, <em>structurés</em> par l'IA. La plume reste la vôtre.
       </>
     ),
     lead:
-      "Dictez ou collez vos notes. REDACTIO les structure en un document hospitalier propre, prêt à relire et signer. Vous restez l'auteur — l'outil tient la plume.",
-    primary: "Essayer gratuitement",
+      "Courrier de sortie, conciliation médicamenteuse, correspondance, observation : collez ou dictez vos notes, REDACTIO les met en forme — pseudonymisées, conformes, prêtes à relire et signer.",
+    primary: "Commencer une rédaction",
     primaryHref: getLoginUrl(),
     secondary: "Voir les outils",
     secondaryHref: "#produits",
-    trust: ["Aucune donnée patient stockée", "Vous validez chaque document"],
+    trust: ["Pseudonymisation automatique", "Vous validez chaque document"],
   },
   etab: {
     title: (
       <>
-        Des lettres de liaison <em>conformes</em>, dans tous vos services.
+        La rédaction hospitalière <em>assistée</em>, à l'échelle de vos services.
       </>
     ),
     lead:
-      "Aidez vos équipes à produire des lettres complètes, au bon format, le jour de la sortie. Un enjeu de qualité (QLS), de financement (IFAQ) et de certification.",
+      "Des lettres de liaison complètes et homogènes, au bon format, le jour de la sortie. Un enjeu de qualité (QLS), de financement (IFAQ) et de certification — pour toutes vos équipes.",
     primary: "Demander une démonstration",
     primaryHref: "#demo",
     secondary: "L'offre établissement",
@@ -53,12 +55,12 @@ const heroCopy = {
 const products = [
   {
     title: "Courrier de sortie",
-    description: "La rédaction structurée du courrier de sortie d'hospitalisation, section par section.",
+    description: "Rédaction structurée du courrier de sortie d'hospitalisation.",
     icon: FileText,
     accent: "#3ECCC4",
     deep: "#7CE7DF",
     tag: "Format lettre de liaison",
-    items: ["Motif, synthèse du séjour, conclusion", "Traitement de sortie hiérarchisé", "Consignes de suivi et de surveillance"],
+    items: ["Motif et synthèse", "Traitement de sortie", "Suivi et surveillance"],
   },
   {
     title: "Conciliation médicamenteuse",
@@ -66,8 +68,8 @@ const products = [
     icon: Stethoscope,
     accent: "#F59F0A",
     deep: "#FFD48A",
-    tag: "Volet médicamenteux LLS",
-    items: ["Bilan médicamenteux mis au propre", "Divergences repérées et explicitées", "Volet médicamenteux prêt à transmettre"],
+    tag: "Volet médicamenteux",
+    items: ["Traitement d'entrée", "Traitement de sortie", "Divergences explicitées"],
   },
   {
     title: "Correspondance médicale",
@@ -77,6 +79,15 @@ const products = [
     deep: "#8FE2B8",
     tag: "Ville · hôpital",
     items: ["Courrier d'adresse pour consultation", "Synthèse du dossier au confrère", "Formules et structure professionnelles"],
+  },
+  {
+    title: "Observation médicale",
+    description: "Prise de notes, suivi journalier, transmissions ciblées.",
+    icon: ClipboardCheck,
+    accent: "#5B54CC",
+    deep: "#4842A8",
+    tag: "Nouveau",
+    items: ["Observation structurée", "Notes de suivi", "Export sécurisé"],
   },
 ];
 
@@ -116,6 +127,16 @@ export default function Home() {
     <div className="redactio-landing" id="top">
       <style>{landingStyles}</style>
 
+      <div className="lp-compliance-bar">
+        <div className="lp-wrap lp-compliance-inner">
+          <span><Shield size={15} /> Conforme aux exigences de protection des données de santé</span>
+          <b>RGPD</b>
+          <b>Hébergement HDS</b>
+          <b>Secret médical</b>
+          <b>Pseudonymisation</b>
+        </div>
+      </div>
+
       <header className="lp-nav">
         <div className="lp-wrap lp-nav-inner">
           <a className="lp-brand" href="#top" aria-label="REDACTIO accueil">
@@ -132,7 +153,7 @@ export default function Home() {
             <a href="#praticiens">Praticiens</a>
             <a href="#etablissements">Établissements</a>
             <a href="#securite">Sécurité</a>
-            <a href="#offres">Offres</a>
+            <a href="/conformite">Conformité</a>
           </nav>
           <div className="lp-nav-cta">
             <a className="lp-login" href={getLoginUrl()}>Connexion</a>
@@ -168,6 +189,12 @@ export default function Home() {
                 <span key={item}><Check size={15} /> {item}</span>
               ))}
             </div>
+            <div className="lp-compliance-badges" aria-label="Garanties de conformité">
+              <span><Shield size={13} /> RGPD</span>
+              <span><Lock size={13} /> Hébergement HDS</span>
+              <span><CheckCircle size={13} /> Secret médical</span>
+              <span><EyeOff size={13} /> Pseudonymisation</span>
+            </div>
           </div>
 
           <div className="lp-doc-card" aria-label="Transformation de notes brutes en courrier de sortie">
@@ -179,7 +206,7 @@ export default function Home() {
             </div>
             <div className="lp-doc-body">
               <div className="lp-doc-pane lp-raw">
-                <span className="lp-pane-tag">Vos notes brutes</span>
+                <span className="lp-pane-tag">Vos notes · collées ou dictées</span>
                 <p>
                   <b>H 72a</b>, hosp 12/03 dlr thoracique. <b>SCA NST+</b>. corona → <b>stent IVA</b>. sortie J4.
                   ttt: aspirine 75, <b>ticagrelor</b> 90×2, atorva 80, bisop 2.5, ramipril 5. FEVG 48%.
@@ -201,16 +228,16 @@ export default function Home() {
 
       <section className="lp-strip">
         <div className="lp-wrap lp-strip-inner">
-          <StripItem icon={FileText} title="3 documents couverts" text="Sortie · conciliation · correspondance" />
-          <StripItem icon={CheckCircle} title="Format lettre de liaison" text="Aligné sur le décret 2016-995" />
-          <StripItem icon={Lock} title="Mémoire de session" text="Tout purgé à la déconnexion" />
-          <StripItem icon={Users} title="Praticiens & établissements" text="Du compte individuel au déploiement" />
+          <StripItem icon={FileText} title="4 documents couverts" text="Sortie · conciliation · courrier · observation" />
+          <StripItem icon={CheckCircle} title="Structuration par IA" text="Des notes brutes au document propre" />
+          <StripItem icon={FileText} title="Format lettre de liaison" text="Aligné sur le décret 2016-995" />
+          <StripItem icon={Lock} title="Conformité données de santé" text="RGPD · HDS · pseudonymisation" />
         </div>
       </section>
 
       <section className="lp-band" id="produits">
         <div className="lp-wrap">
-          <SectionHead eyebrow="Les outils" title="Trois écrits du quotidien hospitalier, un même réflexe." text="Les documents qui prennent du temps en fin de journée — mis en forme à partir de ce que vous savez déjà du dossier." />
+          <SectionHead eyebrow="Les outils" title="Toute votre rédaction hospitalière, assistée." text="Les quatre écrits qui prennent du temps — mis en forme par l'IA à partir de ce que vous savez déjà du dossier." />
           <div className="lp-product-grid">
             {products.map((product) => {
               const Icon = product.icon;
@@ -232,9 +259,33 @@ export default function Home() {
         <div className="lp-wrap">
           <SectionHead eyebrow="Fonctionnement" title="De vos notes au document signé, en trois temps." text="Une séquence courte, pensée pour s'insérer dans le flux d'un service — pas pour le ralentir." />
           <div className="lp-steps">
-            <Step number="TEMPS 01" title="Vous dictez ou collez" text="Abréviations, télégraphique, copier-coller : peu importe la forme. Sans identifiant direct du patient." kbd="H 72a · SCA NST+ · stent IVA…" />
-            <Step number="TEMPS 02" title="REDACTIO structure" text="Le texte est pseudonymisé puis remis en sections claires, dans le format du document choisi." kbd="Motif · Synthèse · Traitement…" />
-            <Step number="TEMPS 03" title="Vous relisez & validez" text="Vous corrigez, complétez, signez. Le document final est le vôtre — REDACTIO ne décide rien." kbd="Exporter · Copier · Signer" />
+            <Step number="TEMPS 01" title="Vous saisissez" text="Collez vos notes ou dictez-les, en forme libre. Sans identifiant direct du patient." kbd="clavier · dictée" />
+            <Step number="TEMPS 02" title="REDACTIO structure" text="Le contenu est pseudonymisé puis mis en sections, dans le format du document choisi." kbd="Motif · Synthèse · Traitement…" />
+            <Step number="TEMPS 03" title="Vous relisez & validez" text="Vous corrigez, complétez, signez. Le document final est le vôtre." kbd="Exporter · Copier · Signer" />
+          </div>
+        </div>
+      </section>
+
+      <section className="lp-band lp-paper" id="dictee">
+        <div className="lp-wrap">
+          <div className="lp-cherry">
+            <div>
+              <span className="lp-cherry-badge"><Mic size={12} /> En plus · Dictée IA</span>
+              <h2>Et, cerise sur le gâteau : <em>dictez</em>.</h2>
+              <p>Toute la rédaction fonctionne au clavier. Si vous préférez, énoncez simplement vos notes : REDACTIO les transcrit, les pseudonymise et les structure dans les quatre outils.</p>
+              <ul>
+                <li><Check size={16} /> Disponible sur les 4 documents</li>
+                <li><Check size={16} /> Pseudonymisation conservée sur la voix</li>
+                <li><Check size={16} /> Un brouillon, jamais une décision</li>
+              </ul>
+            </div>
+            <div className="lp-mic-card">
+              <span className="lp-mic"><Mic size={22} /></span>
+              <div>
+                <b>00:14 · à l'écoute</b>
+                <p>voix → pseudonymisation → structuration → validation</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -298,16 +349,16 @@ export default function Home() {
 
       <section className="lp-band lp-secure" id="securite">
         <div className="lp-wrap">
-          <span className="lp-eyebrow light">Sécurité & données de santé</span>
-          <h2>Conçu pour ne jamais conserver vos patients.</h2>
-          <p>La première objection des soignants face à l'IA est notre première exigence — pour le praticien isolé comme pour la DSI d'un CHU.</p>
+          <span className="lp-eyebrow light">Conformité & sécurité des données de santé</span>
+          <h2>Conforme aux exigences de protection des données de santé.</h2>
+          <p>Ce n'est pas une option : c'est le socle de REDACTIO. Chaque garantie est intégrée au fonctionnement même de la plateforme.</p>
           <div className="lp-secure-grid">
             <Feature dark icon={Shield} title="Aucune donnée stockée" text="Mémoire de session uniquement, purgée à la déconnexion." />
-            <Feature dark icon={EyeOff} title="Pseudonymisation auto" text="Appliquée avant tout envoi au moteur d'IA." />
-            <Feature dark icon={Check} title="Le médecin reste l'auteur" text="Aucun diagnostic, aucune décision automatisée." />
-            <Feature dark icon={Lock} title="Cadre établissement" text="Convention/DPA, hébergement & réversibilité à formaliser." />
+            <Feature dark icon={EyeOff} title="Pseudonymisation auto" text="Sur le texte comme sur la dictée, avant tout envoi au moteur d'IA." />
+            <Feature dark icon={Check} title="Pas d'entraînement sur vos données" text="Vos contenus ne servent jamais à entraîner les modèles." />
+            <Feature dark icon={Lock} title="Cadre contractuel" text="Convention de traitement, réversibilité et DPO pour les établissements." />
           </div>
-          <p className="lp-disclaimer">Bloc à valider avant mise en ligne : adaptez chaque affirmation à votre conformité réelle, avec votre DPO.</p>
+          <a className="lp-btn lp-btn-light lp-mt" href="/conformite">Consulter la page conformité & sécurité <ArrowRight className="lp-arr" size={16} /></a>
         </div>
       </section>
 
@@ -315,7 +366,7 @@ export default function Home() {
         <div className="lp-wrap">
           <SectionHead centered eyebrow="Offres" title="Une porte d'entrée pour chacun." text="Commencez seul en quelques minutes, ou équipez tout un service." />
           <div className="lp-plans">
-            <Plan kind="Praticien" title="À titre individuel" text="Pour un médecin, un interne ou un candidat PADHUE qui rédige pour lui-même." cta="Essayer gratuitement" href={getLoginUrl()} items={["Les 3 outils de rédaction", "Compte personnel immédiat", "Confidentialité par conception"]} />
+            <Plan kind="Praticien" title="À titre individuel" text="Pour un médecin, un interne ou un candidat PADHUE qui rédige pour lui-même." cta="Essayer gratuitement" href={getLoginUrl()} items={["Les 4 outils, dictée comprise", "Compte personnel immédiat", "Confidentialité par conception"]} />
             <Plan featured kind="Établissement" title="Service · Hôpital · GHT" text="Pour équiper des équipes et fiabiliser vos lettres de liaison à l'échelle." cta="Demander une démo & un devis" href="#demo" items={["Comptes équipes & déploiement par service", "Accompagnement & interlocuteur dédié", "Convention de traitement (DPA) sur mesure"]} />
           </div>
         </div>
@@ -327,7 +378,7 @@ export default function Home() {
             <div>
               <span className="lp-eyebrow">Établissements</span>
               <h2>Parlons de votre service.</h2>
-              <p>Une démonstration de 30 minutes, adaptée à votre activité et à vos enjeux QLS.</p>
+            <p>Une démonstration de 30 minutes, adaptée à votre activité (MCO, SSR/SMR, psychiatrie…) et à vos enjeux QLS.</p>
               <ul>
                 <li><Check size={16} /> Cas d'usage sur vos propres types de courriers</li>
                 <li><Check size={16} /> Réponse à vos questions sécurité & conformité</li>
@@ -362,7 +413,7 @@ export default function Home() {
         <div className="lp-wrap">
           <div className="lp-final">
             <h2>Votre prochain courrier, structuré en quelques instants.</h2>
-            <p>Que vous écriviez pour vous ou pour tout un service, REDACTIO vous fait gagner le temps de la mise en forme — sans jamais conserver vos patients.</p>
+            <p>Que vous écriviez pour vous ou pour tout un service — sans jamais conserver vos patients.</p>
             <div>
               <a className="lp-btn lp-btn-light" href={getLoginUrl()}>Essayer gratuitement</a>
               <a className="lp-btn lp-btn-primary" href="#demo">Demander une démo établissement</a>
@@ -381,9 +432,13 @@ export default function Home() {
               </a>
               <p>L'assistant de rédaction qui structure vos écrits hospitaliers — sans jamais conserver vos patients.</p>
             </div>
-            <FooterCol title="Praticiens" links={[["Les outils", "#produits"], ["Fonctionnement", "#fonctionnement"], ["Essayer gratuitement", getLoginUrl()]]} />
+            <FooterCol title="Produit" links={[["Les 4 outils", "#produits"], ["Fonctionnement", "#fonctionnement"], ["Dictée IA", "#dictee"]]} />
             <FooterCol title="Établissements" links={[["Pour les établissements", "#etablissements"], ["Offre établissement", "#offres"], ["Demander une démo", "#demo"]]} />
-            <FooterCol title="Plateforme" links={[["Sécurité & données", "#securite"], ["Connexion", getLoginUrl()], ["Mentions légales", "#"]]} />
+            <FooterCol title="Plateforme" links={[["Conformité & sécurité", "/conformite"], ["Connexion", getLoginUrl()], ["Mentions légales", "#"]]} />
+          </div>
+          <div className="lp-foot-compliance">
+            <span><Shield size={14} /> Conforme aux exigences de protection des données de santé</span>
+            <b>RGPD</b><b>Hébergement HDS</b><b>Secret médical</b><b>Pseudonymisation</b><b>Aucune donnée conservée</b>
           </div>
           <div className="lp-foot-bar">
             <span>© {new Date().getFullYear()} REDACTIO — Aide à la rédaction, jamais à la décision médicale.</span>
@@ -493,5 +548,10 @@ const landingStyles = `
 .lp-final-band{padding-top:0}.lp-final{background:linear-gradient(180deg,#fff,#EEF8F7);border:1px solid var(--border);color:var(--text);border-radius:22px;padding:56px;text-align:center;box-shadow:var(--shadow)}.lp-final h2{color:var(--text);max-width:22ch;margin-left:auto;margin-right:auto}.lp-final p{color:var(--muted);font-size:1.04rem;margin:0 auto 1.8em;max-width:46ch}.lp-final>div{display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap}.lp-footer{background:#fff;border-top:1px solid var(--border);padding:54px 0 38px}.lp-foot-grid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:34px;margin-bottom:38px}.lp-foot-grid p{font-size:.86rem;color:var(--muted);max-width:30ch;margin-top:14px}.lp-foot-col h5{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-family:var(--mono);margin-bottom:14px;font-weight:700}.lp-foot-col a{display:block;font-size:.9rem;padding:.3em 0;color:var(--muted-strong)}.lp-foot-bar{border-top:1px solid var(--border);padding-top:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;font-size:.8rem;color:var(--muted)}
 .redactio-landing .lp-btn-primary{color:#fff}.redactio-landing .lp-btn-slate,.redactio-landing .lp-btn-ghost,.redactio-landing .lp-btn-dark-ghost,.redactio-landing .lp-btn-light{color:var(--text)}
 @media(max-width:900px){.lp-hero-grid,.lp-product-grid,.lp-feature-grid,.lp-etab-grid,.lp-secure-grid,.lp-doors,.lp-plans,.lp-demo{grid-template-columns:1fr}.lp-links{display:none}.lp-menu{display:block}.lp-steps{grid-template-columns:1fr;gap:32px}.lp-step{border-left:2px solid var(--border);padding:0 0 0 18px}.lp-step:first-child{padding-left:18px;border-left:2px solid var(--border)}.lp-foot-grid{grid-template-columns:1fr 1fr}.lp-strip-item{flex:1 1 100%;border-right:0;border-bottom:1px solid var(--border)}}@media(max-width:520px){.lp-wrap{padding:0 20px}.lp-doc-body,.lp-form-row{grid-template-columns:1fr}.lp-raw{border-right:0;border-bottom:1px solid rgba(255,255,255,.08)}.lp-doc-pane{min-height:0}.lp-final,.lp-demo,.lp-plan{padding:30px 24px}.lp-nav-cta .lp-btn,.lp-login{display:none}}
+.lp-compliance-bar{background:#0B1B29;color:#CFE0DA}.lp-compliance-inner{display:flex;align-items:center;justify-content:center;gap:1.05rem;flex-wrap:wrap;padding:.62em 28px;text-align:center}.lp-compliance-inner span{display:inline-flex;align-items:center;gap:.5em;color:#fff;font-size:.82rem;font-weight:800}.lp-compliance-inner span svg{color:#8FD8CE}.lp-compliance-inner b{font-family:var(--mono);font-size:.68rem;letter-spacing:.03em;color:#9FC0B9;font-weight:600}.lp-compliance-badges{display:flex;gap:.55rem;flex-wrap:wrap;margin-top:1.2em}.lp-compliance-badges span{display:inline-flex;align-items:center;gap:.42em;font-size:.76rem;font-weight:800;color:var(--text);background:#fff;border:1px solid var(--border);border-radius:999px;padding:.42em .85em;box-shadow:0 3px 10px -5px rgba(11,27,41,.22)}.lp-compliance-badges svg{color:var(--accent)}
+.lp-product-grid{grid-template-columns:repeat(4,1fr);gap:20px}
+.lp-cherry{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;background:linear-gradient(150deg,#fff,#E7F4F2);border:1px solid #CDEAE5;border-radius:22px;padding:44px;position:relative;overflow:hidden}.lp-cherry-badge{display:inline-flex;align-items:center;gap:.5em;font-family:var(--mono);font-size:.66rem;letter-spacing:.13em;text-transform:uppercase;color:#0A7B70;background:#fff;border:1px solid #CDEAE5;border-radius:999px;padding:.4em .9em;margin-bottom:18px}.lp-cherry h2{font-family:var(--display);font-weight:800;font-size:clamp(1.8rem,3vw,2.45rem);line-height:1.1;margin-bottom:.4em;color:var(--text)}.lp-cherry h2 em{font-style:italic;color:var(--accent)}.lp-cherry p{color:var(--muted);font-size:1rem;max-width:42ch;margin-bottom:1.3em}.lp-cherry ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}.lp-cherry li{display:flex;gap:.6em;align-items:center;font-size:.9rem;color:var(--muted-strong)}.lp-cherry li svg{color:var(--accent)}.lp-mic-card{background:#fff;border:1px solid var(--border);border-radius:18px;padding:26px;box-shadow:0 30px 60px -36px rgba(11,27,41,.3);display:flex;align-items:center;gap:18px}.lp-mic{width:54px;height:54px;border-radius:50%;background:var(--accent);display:grid;place-items:center;color:#fff;flex-shrink:0;box-shadow:0 0 0 0 rgba(14,156,142,.5);animation:lp-pulse 1.8s infinite}.lp-mic-card b{font-family:var(--mono);font-size:.72rem;letter-spacing:.05em;color:#0A7B70}.lp-mic-card p{font-family:var(--mono);font-size:.76rem;margin:.35em 0 0;color:var(--muted)}
+.lp-foot-compliance{display:flex;gap:1.1rem;flex-wrap:wrap;align-items:center;padding:18px 0;border-top:1px solid var(--border);margin-bottom:6px}.lp-foot-compliance span{display:inline-flex;align-items:center;gap:.42em;font-size:.78rem;font-weight:800;color:var(--text)}.lp-foot-compliance span svg{color:var(--accent)}.lp-foot-compliance b{font-size:.78rem;color:var(--muted);font-weight:800}
+@media(max-width:980px){.lp-product-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:900px){.lp-cherry{grid-template-columns:1fr}}@media(max-width:520px){.lp-product-grid{grid-template-columns:1fr}.lp-cherry{padding:30px 24px}.lp-compliance-inner span{font-size:.76rem}}
 .redactio-landing :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
 `;
