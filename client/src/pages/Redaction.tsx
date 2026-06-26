@@ -12,12 +12,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import { Table } from "@tiptap/extension-table";
-import { TableCell } from "@tiptap/extension-table-cell";
-import { TableHeader } from "@tiptap/extension-table-header";
-import { TableRow } from "@tiptap/extension-table-row";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -247,7 +241,9 @@ export default function Redaction() {
   const [isSecuringObservation, setIsSecuringObservation] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const documentEditorRef = useRef<HTMLDivElement | null>(null);
   const [streamingText, setStreamingText] = useState("");
+  const [renderedDocumentHtml, setRenderedDocumentHtml] = useState("");
 
   // Génération via streaming SSE
   const handleStreamGenerate = useCallback(async (
@@ -331,32 +327,11 @@ export default function Redaction() {
     }
   }, []);
 
-  // Éditeur TipTap
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Table.configure({ resizable: true }),
-      TableRow,
-      TableHeader,
-      TableCell,
-    ],
-    content: "",
-    editorProps: {
-      attributes: {
-        class: "tiptap-editor",
-        "aria-label": "Éditeur de document médical",
-        role: "textbox",
-        "aria-multiline": "true",
-      },
-    },
-  });
-
-  // Mettre à jour l'éditeur quand le document est généré
   useEffect(() => {
-    if (editor && generatedDoc) {
-      editor.commands.setContent(renderGeneratedDocumentHtml(generatedDoc));
+    if (generatedDoc) {
+      setRenderedDocumentHtml(renderGeneratedDocumentHtml(generatedDoc));
     }
-  }, [editor, generatedDoc]);
+  }, [generatedDoc]);
 
   const buildGenerationRawData = useCallback(() => {
     if (selectedVolet !== "conciliation") return rawData;
@@ -486,17 +461,17 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
 
   const handleCopy = useCallback(() => {
     if (!validated) return;
-    const text = editor?.getText() ?? generatedDoc;
+    const text = documentEditorRef.current?.innerText ?? generatedDoc;
     navigator.clipboard.writeText(text).then(() => {
       toast.success("Document copié dans le presse-papier.");
     });
-  }, [validated, editor, generatedDoc]);
+  }, [validated, generatedDoc]);
 
   const handleDownloadWord = useCallback(async () => {
     if (!validated) return;
     try {
       toast.info("Génération du document Word en cours...");
-      const text = editor?.getText() ?? generatedDoc;
+      const text = documentEditorRef.current?.innerText ?? generatedDoc;
       const response = await fetch("/api/export/docx", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -519,7 +494,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Téléchargement Word impossible.");
     }
-  }, [validated, editor, generatedDoc, selectedVolet]);
+  }, [validated, generatedDoc, selectedVolet]);
 
   const handleSecureObservation = useCallback(async () => {
     if (selectedVolet !== "observation" || !observationText.trim()) return;
@@ -622,10 +597,10 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     setObservationPseudoInfo(null);
     setConciliationImportTarget("entry");
     setGeneratedDoc("");
+    setRenderedDocumentHtml("");
     setValidated(false);
     setPseudoInfo(null);
-    editor?.commands.setContent("");
-  }, [editor]);
+  }, []);
 
   // Redirection via useEffect pour éviter setState pendant le rendu
   useEffect(() => {
@@ -1251,7 +1226,16 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                   Éditeur de document — {selectedVolet && VOLETS[selectedVolet].label}
                 </span>
               </div>
-              <EditorContent editor={editor} />
+              <div
+                ref={documentEditorRef}
+                className="tiptap-editor"
+                contentEditable
+                suppressContentEditableWarning
+                role="textbox"
+                aria-label="Éditeur de document médical"
+                aria-multiline="true"
+                dangerouslySetInnerHTML={{ __html: renderedDocumentHtml }}
+              />
             </div>
 
             {/* Validation */}
