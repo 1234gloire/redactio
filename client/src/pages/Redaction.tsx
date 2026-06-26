@@ -14,6 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { Table } from "@tiptap/extension-table";
+import { TableCell } from "@tiptap/extension-table-cell";
+import { TableHeader } from "@tiptap/extension-table-header";
+import { TableRow } from "@tiptap/extension-table-row";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -117,6 +121,89 @@ function highlightTags(text: string): string {
     TAG_REGEX,
     '<mark class="tag-a-completer" title="Cliquez pour compléter">[À COMPLÉTER PAR LE MÉDECIN]</mark>'
   );
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function isMarkdownTableSeparator(line: string): boolean {
+  return /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);
+}
+
+function splitMarkdownTableRow(line: string): string[] {
+  return line
+    .trim()
+    .replace(/^\|/, "")
+    .replace(/\|$/, "")
+    .split("|")
+    .map((cell) => cell.trim());
+}
+
+function renderInlineMarkdown(text: string): string {
+  return escapeHtml(text)
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>");
+}
+
+function renderMarkdownTable(headerLine: string, bodyLines: string[]): string {
+  const headers = splitMarkdownTableRow(headerLine);
+  const rows = bodyLines
+    .map(splitMarkdownTableRow)
+    .filter((cells) => cells.some((cell) => cell.length > 0));
+
+  return [
+    "<table>",
+    "<tbody>",
+    "<tr>",
+    ...headers.map((cell) => `<th>${renderInlineMarkdown(cell) || "&nbsp;"}</th>`),
+    "</tr>",
+    ...rows.flatMap((cells) => [
+      "<tr>",
+      ...headers.map((_, index) => `<td>${renderInlineMarkdown(cells[index] ?? "") || "&nbsp;"}</td>`),
+      "</tr>",
+    ]),
+    "</tbody>",
+    "</table>",
+  ].join("");
+}
+
+function renderGeneratedDocumentHtml(documentText: string): string {
+  const lines = documentText.split("\n");
+  const html: string[] = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const nextLine = lines[index + 1] ?? "";
+
+    if (line.includes("|") && isMarkdownTableSeparator(nextLine)) {
+      const bodyLines: string[] = [];
+      index += 2;
+      while (index < lines.length && lines[index].includes("|") && !isMarkdownTableSeparator(lines[index])) {
+        bodyLines.push(lines[index]);
+        index += 1;
+      }
+      index -= 1;
+      html.push(renderMarkdownTable(line, bodyLines));
+      continue;
+    }
+
+    const heading = line.match(/^(#{1,3})\s+(.+)$/);
+    if (heading) {
+      const level = Math.min(heading[1].length + 1, 4);
+      html.push(`<h${level}>${renderInlineMarkdown(heading[2])}</h${level}>`);
+      continue;
+    }
+
+    html.push(`<p>${line.trim() ? renderInlineMarkdown(line) : "&nbsp;"}</p>`);
+  }
+
+  return highlightTags(html.join(""));
 }
 
 export default function Redaction() {
@@ -236,7 +323,13 @@ export default function Redaction() {
 
   // Éditeur TipTap
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [
+      StarterKit,
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
+    ],
     content: "",
     editorProps: {
       attributes: {
@@ -251,13 +344,7 @@ export default function Redaction() {
   // Mettre à jour l'éditeur quand le document est généré
   useEffect(() => {
     if (editor && generatedDoc) {
-      const htmlContent = highlightTags(
-        generatedDoc
-          .split("\n")
-          .map((line) => `<p>${line || "&nbsp;"}</p>`)
-          .join("")
-      );
-      editor.commands.setContent(htmlContent);
+      editor.commands.setContent(renderGeneratedDocumentHtml(generatedDoc));
     }
   }, [editor, generatedDoc]);
 

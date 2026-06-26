@@ -563,6 +563,42 @@
   .tiptap-editor ul, .tiptap-editor ol { padding-left: 1.5em; margin-bottom: 0.75em; }
   .tiptap-editor li { margin-bottom: 0.25em; }
   .tiptap-editor strong { font-weight: 600; }
+  .tiptap-editor .tableWrapper {
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    background: var(--color-card);
+  }
+  .tiptap-editor table {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+  .tiptap-editor th,
+  .tiptap-editor td {
+    min-width: 150px;
+    max-width: 260px;
+    border: 1px solid var(--color-border);
+    padding: 0.625rem 0.75rem;
+    vertical-align: top;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .tiptap-editor th {
+    background: var(--color-muted);
+    color: var(--color-foreground);
+    font-weight: 700;
+  }
+  .tiptap-editor td {
+    background: var(--color-card);
+  }
+  .tiptap-editor tr:nth-child(even) td {
+    background: color-mix(in srgb, var(--color-muted) 35%, transparent);
+  }
 
   /* Streaming cursor */
   .streaming-cursor::after {
