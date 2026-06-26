@@ -25,6 +25,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { applyVoicePunctuation } from "@/lib/voicePunctuation";
 import { Check, Eye, FlaskConical, Loader2, Mic, Pause, Play, RotateCcw, Square, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -151,9 +152,10 @@ export function VoiceRecorderWithPreview({
         setElapsed(0);
         return;
       }
-      setPreviewText(text);
-      setEditedText(text);
-      setAnalyzedText(text);
+      const normalizedText = applyVoicePunctuation(text).text;
+      setPreviewText(normalizedText);
+      setEditedText(normalizedText);
+      setAnalyzedText(normalizedText);
       setActiveTab("analyze"); // Ouvrir directement l'onglet analyse
       setState("preview");
     } catch (err: unknown) {
@@ -397,7 +399,8 @@ export function VoiceRecorderWithPreview({
               <strong>{fieldLabel}</strong>.{" "}
               {insertMode === "append"
                 ? "Le texte sera ajouté à la suite du contenu existant."
-                : "Le texte remplacera le contenu existant."}
+                : "Le texte remplacera le contenu existant."}{" "}
+              Les commandes vocales comme « point », « virgule » ou « à la ligne » sont converties automatiquement.
             </DialogDescription>
           </DialogHeader>
 

@@ -29,6 +29,7 @@
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { applyVoicePunctuation } from "@/lib/voicePunctuation";
 import { Mic, MicOff, Pause, Play, Square } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -60,139 +61,6 @@ declare global {
     SpeechRecognition?: new () => SpeechRecognitionInstance;
     webkitSpeechRecognition?: new () => SpeechRecognitionInstance;
   }
-}
-
-// ── Moteur de ponctuation vocale ───────────────────────────────────────────
-/**
- * Résultat du traitement d'un fragment de texte.
- * - text  : texte à insérer dans le champ (peut être vide si c'est une commande pure)
- * - isCommand : true si le fragment était une commande vocale
- * - deleteLastWord : true si la commande "effacer" a été prononcée
- */
-interface PunctuationResult {
-  text: string;
-  isCommand: boolean;
-  deleteLastWord: boolean;
-}
-
-/**
- * Table de correspondance commande vocale → ponctuation.
- * L'ordre est important : les expressions multi-mots doivent précéder les mots simples.
- * Chaque entrée : [regex_pattern, replacement, supprime_espace_avant]
- *
- * Convention :
- *  - supprime_espace_avant = true  → la ponctuation se colle au mot précédent (virgule, point…)
- *  - supprime_espace_avant = false → la ponctuation est précédée d'un espace (parenthèse ouvrante…)
- */
-/**
- * Crée un pattern qui capture l'espace avant ET après la commande vocale.
- * Cela permet de supprimer les deux espaces lors du remplacement (ponctuation collante)
- * ou de les conserver (ponctuation non-collante).
- * Utilise (\s*) au lieu de \b pour gérer les caractères accentués.
- */
-function wpGlue(pattern: string): RegExp {
-  // (\s*) avant + commande + (\s*) après — les deux groupes sont capturés
-  return new RegExp("(\\s*)(?:" + pattern + ")(\\s*)", "gi");
-}
-
-const PUNCTUATION_RULES: [RegExp, string, boolean][] = [
-  // Paragraphe — doit précéder "nouvelle ligne"
-  [wpGlue("nouveau paragraphe|nouvelle paragraphe|saut de paragraphe"), "\n\n", true],
-  // Nouvelle ligne
-  [wpGlue("à la ligne|nouvelle ligne|saut de ligne|retour à la ligne"), "\n", true],
-  // Point d'interrogation — doit précéder "point"
-  [wpGlue("point d['’]interrogation|point interrogation"), "?", true],
-  // Point d'exclamation — doit précéder "point"
-  [wpGlue("point d['’]exclamation|point exclamation"), "!", true],
-  // Point-virgule — doit précéder "point" et "virgule"
-  [wpGlue("point-virgule|point virgule"), ";", true],
-  // Deux-points
-  [wpGlue("deux[- ]points|deux points"), ":", true],
-  // Virgule
-  [wpGlue("virgule"), ",", true],
-  // Point (seul)
-  [wpGlue("point"), ".", true],
-  // Parenthèses
-  [wpGlue("ouvrir parenthèse|parenthèse ouvrante|ouvrir la parenthèse"), "(", false],
-  [wpGlue("fermer parenthèse|parenthèse fermante|fermer la parenthèse"), ")", true],
-  // Guillemets français
-  [wpGlue("ouvrir guillemets|guillemets ouvrants|ouvrir les guillemets"), "«\u00a0", false],
-  [wpGlue("fermer guillemets|guillemets fermants|fermer les guillemets"), "\u00a0»", true],
-  // Tiret
-  [wpGlue("tiret"), " -", true],
-  // Espace forcé
-  [wpGlue("espace"), " ", false],
-];
-
-/** Commande d'effacement du dernier mot */
-const DELETE_COMMAND = /\b(effacer|supprimer le dernier mot|annuler)\b/gi;
-
-/**
- * Applique le moteur de ponctuation sur un fragment de texte final.
- *
- * Stratégie :
- * 1. Détecter si le fragment entier est une commande d'effacement
- * 2. Remplacer les commandes intégrées dans le texte (ex. "tension 14 virgule 5")
- *    - ponctuation collante (glueLeft=true) : supprimer l'espace précédent via look-behind
- *    - ponctuation non-collante (glueLeft=false) : ajouter un espace si nécessaire
- * 3. Nettoyer les espaces multiples introduits par les remplacements
- * 4. Capitaliser la lettre suivant un . ? ! \n
- */
-function applyPunctuation(raw: string): PunctuationResult {
-  const trimmed = raw.trim();
-  if (!trimmed) return { text: "", isCommand: false, deleteLastWord: false };
-
-  // Commande d'effacement
-  if (DELETE_COMMAND.test(trimmed)) {
-    DELETE_COMMAND.lastIndex = 0;
-    return { text: "", isCommand: true, deleteLastWord: true };
-  }
-  DELETE_COMMAND.lastIndex = 0;
-
-  // Détecter si le fragment est une commande pure (uniquement une commande, rien d'autre)
-  let isPureCommand = false;
-  for (const [pattern] of PUNCTUATION_RULES) {
-    pattern.lastIndex = 0;
-    const match = trimmed.match(pattern);
-    if (match && match[0].trim().toLowerCase() === trimmed.toLowerCase()) {
-      isPureCommand = true;
-      break;
-    }
-    pattern.lastIndex = 0;
-  }
-
-  // Appliquer les remplacements
-  // Chaque pattern wpGlue capture (\s*) avant et (\s*) après la commande.
-  // - glueLeft=true  : supprimer les espaces autour → ponctuation colle au mot précédent
-  // - glueLeft=false : conserver un espace avant → ponctuation non-collante (parenthèse ouvrante)
-  let result = trimmed;
-  for (const [pattern, replacement, glueLeft] of PUNCTUATION_RULES) {
-    pattern.lastIndex = 0;
-    if (glueLeft) {
-      // Supprimer les espaces avant ET après la commande
-      result = result.replace(pattern, replacement);
-    } else {
-      // Garder un espace avant, supprimer l'espace après
-      result = result.replace(pattern, (_match, _before, _after) => " " + replacement);
-    }
-    pattern.lastIndex = 0;
-  }
-
-  // Supprimer les espaces multiples (sauf \n)
-  result = result.replace(/[ \t]{2,}/g, " ");
-  // Supprimer les espaces avant ponctuation collante résiduels
-  result = result.replace(/ ([,.:;?!)])/g, "$1");
-  // Supprimer les espaces après parenthèse ouvrante
-  result = result.replace(/\( /g, "(");
-  // Trim uniquement les espaces et tabulations (pas les \n)
-  result = result.replace(/^[ \t]+|[ \t]+$/g, "");
-
-  // Capitalisation après . ? ! \n (début de phrase)
-  result = result.replace(/(^|[.?!\n]\s*)([a-zàâäéèêëîïôùûüç])/g, (_, before, letter) => {
-    return before + letter.toUpperCase();
-  });
-
-  return { text: result, isCommand: isPureCommand, deleteLastWord: false };
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -280,7 +148,7 @@ export default function LiveSpeechRecorder({
         const result = event.results[i];
         const transcript = result[0].transcript;
         if (result.isFinal) {
-          const { text, deleteLastWord } = applyPunctuation(transcript);
+          const { text, deleteLastWord } = applyVoicePunctuation(transcript);
           if (deleteLastWord) {
             onDeleteLastWord?.();
           } else if (text) {
