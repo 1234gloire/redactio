@@ -13,6 +13,7 @@ import {
   Paragraph,
   Table,
   TableCell,
+  TableLayoutType,
   TableRow,
   TextRun,
   WidthType,
@@ -21,6 +22,11 @@ import { sdk } from "./_core/sdk";
 import { pseudonymise } from "./pseudonymisation";
 
 const RAW_DATA_MAX_CHARS = 200_000;
+
+// Content width (in twips/dxa) for a Letter page with 1" margins. Word mishandles the
+// fractional percentage widths this docx version emits (e.g. "33.333...%"), collapsing
+// columns to near-zero — fixed dxa widths avoid that entirely.
+const TABLE_WIDTH_DXA = 9000;
 
 const HEADING_LEVEL_BY_TAG: Record<string, (typeof HeadingLevel)[keyof typeof HeadingLevel]> = {
   h2: HeadingLevel.HEADING_1,
@@ -77,14 +83,14 @@ function buildTableRows(tableHtml: string): TableRow[] {
     while ((cellMatch = cellRegex.exec(rowMatch[1])) !== null) {
       cellsHtml.push(cellMatch[1]);
     }
-    const columnWidth = 100 / Math.max(cellsHtml.length, 1);
+    const columnWidth = Math.floor(TABLE_WIDTH_DXA / Math.max(cellsHtml.length, 1));
     rows.push(
       new TableRow({
         tableHeader: isFirstRow,
         children: cellsHtml.map(
           (cellHtml) =>
             new TableCell({
-              width: { size: columnWidth, type: WidthType.PERCENTAGE },
+              width: { size: columnWidth, type: WidthType.DXA },
               children: [new Paragraph({ children: parseInlineRuns(cellHtml) })],
             })
         ),
@@ -113,7 +119,13 @@ function buildDocxContentFromHtml(html: string): (Paragraph | Table)[] {
     } else if (tableHtml !== undefined) {
       const rows = buildTableRows(tableHtml);
       if (rows.length > 0) {
-        content.push(new Table({ rows, width: { size: 100, type: WidthType.PERCENTAGE } }));
+        content.push(
+          new Table({
+            rows,
+            width: { size: TABLE_WIDTH_DXA, type: WidthType.DXA },
+            layout: TableLayoutType.FIXED,
+          })
+        );
       }
     } else if (paragraphHtml !== undefined) {
       content.push(new Paragraph({ children: parseInlineRuns(paragraphHtml) }));
