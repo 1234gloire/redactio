@@ -473,12 +473,12 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     if (!validated) return;
     try {
       toast.info("Génération du document Word en cours...");
-      const text = documentEditorRef.current?.innerText ?? generatedDoc;
+      const html = documentEditorRef.current?.innerHTML ?? renderedDocumentHtml;
       const response = await fetch("/api/export/docx", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ content: text }),
+        body: JSON.stringify({ content: html }),
       });
 
       if (!response.ok) {
