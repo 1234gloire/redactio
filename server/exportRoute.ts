@@ -70,10 +70,11 @@ function parseInlineRuns(html: string): TextRun[] {
   return runs;
 }
 
-function buildTableRows(tableHtml: string): TableRow[] {
+function buildTableRows(tableHtml: string): { rows: TableRow[]; columnCount: number } {
   const rowRegex = /<tr>([\s\S]*?)<\/tr>/g;
   const cellRegex = /<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/g;
   const rows: TableRow[] = [];
+  let columnCount = 0;
   let rowMatch: RegExpExecArray | null;
   let isFirstRow = true;
   while ((rowMatch = rowRegex.exec(tableHtml)) !== null) {
@@ -83,6 +84,7 @@ function buildTableRows(tableHtml: string): TableRow[] {
     while ((cellMatch = cellRegex.exec(rowMatch[1])) !== null) {
       cellsHtml.push(cellMatch[1]);
     }
+    columnCount = Math.max(columnCount, cellsHtml.length);
     const columnWidth = Math.floor(TABLE_WIDTH_DXA / Math.max(cellsHtml.length, 1));
     rows.push(
       new TableRow({
@@ -98,7 +100,7 @@ function buildTableRows(tableHtml: string): TableRow[] {
     );
     isFirstRow = false;
   }
-  return rows;
+  return { rows, columnCount };
 }
 
 // Convert the editor's rendered HTML (headings, bold, tables) into real Word elements
@@ -117,12 +119,14 @@ function buildDocxContentFromHtml(html: string): (Paragraph | Table)[] {
         })
       );
     } else if (tableHtml !== undefined) {
-      const rows = buildTableRows(tableHtml);
+      const { rows, columnCount } = buildTableRows(tableHtml);
       if (rows.length > 0) {
+        const columnWidth = Math.floor(TABLE_WIDTH_DXA / Math.max(columnCount, 1));
         content.push(
           new Table({
             rows,
             width: { size: TABLE_WIDTH_DXA, type: WidthType.DXA },
+            columnWidths: Array(columnCount).fill(columnWidth),
             layout: TableLayoutType.FIXED,
           })
         );
