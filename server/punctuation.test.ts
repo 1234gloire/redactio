@@ -37,6 +37,18 @@ describe("applyVoicePunctuation — commandes pures", () => {
     expect(applyVoicePunctuation("deux-points").text).toBe(":");
   });
 
+  it("deux point (singulier, sans 's' final) → :", () => {
+    // Le "s" final de "points" est muet en français — la reconnaissance vocale
+    // le transcrit souvent au singulier ; la commande doit rester reconnue.
+    expect(applyVoicePunctuation("deux point").text).toBe(":");
+    expect(applyVoicePunctuation("deux-point").text).toBe(":");
+  });
+
+  it("ouvrir/fermer guillemet (singulier) → « / »", () => {
+    expect(applyVoicePunctuation("ouvrir guillemet").text).toContain("«");
+    expect(applyVoicePunctuation("fermer guillemet").text).toContain("»");
+  });
+
   it("point-virgule → ;", () => {
     expect(applyVoicePunctuation("point-virgule").text).toBe(";");
     expect(applyVoicePunctuation("point virgule").text).toBe(";");
