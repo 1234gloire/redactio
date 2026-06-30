@@ -54,12 +54,13 @@ const USER_PROMPT = `Analyse le document pseudonymise fourni et produis une sort
 
 BIO :
 - Groupe les resultats par famille biologique si possible.
-- Utilise un tableau simple avec les colonnes : Analyse | Resultat | Unite | Valeurs de reference | Anomalie.
+- N'utilise jamais de tableau.
+- Restitue chaque ligne en bloc court : "- Analyse : resultat unite ; reference : ... ; anomalie : ...".
 - Si plusieurs series de prelevements existent, separe-les sans indiquer de date.
 
 MICRO :
 - Structure : Prelevement, Examen direct, Culture, Identification, Antibiogramme, Conclusion.
-- Antibiogramme en tableau : Antibiotique | Resultat | CMI si presente.
+- Antibiogramme en blocs : "- Antibiotique : resultat ; CMI : ...".
 
 ANAPATH :
 - Separe chaque prelevement.
@@ -75,7 +76,7 @@ CARDIO :
 - Holter ou autre : restitue les resultats objectifs.
 
 EFR :
-- Tableau : Parametre | Valeur mesuree | Unite | % de la theorique | Interpretation.
+- Blocs : "- Parametre : valeur mesuree unite ; % theorique : ... ; interpretation : ...".
 - Ajoute gazometrie, reversibilite et conclusion si presents.
 
 ENDOSCOPIE / OPERATOIRE / AUTRE :
@@ -87,7 +88,8 @@ Regles de forme :
 - Meme langue que le document source.
 - Aucun bloc de code.
 - Pas de decoration markdown inutile.
-- Les tableaux doivent etre lisibles dans un editeur riche.
+- Aucun tableau Markdown. Aucun separateur de tableau avec des pipes "|".
+- Affichage attendu : titres fonctionnels puis listes a puces ou paragraphes courts.
 - Si le document contient plusieurs examens, separe-les avec : --- EXAMEN N - [TYPE] ---
 - Utilise [ILLISIBLE], [INCOMPLET] ou [NON EXTRAIT - IDENTIFIANT] si necessaire.
 - Ne signale pas les informations supprimees sauf si cela rend une ligne medicale incomprehensible.`;
@@ -123,6 +125,87 @@ function getExtension(filename: string) {
 
 function isEmptyExtractionMessage(text: string) {
   return /^\s*\[DOCUMENT VIDE\s*[-—]\s*aucun r[ée]sultat [àa] extraire\]\s*$/i.test(text);
+}
+
+function cleanMarkdownEmphasis(text: string) {
+  return text
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/\*([^*\n]+)\*/g, "$1");
+}
+
+function splitMarkdownTableRow(line: string) {
+  return line
+    .trim()
+    .replace(/^\|/, "")
+    .replace(/\|$/, "")
+    .split("|")
+    .map((cell) => cleanMarkdownEmphasis(cell.trim()));
+}
+
+function isMarkdownTableSeparator(line: string) {
+  const cells = splitMarkdownTableRow(line);
+  return cells.length > 1 && cells.every((cell) => /^:?-{3,}:?$/.test(cell));
+}
+
+function normalizeTableHeader(header: string) {
+  return header
+    .replace(/Valeurs?\s+de\s+\[NOM_MASQU[ÉE]\]/gi, "référence")
+    .replace(/Valeurs?\s+de\s+r[ée]f[ée]rence/gi, "référence")
+    .replace(/^R[ée]sultat\s*$/i, "résultat")
+    .replace(/^Unit[ée]\s*$/i, "unité")
+    .replace(/^Anomalie\s*$/i, "anomalie")
+    .trim();
+}
+
+function isEmptyTableCell(value: string) {
+  return !value || value === "—" || value === "-";
+}
+
+function convertMarkdownTableToBlocks(tableLines: string[]) {
+  const headers = splitMarkdownTableRow(tableLines[0]).map(normalizeTableHeader);
+  const rows = tableLines.slice(2).map(splitMarkdownTableRow);
+  const blocks = rows.map((cells) => {
+    const label = cells[0]?.trim() || "Résultat";
+    const details = cells.slice(1).flatMap((value, index) => {
+      if (isEmptyTableCell(value)) return [];
+      const header = normalizeTableHeader(headers[index + 1] || `colonne ${index + 2}`);
+      return `${header} : ${value}`;
+    });
+    return details.length > 0 ? `- ${label} : ${details.join(" ; ")}` : `- ${label}`;
+  });
+  return blocks.join("\n");
+}
+
+export function formatObservationExamBlocks(text: string) {
+  const lines = cleanMarkdownEmphasis(text).split(/\r?\n/);
+  const output: string[] = [];
+
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index];
+    const nextLine = lines[index + 1];
+    const isTableStart = line.trim().startsWith("|") && nextLine?.trim().startsWith("|") && isMarkdownTableSeparator(nextLine);
+
+    if (!isTableStart) {
+      output.push(line);
+      continue;
+    }
+
+    const tableLines = [line, nextLine];
+    index += 2;
+    while (index < lines.length && lines[index].trim().startsWith("|")) {
+      tableLines.push(lines[index]);
+      index++;
+    }
+    index--;
+    output.push(convertMarkdownTableToBlocks(tableLines));
+  }
+
+  return output
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/Valeurs?\s+de\s+\[NOM_MASQU[ÉE]\]/gi, "référence")
+    .trim();
 }
 
 export function registerObservationExamExtraction(app: Express) {
@@ -187,11 +270,12 @@ export function registerObservationExamExtraction(app: Express) {
         generatedText = inputPseudo.filteredText;
       }
 
-      const outputPseudo = pseudonymise(generatedText.trim());
+      const outputPseudo = pseudonymise(formatObservationExamBlocks(generatedText));
       if (!outputPseudo.filteredText) {
         res.status(422).json({ error: "Aucun résultat médical exploitable trouvé dans ce fichier." });
         return;
       }
+      const outputText = formatObservationExamBlocks(outputPseudo.filteredText);
 
       try {
         await createAuditLog({
@@ -201,7 +285,7 @@ export function registerObservationExamExtraction(app: Express) {
           metadata: {
             fileExtension: getExtension(req.file.originalname),
             sourceCharacters: rawText.length,
-            outputCharacters: outputPseudo.filteredText.length,
+            outputCharacters: outputText.length,
             inputMaskCount: inputPseudo.maskCount,
             outputMaskCount: outputPseudo.maskCount,
             extractionMode,
@@ -217,8 +301,8 @@ export function registerObservationExamExtraction(app: Express) {
 
       res.json({
         filename: req.file.originalname,
-        characterCount: outputPseudo.filteredText.length,
-        text: outputPseudo.filteredText,
+        characterCount: outputText.length,
+        text: outputText,
         extractionMode,
         warning,
         pseudonymisationInfo: {
