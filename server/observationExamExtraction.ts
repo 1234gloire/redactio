@@ -40,7 +40,9 @@ Supprime systematiquement :
 
 Exception a conserver : les renseignements cliniques, indications, motifs et contexte clinique quand ils sont medicalement utiles et presents dans le document.
 
-Si le document ne contient que des informations administratives ou identifiantes, reponds exactement :
+Ne reponds jamais "document vide" si tu vois au moins une valeur biologique, un resultat d'imagerie, une conclusion, un intitulé d'examen, une unite, une norme, un germe, un antibiogramme, une mesure ECG/EFR, ou un fragment de compte rendu exploitable, meme si l'OCR est imparfait.
+
+Si et seulement si le document ne contient que des informations administratives ou identifiantes, reponds exactement :
 [DOCUMENT VIDE - aucun resultat a extraire]`;
 
 const USER_PROMPT = `Analyse le document pseudonymise fourni et produis une sortie directement exploitable dans l'editeur d'observation medicale.
@@ -119,6 +121,10 @@ function getExtension(filename: string) {
   return dotIndex >= 0 ? filename.slice(dotIndex).toLowerCase() : "";
 }
 
+function isEmptyExtractionMessage(text: string) {
+  return /^\s*\[DOCUMENT VIDE\s*[-—]\s*aucun r[ée]sultat [àa] extraire\]\s*$/i.test(text);
+}
+
 export function registerObservationExamExtraction(app: Express) {
   app.post("/api/observation/extract-exam", upload.single("file"), async (req: Request, res: Response) => {
     let userId: number | null = null;
@@ -173,6 +179,12 @@ export function registerObservationExamExtraction(app: Express) {
           userId,
           message: aiError instanceof Error ? aiError.message : String(aiError),
         });
+      }
+
+      if (isEmptyExtractionMessage(generatedText) && inputPseudo.filteredText.trim().length > 80) {
+        extractionMode = "pseudonymised_raw";
+        warning = "L'extraction intelligente n'a pas identifié de résultat structuré : le texte extrait a été pseudonymisé et ajouté pour relecture.";
+        generatedText = inputPseudo.filteredText;
       }
 
       const outputPseudo = pseudonymise(generatedText.trim());
