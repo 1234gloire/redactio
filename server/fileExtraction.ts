@@ -35,12 +35,18 @@ function getOcrInstallMessage() {
   return "PDF scanné sans texte extractible. Installez l'OCR serveur (poppler-utils, tesseract-ocr, tesseract-ocr-fra) ou ajoutez une version OCRisée.";
 }
 
+function isPageMarkerLine(line: string) {
+  return (
+    /^\s*--\s*\d+\s+of\s+\d+\s*--\s*$/i.test(line) ||
+    /^\s*page\s+\d+\s+(?:sur|of)\s+\d+\s*$/i.test(line)
+  );
+}
+
 function cleanOcrText(text: string) {
   return text
     .split(/\r?\n/)
     .map((line) => line.trimEnd())
-    .filter((line) => !/^\s*--\s*\d+\s+of\s+\d+\s*--\s*$/i.test(line))
-    .filter((line) => !/^\s*page\s+\d+\s+(?:sur|of)\s+\d+\s*$/i.test(line))
+    .filter((line) => !isPageMarkerLine(line))
     .join("\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
@@ -55,6 +61,10 @@ function scoreOcrText(text: string) {
     ) ?? []
   ).length;
   return letters + medicalHits * 80;
+}
+
+export function hasUsableExtractedText(text: string) {
+  return scoreOcrText(text) >= 120;
 }
 
 async function execTesseract(imagePath: string, args: string[]) {
@@ -162,8 +172,8 @@ export async function extractText(file: Express.Multer.File) {
     const parser = new PDFParse({ data: file.buffer });
     try {
       const parsed = await parser.getText();
-      const text = parsed.text?.trim() ?? "";
-      if (!text) {
+      const text = cleanOcrText(parsed.text?.trim() ?? "");
+      if (!hasUsableExtractedText(text)) {
         return extractScannedPdfText(file.buffer);
       }
       return text;
