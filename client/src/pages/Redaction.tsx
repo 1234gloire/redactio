@@ -367,7 +367,8 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     setIsExtractingFile(true);
 
     try {
-      const response = await fetch("/api/extract-file", {
+      const isObservationExamImport = selectedVolet === "observation";
+      const response = await fetch(isObservationExamImport ? "/api/observation/extract-exam" : "/api/extract-file", {
         method: "POST",
         credentials: "include",
         body: formData,
@@ -390,7 +391,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
         });
       } else if (selectedVolet === "observation") {
         setObservationText((current) => {
-          const separator = current.trim().length > 0 ? "\n\n--- Contenu importé ---\n\n" : "";
+          const separator = current.trim().length > 0 ? "\n\n--- Résultats d'examen extraits ---\n\n" : "";
           return `${current}${separator}${extractedText}`.slice(0, RAW_DATA_MAX_CHARS);
         });
       } else {
@@ -399,7 +400,11 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
           return `${current}${separator}${extractedText}`.slice(0, RAW_DATA_MAX_CHARS);
         });
       }
-      toast.success(`Texte extrait depuis ${payload.filename || file.name}.`);
+      toast.success(
+        isObservationExamImport
+          ? `Résultats d'examen extraits depuis ${payload.filename || file.name}.`
+          : `Texte extrait depuis ${payload.filename || file.name}.`
+      );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Extraction du fichier impossible.");
     } finally {
@@ -1068,6 +1073,9 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
               <p className="text-xs text-muted-foreground">
                 {observationText.length}/{RAW_DATA_MAX_CHARS.toLocaleString("fr-FR")} caractères
               </p>
+              <p className="text-xs text-muted-foreground">
+                Les fichiers déposés sont analysés avant insertion : résultats d'examen uniquement, données administratives supprimées.
+              </p>
               {observationText.length > 0 && (
                 <Badge variant="secondary" className="w-fit text-xs">
                   Pseudonymisation automatique activée avant export
@@ -1099,10 +1107,10 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                 </div>
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    Glissez-déposez un fichier ici
+                    {isExtractingFile ? "Extraction des données de l'examen en cours..." : "Glissez-déposez un fichier ici"}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Bilan biologique brut, PDF, Word .docx, TXT, CSV ou JSON — il sera ajouté à l'observation.
+                    Les informations administratives et identitaires seront automatiquement supprimées.
                   </p>
                 </div>
               </div>

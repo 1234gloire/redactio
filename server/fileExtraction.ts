@@ -16,7 +16,7 @@ function getExtension(filename: string) {
   return dotIndex >= 0 ? filename.slice(dotIndex).toLowerCase() : "";
 }
 
-async function extractText(file: Express.Multer.File) {
+export async function extractText(file: Express.Multer.File) {
   const extension = getExtension(file.originalname);
 
   if (extension === ".pdf" || file.mimetype === "application/pdf") {

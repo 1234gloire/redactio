@@ -40,6 +40,9 @@ export async function createAnthropicStream(params: {
 export async function createAnthropicMessage(params: {
   system: string;
   messages: AnthropicMessage[];
+  maxTokens?: number;
+  temperature?: number;
+  topP?: number;
 }): Promise<string> {
   if (!ENV.anthropicApiKey) {
     throw new Error("ANTHROPIC_API_KEY is not configured");
@@ -54,9 +57,11 @@ export async function createAnthropicMessage(params: {
     },
     body: JSON.stringify({
       model: ENV.anthropicModel,
-      max_tokens: Number.isFinite(ENV.anthropicMaxTokens)
+      max_tokens: params.maxTokens ?? (Number.isFinite(ENV.anthropicMaxTokens)
         ? ENV.anthropicMaxTokens
-        : 12000,
+        : 12000),
+      ...(typeof params.temperature === "number" ? { temperature: params.temperature } : {}),
+      ...(typeof params.topP === "number" ? { top_p: params.topP } : {}),
       system: params.system,
       messages: params.messages,
     }),

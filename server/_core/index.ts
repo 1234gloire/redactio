@@ -7,6 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { registerExportRoutes } from "../exportRoute";
 import { registerFileExtraction } from "../fileExtraction";
+import { registerObservationExamExtraction } from "../observationExamExtraction";
 import { registerStreamGeneration } from "../streamGeneration";
 import { registerVoiceTranscription } from "../voiceTranscriptionRoute";
 import { appRouter } from "../routers";
@@ -41,6 +42,7 @@ async function startServer() {
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerFileExtraction(app);
+  registerObservationExamExtraction(app);
   registerStreamGeneration(app);
   registerExportRoutes(app);
   registerVoiceTranscription(app);

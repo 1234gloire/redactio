@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 
 import { registerFileExtraction } from "./fileExtraction";
 import { registerExportRoutes } from "./exportRoute";
+import { registerObservationExamExtraction } from "./observationExamExtraction";
 import { registerStreamGeneration } from "./streamGeneration";
 import { registerVoiceTranscription } from "./voiceTranscriptionRoute";
 import { appRouter } from "./routers";
@@ -21,6 +22,7 @@ app.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext 
 registerStreamGeneration(app);
 registerVoiceTranscription(app);
 registerFileExtraction(app);
+registerObservationExamExtraction(app);
 registerExportRoutes(app);
 
 // --- Service des fichiers statiques (pour la production) ---
