@@ -123,7 +123,7 @@ function getExtension(filename: string) {
   return dotIndex >= 0 ? filename.slice(dotIndex).toLowerCase() : "";
 }
 
-function isEmptyExtractionMessage(text: string) {
+export function isEmptyExtractionMessage(text: string) {
   return /^\s*\[DOCUMENT VIDE\s*[-—]\s*aucun r[ée]sultat [àa] extraire\]\s*$/i.test(text);
 }
 
@@ -264,10 +264,18 @@ export function registerObservationExamExtraction(app: Express) {
         });
       }
 
-      if (isEmptyExtractionMessage(generatedText) && inputPseudo.filteredText.trim().length > 80) {
+      if (isEmptyExtractionMessage(generatedText)) {
         extractionMode = "pseudonymised_raw";
-        warning = "L'extraction intelligente n'a pas identifié de résultat structuré : le texte extrait a été pseudonymisé et ajouté pour relecture.";
-        generatedText = inputPseudo.filteredText;
+        if (inputPseudo.filteredText.trim()) {
+          warning = "L'extraction intelligente n'a pas identifié de résultat structuré : le texte OCR extrait a été pseudonymisé et ajouté pour relecture.";
+          generatedText = inputPseudo.filteredText;
+        } else {
+          res.status(422).json({
+            error:
+              "OCR terminé, mais aucun texte médical exploitable n'a été reconnu. Essayez un scan plus net ou une version PDF OCRisée.",
+          });
+          return;
+        }
       }
 
       const outputPseudo = pseudonymise(formatObservationExamBlocks(generatedText));
