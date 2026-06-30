@@ -23,7 +23,13 @@ export async function extractText(file: Express.Multer.File) {
     const parser = new PDFParse({ data: file.buffer });
     try {
       const parsed = await parser.getText();
-      return parsed.text?.trim() ?? "";
+      const text = parsed.text?.trim() ?? "";
+      if (!text) {
+        throw new Error(
+          "PDF scanné sans texte extractible. Ajoutez une version OCRisée ou copiez le compte rendu en texte."
+        );
+      }
+      return text;
     } finally {
       await parser.destroy();
     }
