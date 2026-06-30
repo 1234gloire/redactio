@@ -35,21 +35,73 @@ function getOcrInstallMessage() {
   return "PDF scanné sans texte extractible. Installez l'OCR serveur (poppler-utils, tesseract-ocr, tesseract-ocr-fra) ou ajoutez une version OCRisée.";
 }
 
+function cleanOcrText(text: string) {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trimEnd())
+    .filter((line) => !/^\s*--\s*\d+\s+of\s+\d+\s*--\s*$/i.test(line))
+    .filter((line) => !/^\s*page\s+\d+\s+(?:sur|of)\s+\d+\s*$/i.test(line))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function scoreOcrText(text: string) {
+  const cleaned = cleanOcrText(text);
+  const letters = cleaned.match(/[A-Za-zÀ-ÖØ-öø-ÿ]/g)?.length ?? 0;
+  const medicalHits = (
+    cleaned.match(
+      /\b(?:indication|technique|r[ée]sultat|conclusion|scanner|irm|radio|échographie|angio|patient|patiente|examen|c[ée]r[ée]bral|cr[âa]ne|injection|lésion|saignement|st[ée]nose)\b/gi
+    ) ?? []
+  ).length;
+  return letters + medicalHits * 80;
+}
+
+async function execTesseract(imagePath: string, args: string[]) {
+  const { stdout } = await execFileAsync("tesseract", [imagePath, "stdout", ...args], {
+    maxBuffer: 30 * 1024 * 1024,
+  });
+  return stdout;
+}
+
 async function runTesseract(imagePath: string) {
+  const pageSegmentationModes = ["4", "3", "6", "11"];
+  const attempts = pageSegmentationModes.map((psm) => [
+    "-l",
+    "fra+eng",
+    "--oem",
+    "1",
+    "--psm",
+    psm,
+    "-c",
+    "preserve_interword_spaces=1",
+  ]);
+  let languageError: unknown = null;
+  const candidates: string[] = [];
+
   try {
-    const { stdout } = await execFileAsync(
-      "tesseract",
-      [imagePath, "stdout", "-l", "fra+eng", "--psm", "6"],
-      { maxBuffer: 20 * 1024 * 1024 }
-    );
-    return stdout;
+    for (const args of attempts) {
+      candidates.push(await execTesseract(imagePath, args));
+    }
   } catch (error) {
     if (isCommandMissing(error)) throw error;
-    const { stdout } = await execFileAsync("tesseract", [imagePath, "stdout", "--psm", "6"], {
-      maxBuffer: 20 * 1024 * 1024,
-    });
-    return stdout;
+    languageError = error;
   }
+
+  if (candidates.length === 0) {
+    try {
+      for (const psm of pageSegmentationModes) {
+        candidates.push(await execTesseract(imagePath, ["--psm", psm]));
+      }
+    } catch (error) {
+      if (isCommandMissing(error)) throw error;
+      throw languageError ?? error;
+    }
+  }
+
+  return candidates
+    .map(cleanOcrText)
+    .sort((a, b) => scoreOcrText(b) - scoreOcrText(a))[0] ?? "";
 }
 
 async function extractScannedPdfText(buffer: Buffer) {
@@ -81,7 +133,7 @@ async function extractScannedPdfText(buffer: Buffer) {
     const pageTexts: string[] = [];
     for (const imageFile of imageFiles) {
       try {
-        const text = await runTesseract(path.join(workDir, imageFile));
+        const text = cleanOcrText(await runTesseract(path.join(workDir, imageFile)));
         if (text.trim()) pageTexts.push(text.trim());
       } catch (error) {
         if (isCommandMissing(error)) {
@@ -91,7 +143,13 @@ async function extractScannedPdfText(buffer: Buffer) {
       }
     }
 
-    return pageTexts.join("\n\n").trim();
+    const text = cleanOcrText(pageTexts.join("\n\n"));
+    if (scoreOcrText(text) < 120) {
+      throw new Error(
+        "OCR terminé, mais aucun texte médical exploitable n'a été reconnu. Essayez un scan plus net ou une version PDF OCRisée."
+      );
+    }
+    return text;
   } finally {
     await rm(workDir, { recursive: true, force: true });
   }
