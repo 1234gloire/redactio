@@ -8,7 +8,7 @@ import { createAnthropicMessage } from "./_core/anthropic";
 import { sdk } from "./_core/sdk";
 import { createAuditLog } from "./db";
 import { extractText } from "./fileExtraction";
-import { pseudonymise } from "./pseudonymisation";
+import { pseudonymiseExamExtractionOutput } from "./pseudonymisation";
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
 const RAW_DATA_MAX_CHARS = 200_000;
@@ -278,7 +278,6 @@ export function registerObservationExamExtraction(app: Express) {
         return;
       }
 
-      const inputPseudo = pseudonymise(rawText);
       let generatedText = "";
       let extractionMode: "ai" | "pseudonymised_raw" = "ai";
       let warning: string | undefined;
@@ -289,7 +288,7 @@ export function registerObservationExamExtraction(app: Express) {
           messages: [
             {
               role: "user",
-              content: `${USER_PROMPT}\n\n--- DOCUMENT PSEUDONYMISÉ À EXTRAIRE ---\n${inputPseudo.filteredText}`,
+              content: `${USER_PROMPT}\n\n--- DOCUMENT BRUT À EXTRAIRE — NON FILTRÉ EN ENTRÉE ---\n${rawText}`,
             },
           ],
           maxTokens: 4000,
@@ -298,7 +297,7 @@ export function registerObservationExamExtraction(app: Express) {
       } catch (aiError) {
         extractionMode = "pseudonymised_raw";
         warning = "Extraction intelligente indisponible : le texte extrait a été pseudonymisé et ajouté sans restructuration IA.";
-        generatedText = inputPseudo.filteredText;
+        generatedText = rawText;
         console.error("[ObservationExamExtraction] AI extraction fallback", {
           userId,
           message: aiError instanceof Error ? aiError.message : String(aiError),
@@ -307,9 +306,9 @@ export function registerObservationExamExtraction(app: Express) {
 
       if (isEmptyExtractionMessage(generatedText)) {
         extractionMode = "pseudonymised_raw";
-        if (inputPseudo.filteredText.trim()) {
+        if (rawText.trim()) {
           warning = "L'extraction intelligente n'a pas identifié de résultat structuré : le texte OCR extrait a été pseudonymisé et ajouté pour relecture.";
-          generatedText = inputPseudo.filteredText;
+          generatedText = rawText;
         } else {
           res.status(422).json({
             error:
@@ -319,7 +318,7 @@ export function registerObservationExamExtraction(app: Express) {
         }
       }
 
-      const outputPseudo = pseudonymise(formatObservationExamBlocks(generatedText));
+      const outputPseudo = pseudonymiseExamExtractionOutput(formatObservationExamBlocks(generatedText));
       if (!outputPseudo.filteredText) {
         res.status(422).json({ error: "Aucun résultat médical exploitable trouvé dans ce fichier." });
         return;
@@ -335,13 +334,10 @@ export function registerObservationExamExtraction(app: Express) {
             fileExtension: getExtension(req.file.originalname),
             sourceCharacters: rawText.length,
             outputCharacters: outputText.length,
-            inputMaskCount: inputPseudo.maskCount,
             outputMaskCount: outputPseudo.maskCount,
             extractionMode,
-            detectedCategories: Array.from(
-              new Set([...inputPseudo.detectedCategories, ...outputPseudo.detectedCategories])
-            ),
-            hasPotentialOvermasking: inputPseudo.hasPotentialOvermasking || outputPseudo.hasPotentialOvermasking,
+            detectedCategories: outputPseudo.detectedCategories,
+            hasPotentialOvermasking: outputPseudo.hasPotentialOvermasking,
           },
         });
       } catch {
@@ -355,12 +351,9 @@ export function registerObservationExamExtraction(app: Express) {
         extractionMode,
         warning,
         pseudonymisationInfo: {
-          inputMaskCount: inputPseudo.maskCount,
           outputMaskCount: outputPseudo.maskCount,
-          detectedCategories: Array.from(
-            new Set([...inputPseudo.detectedCategories, ...outputPseudo.detectedCategories])
-          ),
-          hasPotentialOvermasking: inputPseudo.hasPotentialOvermasking || outputPseudo.hasPotentialOvermasking,
+          detectedCategories: outputPseudo.detectedCategories,
+          hasPotentialOvermasking: outputPseudo.hasPotentialOvermasking,
         },
       });
     } catch (error) {

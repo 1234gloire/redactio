@@ -170,6 +170,40 @@ function applyNER(text: string): { result: string; count: number } {
   return { result, count };
 }
 
+function applyExamOutputNER(text: string): { result: string; count: number } {
+  let result = text;
+  let count = 0;
+
+  const titlePattern = new RegExp(
+    `\\b(${FRENCH_TITLES.join("|")})\\s+([A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ][a-zàâäéèêëîïôùûüç\\-']+(?:\\s+[A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ][a-zàâäéèêëîïôùûüç\\-']+){0,3})`,
+    "g"
+  );
+  result = result.replace(titlePattern, (_match, title) => {
+    count++;
+    return `${title} [NOM_MASQUÉ]`;
+  });
+
+  const identityKeywords = [
+    "patient",
+    "patiente",
+    "identité",
+    "nom",
+    "prénom",
+    "appelé",
+    "appelée",
+  ];
+  const contextPattern = new RegExp(
+    `\\b(${identityKeywords.join("|")})\\s*:?\\s+([A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ][a-zàâäéèêëîïôùûüç\\-']+(?:\\s+[A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ][a-zàâäéèêëîïôùûüç\\-']+){0,3})`,
+    "gi"
+  );
+  result = result.replace(contextPattern, (_match, keyword) => {
+    count++;
+    return `${keyword} [NOM_MASQUÉ]`;
+  });
+
+  return { result, count };
+}
+
 // ─── Fonction principale ──────────────────────────────────────────────────────
 
 /**
@@ -229,6 +263,60 @@ export function pseudonymise(rawText: string): PseudonymisationResult {
     maskCount: totalMaskCount,
     detectedCategories,
     hasPotentialOvermasking,
+  };
+}
+
+/**
+ * Filtre de sortie pour l'extraction d'examens.
+ *
+ * Contrairement au filtre général, il ne masque pas les dates génériques :
+ * dans les comptes rendus paracliniques, une date peut être clinique
+ * (début des symptômes, début de traitement, ancienneté d'une lésion).
+ */
+export function pseudonymiseExamExtractionOutput(rawText: string): PseudonymisationResult {
+  if (!rawText || typeof rawText !== "string") {
+    return {
+      filteredText: "",
+      maskCount: 0,
+      detectedCategories: [],
+      hasPotentialOvermasking: false,
+    };
+  }
+
+  let text = rawText;
+  let totalMaskCount = 0;
+  const detectedCategories: string[] = [];
+  const allowedRules = RULES.filter((rule) => rule.name !== "DATE_SENSIBLE");
+
+  for (const rule of allowedRules) {
+    const before = text;
+    text = text.replace(rule.pattern, rule.replacement);
+    if (text !== before) {
+      const matches = (before.match(rule.pattern) || []).length;
+      totalMaskCount += matches;
+      if (!detectedCategories.includes(rule.name)) {
+        detectedCategories.push(rule.name);
+      }
+    }
+  }
+
+  const nerResult = applyExamOutputNER(text);
+  text = nerResult.result;
+  if (nerResult.count > 0) {
+    totalMaskCount += nerResult.count;
+    if (!detectedCategories.includes("NOM_PROPRE")) {
+      detectedCategories.push("NOM_PROPRE");
+    }
+  }
+
+  const maskedTokens = (text.match(/\[[\w_]+_MASQUÉ[E]?\]/g) || []).length;
+  const totalWords = rawText.split(/\s+/).length;
+
+  return {
+    filteredText: text,
+    maskCount: totalMaskCount,
+    detectedCategories,
+    hasPotentialOvermasking: totalWords > 0 && maskedTokens / totalWords > 0.2,
   };
 }
 
