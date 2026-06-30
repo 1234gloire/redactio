@@ -58,9 +58,13 @@ Indication / motif / renseignements cliniques :
 - L'indication, le motif, le contexte clinique, la question posée ou les renseignements cliniques de l'examen sont obligatoirement conservés s'ils figurent dans le document.
 - Ils ne sont jamais masqués, supprimés ni reformulés, sauf retrait d'identifiants directs.
 
-Exhaustivité :
-- Restitue toutes les lignes de résultat présentes dans le document, sans omission, fusion ni résumé.
-- Les résultats négatifs ou normaux ("Pas de...", "Absence de...", "Sans particularité", "Non visualisé", "Éléments en place") sont obligatoires.
+RÈGLE D'EXHAUSTIVITÉ — AUCUN RÉSULTAT OMIS :
+- Tu restitues TOUTES les lignes de résultat présentes dans le document, sans exception et dans leur ordre d'apparition.
+- Tu n'omets, ne fusionnes ni ne résumes aucun résultat.
+- Les résultats NÉGATIFS ou NORMAUX ("Pas de...", "Absence de...", "Sans particularité", "Non visualisé", "Éléments en place") ont la même valeur diagnostique que les résultats positifs et doivent impérativement être restitués.
+- Un résultat négatif n'est jamais superflu : il documente l'absence de signe et fait partie intégrante du compte rendu.
+- Omettre une ligne de résultat, positive ou négative, est une erreur grave qui compromet la fiabilité du système.
+- Mettre tous les résultats, positifs et négatifs, sans masquage comme ici : "Pas de [NOM_MASQUÉ]". Tu dois les remettre intégralement comme dans le document source.
 
 Ne réponds jamais "document vide" si tu vois au moins une valeur biologique, un résultat d'imagerie, une conclusion, un intitulé d'examen, une unité, un germe, un antibiogramme, une mesure ECG/EFR, une indication ou un fragment de compte rendu exploitable, même si l'OCR est imparfait.
 
