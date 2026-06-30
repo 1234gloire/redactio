@@ -93,6 +93,12 @@ Regles de forme :
 function getClientErrorMessage(err: unknown): string {
   const message = err instanceof Error ? err.message : String(err);
 
+  if (message.includes("Format non pris en charge")) {
+    return message;
+  }
+  if (message.includes("Aucun texte exploitable")) {
+    return message;
+  }
   if (message.includes("ANTHROPIC_API_KEY")) {
     return "Configuration Anthropic manquante. Vérifiez la clé API côté serveur.";
   }
@@ -143,18 +149,31 @@ export function registerObservationExamExtraction(app: Express) {
       }
 
       const inputPseudo = pseudonymise(rawText);
-      const generatedText = await createAnthropicMessage({
-        system: SYSTEM_PROMPT,
-        messages: [
-          {
-            role: "user",
-            content: `${USER_PROMPT}\n\n--- DOCUMENT PSEUDONYMISÉ À EXTRAIRE ---\n${inputPseudo.filteredText}`,
-          },
-        ],
-        maxTokens: 4000,
-        temperature: 0,
-        topP: 0.9,
-      });
+      let generatedText = "";
+      let extractionMode: "ai" | "pseudonymised_raw" = "ai";
+      let warning: string | undefined;
+
+      try {
+        generatedText = await createAnthropicMessage({
+          system: SYSTEM_PROMPT,
+          messages: [
+            {
+              role: "user",
+              content: `${USER_PROMPT}\n\n--- DOCUMENT PSEUDONYMISÉ À EXTRAIRE ---\n${inputPseudo.filteredText}`,
+            },
+          ],
+          maxTokens: 4000,
+          temperature: 0.1,
+        });
+      } catch (aiError) {
+        extractionMode = "pseudonymised_raw";
+        warning = "Extraction intelligente indisponible : le texte extrait a été pseudonymisé et ajouté sans restructuration IA.";
+        generatedText = inputPseudo.filteredText;
+        console.error("[ObservationExamExtraction] AI extraction fallback", {
+          userId,
+          message: aiError instanceof Error ? aiError.message : String(aiError),
+        });
+      }
 
       const outputPseudo = pseudonymise(generatedText.trim());
       if (!outputPseudo.filteredText) {
@@ -173,6 +192,7 @@ export function registerObservationExamExtraction(app: Express) {
             outputCharacters: outputPseudo.filteredText.length,
             inputMaskCount: inputPseudo.maskCount,
             outputMaskCount: outputPseudo.maskCount,
+            extractionMode,
             detectedCategories: Array.from(
               new Set([...inputPseudo.detectedCategories, ...outputPseudo.detectedCategories])
             ),
@@ -187,6 +207,8 @@ export function registerObservationExamExtraction(app: Express) {
         filename: req.file.originalname,
         characterCount: outputPseudo.filteredText.length,
         text: outputPseudo.filteredText,
+        extractionMode,
+        warning,
         pseudonymisationInfo: {
           inputMaskCount: inputPseudo.maskCount,
           outputMaskCount: outputPseudo.maskCount,

@@ -400,11 +400,15 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
           return `${current}${separator}${extractedText}`.slice(0, RAW_DATA_MAX_CHARS);
         });
       }
-      toast.success(
-        isObservationExamImport
-          ? `Résultats d'examen extraits depuis ${payload.filename || file.name}.`
-          : `Texte extrait depuis ${payload.filename || file.name}.`
-      );
+      if (isObservationExamImport && payload.warning) {
+        toast.warning(String(payload.warning));
+      } else {
+        toast.success(
+          isObservationExamImport
+            ? `Résultats d'examen extraits depuis ${payload.filename || file.name}.`
+            : `Texte extrait depuis ${payload.filename || file.name}.`
+        );
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Extraction du fichier impossible.");
     } finally {
