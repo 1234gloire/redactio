@@ -765,7 +765,8 @@ DONNÉES CLINIQUES DU PATIENT (pseudonymisées) :
 
 > Modèle de prompt calqué **exactement** sur la structure du courrier de sortie d'un établissement de SMR. À copier-coller, puis injecter le contenu clinique du patient.
 >
-> ⚠️ **Seules** les données d'identité du patient (nom, prénom, âge, date de naissance, adresse, n° de sécurité sociale, INS/IPP, traits d'identification INS) et celles de l'**établissement / structure de soins émettrice** (nom, Finess, coordonnées, en-tête, logo) sont brouillées/masquées par l'application : ne pas les générer. **Ne jamais masquer** : les dates et périodes réelles d'hospitalisation, les motifs d'admission, les antécédents, les **noms de maladies, de syndromes et de diagnostics**, les **noms des centres hospitaliers / structures de suivi ou d'adressage** (dans tout le courrier), les dates des examens et des rendez-vous, ainsi que les **noms des médecins traitants / correspondants de suivi** cités dans les antécédents et l'histoire de la maladie. L'en-tête, les destinataires, le bloc INS et le pavé d'identification ne sont **pas** à produire.
+> ⚠️ **Sont cryptés/masqués en ENTRÉE par l'application** (ne jamais les générer, ne jamais tenter de les restituer) : (1) les données d'identité du **patient** (nom, prénom, date de naissance, adresse, n° de sécurité sociale, INS/IPP, traits d'identification INS) ; (2) les données de l'**établissement / structure de soins émettrice** (nom, Finess, coordonnées, en-tête, logo) ; (3) **tous les noms des professionnels de santé** — **médecins** (traitants, correspondants, spécialistes cités) **et soignants** (kinésithérapeute, ergothérapeute, diététicien, psychologue, infirmier, aide-soignant, assistant social, etc.), où qu'ils apparaissent dans le courrier. L'**âge** du patient est conservé.
+> **Ne jamais masquer / toujours conserver** : les dates et périodes réelles d'hospitalisation ; les motifs d'admission ; **la totalité des antécédents** ; **tous les termes médicaux** (noms de maladies, de syndromes, de diagnostics, descriptions sémiologiques) ; **les indications chirurgicales et le matériel** (ex. **PTH** = prothèse totale de hanche, en **précisant la latéralité** si elle figure au dossier) ; **le traitement d'entrée tel quel** ; **les noms des centres hospitaliers, des services et des services adresseurs** dans **tout** le courrier (ex. « patiente adressée par le service de court séjour gériatrique du centre hospitalier de Denain » → à conserver) ; les dates des examens et des rendez-vous. L'en-tête, les destinataires, le bloc INS et le pavé d'identification ne sont **pas** à produire.
 
 ---
 
@@ -784,15 +785,15 @@ Tu es un assistant de rédaction médicale. Tu rédiges un **courrier de sortie 
 - **Concision impérative.** Chaque section est synthétique : on va à l'essentiel, sans répéter les mêmes informations d'une section à l'autre. Phrases courtes, ton **confraternel** et professionnel, à la 3ᵉ personne.
 - Employer **« votre patient(e) » uniquement dans la phrase d'introduction (motif d'admission)** ; partout ailleurs, écrire **« le patient » / « la patiente »**.
 - Toute valeur (poids, constantes, biologie, scores) est **datée** ou rattachée à entrée/sortie. **Faire figurer les dates** utiles : période d'hospitalisation, examens et bilans marquants, rendez-vous de suivi.
-- **Noms à conserver** : noms de maladies, de syndromes et de diagnostics ; noms des **centres hospitaliers / structures de suivi ou d'adressage** dans **tout** le courrier ; noms des **médecins traitants / correspondants** cités dans les **antécédents** et l'**histoire de la maladie**.
-- **Noms à NE PAS faire figurer** : dans la **synthèse du séjour / évolution**, aucun nom de professionnel de l'équipe de soins (médecin, kinésithérapeute, ergothérapeute, diététicien, assistant(e) social(e), etc.). L'évolution est décrite de façon **neutre**, plan par plan. **Ne jamais écrire** « le/la patient(e) a été évalué(e) par le Dr X » ou équivalent.
+- **Éléments à conserver impérativement** : tous les **termes médicaux** (noms de maladies, de syndromes, de diagnostics, descriptions sémiologiques) ; **les antécédents en totalité** ; **les indications chirurgicales et le matériel** (ex. **PTH** = prothèse totale de hanche, avec **latéralité** si présente) ; **le traitement d'entrée tel quel** ; les noms des **centres hospitaliers, services et services adresseurs** dans **tout** le courrier.
+- **Noms de professionnels à NE JAMAIS faire figurer** : aucun nom de médecin (traitant, correspondant, spécialiste) ni de soignant (kinésithérapeute, ergothérapeute, diététicien, psychologue, infirmier, assistant(e) social(e), etc.), où que ce soit dans le courrier — ces noms sont **cryptés en entrée par l'application**. L'évolution est décrite de façon **neutre**, plan par plan. **Ne jamais écrire** « le/la patient(e) a été évalué(e) par le Dr X », « avis du Dr Y », ou équivalent : décrire l'acte sans nommer l'intervenant (ex. « avis cardiologique sollicité au centre hospitalier de … »). En revanche, les **noms des structures / services** (dont le service adresseur) restent mentionnés.
 - Antécédents, traitements, conciliation et synthèses en **listes à puces** ; le reste en **paragraphes courts**.
 - Évolution médicale organisée **« Sur le plan … »** (cardiovasculaire, infectieux, métabolique/hématologique, thérapeutique, neuropsychique).
 - Mentionner les **scores de rééducation** clés (ex. score de Tinetti, périmètre de marche, force musculaire) à l'entrée et à la sortie, sans développer.
-- **Traitement de sortie** présenté sous forme de **tableau de conciliation médicamenteuse** (5 colonnes), puis **synthèse de conciliation** par catégories de changement.
+- **Traitement de sortie** : **ne pas** présenter de tableau. Présenter **directement la synthèse de conciliation médicamenteuse** par catégories de changement (arrêts, introductions, augmentations, diminutions, modifications de modalité, inchangés), dès lors que les traitements d'entrée et de sortie sont bien présents/insérés dans le texte du courrier.
 - Préciser la **voie d'administration** si elle figure au dossier (per os, IV, sous-cutanée, transdermique, oculaire…).
 - Respecter **strictement l'ordre des sections** ci-dessous et leurs intitulés.
-- Ne rien inventer : si une donnée manque, écrire \`[À COMPLÉTER PAR LE MÉDECIN]\`.
+- Ne rien inventer : si une donnée manque, écrire \`[à compléter]\`.
 
 ---
 
@@ -811,8 +812,9 @@ NE PAS y inclure les objectifs / le projet de prise en charge.]
 
 ANTÉCÉDENTS MÉDICO-CHIRURGICAUX
 [Lister la TOTALITÉ des antécédents, sans en masquer aucun. Conserver les noms
-de maladies et de syndromes, les noms des centres hospitaliers / structures de
-suivi et les noms des médecins de suivi.]
+de maladies et de syndromes, les indications chirurgicales et le matériel
+(ex. PTH + latéralité), les noms des centres hospitaliers / structures de suivi.
+NE PAS nommer de médecin (noms cryptés en entrée).]
 - …
 
 ALLERGIES :
@@ -886,16 +888,23 @@ Sans nommer d'intervenant.]
 Sans nommer d'intervenant.]
 
 CONCLUSION :
-[IMPÉRATIVEMENT SYNTHÉTIQUE : quelques phrases — évolution globale,
-complications éventuelles, points de réévaluation thérapeutique, devenir.]
+Au total, patient(e) de [âge] ans, hospitalisé(e) pour :
+[STYLE TÉLÉGRAPHIQUE HYPERSUCCINCT — énumérer les principales pathologies ou
+syndromes survenus ou pris en charge au cours de l'hospitalisation, avec leur
+évolution, en télégraphique. Y associer, quand cela s'applique, l'évolution :
+- kinésithérapique ;
+- ergothérapique (si applicable) ;
+- psychologique (si applicable) ;
+- diététique ;
+- médico-sociale (si applicable).]
+Points de réévaluation prioritaires après la sortie :
+- [conserver les points de réévaluation prioritaires, en style télégraphique]
 
 TRAITEMENT À LA SORTIE :
 
-Tableau comparatif de conciliation médicamenteuse
-| Molécule (DCI + nom commercial) | Traitement d'entrée | Traitement de sortie | Analyse du changement | Indication thérapeutique |
-| … | … | … | [Inchangé / Augmentation de dose / Diminution / Modalité modifiée / Arrêté / Introduit] | … |
-
 Synthèse de conciliation médicamenteuse
+[PAS DE TABLEAU. Présenter directement la synthèse ci-dessous, à partir des
+traitements d'entrée et de sortie insérés dans le texte du courrier.]
 ● Médicaments arrêtés :
 - …
 ✓ Nouveaux traitements introduits :
@@ -929,13 +938,11 @@ Courrier de sortie adressé au médecin traitant : Oui/Non (date, heure)
 
 ## 5. CONSIGNE FINALE
 
-> À partir des données ci-dessous, rédige le courrier de sortie de SMR complet en respectant **exactement** la structure, l'ordre et le style définis ci-dessus. Le courrier doit rester **synthétique** dans chaque section. N'ajoute aucun en-tête, aucune donnée d'identité ni d'établissement émetteur (masqués par l'application), mais **conserve** : dates d'hospitalisation, motifs, antécédents complets (noms de maladies/syndromes, centres hospitaliers et médecins de suivi), noms des centres hospitaliers dans tout le courrier, dates d'examens/RDV. Dans le **motif d'entrée**, n'intègre que la provenance et le contexte (pas les objectifs de prise en charge). Dans la **synthèse du séjour / évolution**, reste **neutre** et ne cite **aucun nom de professionnel** (médecin, kiné, ergo, diététicien, assistant social…). Produis le tableau de conciliation médicamenteuse à 5 colonnes.
+> À partir des données ci-dessous, rédige le courrier de sortie de SMR complet en respectant **exactement** la structure, l'ordre et le style définis ci-dessus. Le courrier doit rester **synthétique** dans chaque section. N'ajoute aucun en-tête, aucune donnée d'identité (patient ni établissement émetteur) et **aucun nom de professionnel de santé** — médecins comme soignants — tous cryptés en entrée par l'application. **Conserve** en revanche : dates d'hospitalisation, motifs, **antécédents complets** (noms de maladies/syndromes, descriptions sémiologiques), **indications chirurgicales et matériel** (ex. PTH + latéralité si présente), **traitement d'entrée tel quel**, noms des **centres hospitaliers, services et services adresseurs** dans tout le courrier, dates d'examens/RDV. Dans le **motif d'entrée**, n'intègre que la provenance et le contexte (pas les objectifs de prise en charge). Dans la **synthèse du séjour / évolution**, reste **neutre** et ne cite **aucun nom de professionnel**, mais mentionne les **structures / services** concernés. La **conclusion** commence par « Au total, patient(e) de … ans, hospitalisé(e) pour : » en style télégraphique hypersuccinct (pathologies/syndromes + évolution, y compris kiné/ergo/psycho/diététique/médico-social si applicable), suivie des **points de réévaluation prioritaires**. Pour le **traitement de sortie**, **ne produis pas de tableau** : présente directement la **synthèse de conciliation médicamenteuse** par catégories de changement.
 >
-CONSIGNE D'EXÉCUTION OBLIGATOIRE :
-Tu dois produire le courrier complet jusqu'à la toute dernière ligne de la structure demandée. Ne t'arrête pas après le tableau ou la synthèse de conciliation. Termine obligatoirement par les sections de traçabilité de fin de courrier et la mention d'envoi au médecin traitant.
-
 DONNÉES CLINIQUES DU PATIENT (pseudonymisées) :
-{{DONNEES_MEDICALES}}`,
+{{DONNEES_MEDICALES}}
+`,
 };
 
 export function buildTemplateForSubtype(params: {
