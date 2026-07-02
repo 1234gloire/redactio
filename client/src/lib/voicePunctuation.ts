@@ -9,10 +9,10 @@ function wpGlue(pattern: string): RegExp {
 }
 
 const PUNCTUATION_RULES: [RegExp, string, boolean][] = [
-  [wpGlue("point (?:à|a) la ligne|point retour (?:à|a) la ligne|point nouvelle ligne"), ".\n", true],
-  [wpGlue("point nouveau paragraphe|point nouvelle paragraphe|point saut de paragraphe"), ".\n\n", true],
-  [wpGlue("nouveau paragraphe|nouvelle paragraphe|saut de paragraphe"), "\n\n", true],
-  [wpGlue("(?:à|a) la ligne|nouvelle ligne|saut de ligne|retour (?:à|a) la ligne|retour ligne"), "\n", true],
+  [wpGlue("point (?:à|a) la ligne|point retour(?:ne)? (?:à|a) la ligne|point nouvelle ligne|point ligne suivante"), ".\n", true],
+  [wpGlue("point nouveau paragraphe|point nouvelle paragraphe|point saut de paragraphe|point paragraphe suivant"), ".\n\n", true],
+  [wpGlue("nouveau paragraphe|nouvelle paragraphe|saut de paragraphe|paragraphe suivant|aller au paragraphe|passer au paragraphe"), "\n\n", true],
+  [wpGlue("(?:à|a) la ligne|nouvelle ligne|saut de ligne|retour(?:ne)? (?:à|a) la ligne|retour ligne|aller (?:à|a) la ligne|passer (?:à|a) la ligne|ligne suivante|va (?:à|a) la ligne"), "\n", true],
   [wpGlue("point d['’ ]interrogation|point interrogation"), "?", true],
   [wpGlue("point d['’ ]exclamation|point exclamation"), "!", true],
   [wpGlue("point-virgule|point virgule"), ";", true],
@@ -72,4 +72,3 @@ export function applyVoicePunctuation(raw: string): VoicePunctuationResult {
 
   return { text: result, isCommand: isPureCommand, deleteLastWord: false };
 }
-

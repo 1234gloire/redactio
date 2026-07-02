@@ -57,6 +57,11 @@ describe("applyVoicePunctuation — commandes pures", () => {
   it("à la ligne → \\n", () => {
     expect(applyVoicePunctuation("à la ligne").text).toBe("\n");
     expect(applyVoicePunctuation("a la ligne").text).toBe("\n");
+    expect(applyVoicePunctuation("retour à la ligne").text).toBe("\n");
+    expect(applyVoicePunctuation("retourne à la ligne").text).toBe("\n");
+    expect(applyVoicePunctuation("aller à la ligne").text).toBe("\n");
+    expect(applyVoicePunctuation("passer à la ligne").text).toBe("\n");
+    expect(applyVoicePunctuation("ligne suivante").text).toBe("\n");
   });
 
   it("nouveau paragraphe → \\n\\n", () => {
@@ -90,6 +95,16 @@ describe("applyVoicePunctuation — commandes intégrées dans une phrase", () =
   it("patient stable point à la ligne sortie autorisée → point puis nouvelle ligne", () => {
     const r = applyVoicePunctuation("patient stable point à la ligne sortie autorisée");
     expect(r.text).toBe("Patient stable.\nSortie autorisée");
+  });
+
+  it("patient stable point retour à la ligne sortie autorisée → point puis nouvelle ligne", () => {
+    const r = applyVoicePunctuation("patient stable point retour à la ligne sortie autorisée");
+    expect(r.text).toBe("Patient stable.\nSortie autorisée");
+  });
+
+  it("patient stable retourne à la ligne sortie autorisée → nouvelle ligne", () => {
+    const r = applyVoicePunctuation("patient stable retourne à la ligne sortie autorisée");
+    expect(r.text).toBe("Patient stable\nSortie autorisée");
   });
 
   it("fréquence cardiaque 72 deux points rythme sinusal → colon sans espace avant", () => {
