@@ -97,6 +97,7 @@ export function VoiceRecorderWithPreview({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const browserRecognitionRef = useRef<BrowserSpeechRecognition | null>(null);
   const browserTranscriptRef = useRef("");
+  const browserInterimTranscriptRef = useRef("");
   const browserStopModeRef = useRef<"idle" | "pause" | "finish" | "cancel">("idle");
   const stateRef = useRef<RecordingState>(state);
   const chunksRef = useRef<Blob[]>([]);
@@ -213,12 +214,18 @@ export function VoiceRecorderWithPreview({
 
     recognition.onresult = (event) => {
       let finalText = "";
+      let interimText = "";
       for (let i = event.resultIndex; i < event.results.length; i += 1) {
         const result = event.results[i];
-        if (result?.isFinal) finalText += ` ${result[0]?.transcript ?? ""}`;
+        const transcript = result?.[0]?.transcript ?? "";
+        if (result?.isFinal) finalText += ` ${transcript}`;
+        else interimText += ` ${transcript}`;
       }
       if (finalText.trim()) {
         browserTranscriptRef.current = `${browserTranscriptRef.current} ${finalText}`.trim();
+        browserInterimTranscriptRef.current = "";
+      } else {
+        browserInterimTranscriptRef.current = interimText.trim();
       }
     };
 
@@ -243,7 +250,7 @@ export function VoiceRecorderWithPreview({
       }
       if (mode === "finish") {
         browserStopModeRef.current = "idle";
-        openPreview(browserTranscriptRef.current, "browser");
+        openPreview(`${browserTranscriptRef.current} ${browserInterimTranscriptRef.current}`, "browser");
         return;
       }
       if (mode === "cancel") {
@@ -256,7 +263,7 @@ export function VoiceRecorderWithPreview({
           startBrowserRecognition();
         } catch {
           browserStopModeRef.current = "finish";
-          openPreview(browserTranscriptRef.current, "browser");
+          openPreview(`${browserTranscriptRef.current} ${browserInterimTranscriptRef.current}`, "browser");
         }
       }
     };
@@ -301,11 +308,13 @@ export function VoiceRecorderWithPreview({
     if (disabled || state !== "idle") return;
     if (speechProvider === "browser") {
       browserTranscriptRef.current = "";
+      browserInterimTranscriptRef.current = "";
       browserStopModeRef.current = "idle";
       setState("recording");
       setElapsed(0);
       startTimer();
       startBrowserRecognition();
+      toast.info("Test Voice navigateur actif : reconnaissance native Chrome/Edge, sans clé API.");
       maxTimerRef.current = setTimeout(() => {
         toast.warning("Durée maximale atteinte (5 min). Arrêt automatique.");
         browserStopModeRef.current = "finish";
@@ -496,7 +505,7 @@ export function VoiceRecorderWithPreview({
                 className="gap-1.5 border-primary/40 text-primary hover:bg-primary/5 hover:border-primary transition-all duration-150"
               >
                 <Mic className="w-3.5 h-3.5" />
-                <span className="text-xs">Dicter</span>
+                <span className="text-xs">{speechProvider === "browser" ? "Dicter Chrome/Edge" : "Dicter"}</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top"><p className="text-xs">Démarrer la dictée vocale</p></TooltipContent>
