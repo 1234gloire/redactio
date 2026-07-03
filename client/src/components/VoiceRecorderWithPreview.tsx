@@ -32,34 +32,6 @@ import { toast } from "sonner";
 import MedicalTextHighlighter from "./MedicalTextHighlighter";
 
 type RecordingState = "idle" | "recording" | "paused" | "transcribing" | "preview";
-type SpeechProvider = "openai" | "browser";
-
-type BrowserSpeechRecognitionEvent = {
-  resultIndex: number;
-  results: ArrayLike<{
-    isFinal: boolean;
-    0?: { transcript?: string };
-  }>;
-};
-
-type BrowserSpeechRecognitionErrorEvent = {
-  error?: string;
-  message?: string;
-};
-
-type BrowserSpeechRecognition = {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  onresult: ((event: BrowserSpeechRecognitionEvent) => void) | null;
-  onerror: ((event: BrowserSpeechRecognitionErrorEvent) => void) | null;
-  onend: (() => void) | null;
-  start: () => void;
-  stop: () => void;
-  abort: () => void;
-};
-
-type BrowserSpeechRecognitionConstructor = new () => BrowserSpeechRecognition;
 
 interface VoiceRecorderWithPreviewProps {
   /** Appelé quand l'utilisateur valide la transcription */
@@ -72,10 +44,6 @@ interface VoiceRecorderWithPreviewProps {
   className?: string;
   /** Désactiver le composant */
   disabled?: boolean;
-  /** Valeur du champ cible pour la dictée navigateur en direct */
-  liveValue?: string;
-  /** Mise à jour directe du champ cible pendant la dictée navigateur */
-  onLiveChange?: (text: string) => void;
 }
 
 const MAX_DURATION_MS = 5 * 60 * 1000;
@@ -86,8 +54,6 @@ export function VoiceRecorderWithPreview({
   insertMode = "append",
   className,
   disabled = false,
-  liveValue = "",
-  onLiveChange,
 }: VoiceRecorderWithPreviewProps) {
   const [state, setState] = useState<RecordingState>("idle");
   const [elapsed, setElapsed] = useState(0);
@@ -97,16 +63,8 @@ export function VoiceRecorderWithPreview({
   const [activeTab, setActiveTab] = useState<"edit" | "analyze">("edit");
   const [bars, setBars] = useState([0.3, 0.6, 1.0, 0.6, 0.3]);
   const [mimeType, setMimeType] = useState("");
-  const [speechProvider, setSpeechProvider] = useState<SpeechProvider>("openai");
-  const [lastProvider, setLastProvider] = useState<SpeechProvider>("openai");
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const browserRecognitionRef = useRef<BrowserSpeechRecognition | null>(null);
-  const browserTranscriptRef = useRef("");
-  const browserInterimTranscriptRef = useRef("");
-  const browserLiveBaseRef = useRef("");
-  const browserStopModeRef = useRef<"idle" | "pause" | "finish" | "cancel">("idle");
-  const stateRef = useRef<RecordingState>(state);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -117,15 +75,9 @@ export function VoiceRecorderWithPreview({
 
   // Nettoyage
   useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
-
-  useEffect(() => {
     return () => {
       stopTimer();
       stopWave();
-      browserStopModeRef.current = "cancel";
-      browserRecognitionRef.current?.abort();
       streamRef.current?.getTracks().forEach((t) => t.stop());
       audioCtxRef.current?.close();
     };
@@ -177,147 +129,6 @@ export function VoiceRecorderWithPreview({
 
   const fmt = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
-  const getBrowserSpeechRecognition = (): BrowserSpeechRecognitionConstructor | null => {
-    const speechWindow = window as unknown as {
-      SpeechRecognition?: BrowserSpeechRecognitionConstructor;
-      webkitSpeechRecognition?: BrowserSpeechRecognitionConstructor;
-    };
-    return speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition ?? null;
-  };
-
-  const openPreview = useCallback((rawText: string, provider: SpeechProvider) => {
-    const text = rawText.trim();
-    if (!text) {
-      toast.warning("Aucun texte détecté. Veuillez réessayer.");
-      setState("idle");
-      setElapsed(0);
-      return;
-    }
-
-    const normalizedText = applyVoicePunctuation(text).text;
-    setPreviewText(normalizedText);
-    setEditedText(normalizedText);
-    setAnalyzedText(normalizedText);
-    setLastProvider(provider);
-    setActiveTab("analyze");
-    setState("preview");
-  }, []);
-
-  const getBrowserFullTranscript = () => {
-    return `${browserTranscriptRef.current} ${browserInterimTranscriptRef.current}`.trim();
-  };
-
-  const publishBrowserLiveText = useCallback(() => {
-    if (!onLiveChange) return;
-    const transcript = applyVoicePunctuation(getBrowserFullTranscript()).text;
-    const base = browserLiveBaseRef.current.trimEnd();
-    if (!transcript) {
-      onLiveChange(base);
-      return;
-    }
-    const separator = base ? (base.endsWith("\n") ? "" : "\n") : "";
-    onLiveChange(`${base}${separator}${transcript}`);
-  }, [onLiveChange]);
-
-  const startBrowserRecognition = useCallback(() => {
-    const Recognition = getBrowserSpeechRecognition();
-    if (!Recognition) {
-      toast.error("Test Voice navigateur disponible uniquement sur Chrome ou Edge.");
-      setState("idle");
-      setElapsed(0);
-      stopTimer();
-      return;
-    }
-
-    const recognition = new Recognition();
-    browserRecognitionRef.current = recognition;
-    recognition.lang = "fr-FR";
-    recognition.continuous = true;
-    recognition.interimResults = true;
-
-    recognition.onresult = (event) => {
-      let finalText = "";
-      let interimText = "";
-      for (let i = event.resultIndex; i < event.results.length; i += 1) {
-        const result = event.results[i];
-        const transcript = result?.[0]?.transcript ?? "";
-        if (result?.isFinal) finalText += ` ${transcript}`;
-        else interimText += ` ${transcript}`;
-      }
-      if (finalText.trim()) {
-        browserTranscriptRef.current = `${browserTranscriptRef.current} ${finalText}`.trim();
-        browserInterimTranscriptRef.current = "";
-      } else {
-        browserInterimTranscriptRef.current = interimText.trim();
-      }
-      publishBrowserLiveText();
-    };
-
-    recognition.onerror = (event) => {
-      if (browserStopModeRef.current !== "idle") return;
-      const error = event.error ?? event.message ?? "erreur inconnue";
-      if (error === "not-allowed") toast.error("Accès au microphone refusé dans le navigateur.");
-      else if (error === "no-speech") toast.warning("Aucune parole détectée. Réessayez en parlant plus près du micro.");
-      else toast.error(`Test Voice navigateur indisponible : ${error}`);
-      browserStopModeRef.current = "cancel";
-      stopTimer();
-      setState("idle");
-      setElapsed(0);
-    };
-
-    recognition.onend = () => {
-      const mode = browserStopModeRef.current;
-      browserRecognitionRef.current = null;
-      if (mode === "pause") {
-        browserStopModeRef.current = "idle";
-        return;
-      }
-      if (mode === "finish") {
-        browserStopModeRef.current = "idle";
-        if (onLiveChange) {
-          const transcript = getBrowserFullTranscript();
-          publishBrowserLiveText();
-          if (transcript) toast.success("Dictée Chrome/Edge ajoutée directement.");
-          else toast.warning("Aucun texte détecté. Veuillez réessayer.");
-          setState("idle");
-          setElapsed(0);
-        } else {
-          openPreview(getBrowserFullTranscript(), "browser");
-        }
-        return;
-      }
-      if (mode === "cancel") {
-        browserStopModeRef.current = "idle";
-        return;
-      }
-
-      if (stateRef.current === "recording") {
-        try {
-          startBrowserRecognition();
-        } catch {
-          browserStopModeRef.current = "finish";
-          if (onLiveChange) {
-            publishBrowserLiveText();
-            setState("idle");
-            setElapsed(0);
-          } else {
-            openPreview(getBrowserFullTranscript(), "browser");
-          }
-        }
-      }
-    };
-
-    try {
-      recognition.start();
-    } catch (err) {
-      toast.error(`Impossible de démarrer Test Voice navigateur : ${err instanceof Error ? err.message : "erreur inconnue"}`);
-      browserRecognitionRef.current = null;
-      stopTimer();
-      setState("idle");
-      setElapsed(0);
-    }
-  }, [openPreview, onLiveChange, publishBrowserLiveText]);
-
   // ── Transcription ──────────────────────────────────────────────────────────
   const transcribeBlob = useCallback(async (blob: Blob, mime: string) => {
     setState("transcribing");
@@ -335,36 +146,27 @@ export function VoiceRecorderWithPreview({
       }
       const data = await res.json();
       const text: string = data.text?.trim() || "";
-      openPreview(text, "openai");
+      if (!text) {
+        toast.warning("Aucun texte détecté. Veuillez réessayer.");
+        setState("idle");
+        setElapsed(0);
+        return;
+      }
+      const normalizedText = applyVoicePunctuation(text).text;
+      setPreviewText(normalizedText);
+      setEditedText(normalizedText);
+      setAnalyzedText(normalizedText);
+      setActiveTab("analyze"); // Ouvrir directement l'onglet analyse
+      setState("preview");
     } catch (err: unknown) {
       toast.error(`Transcription échouée : ${err instanceof Error ? err.message : "Erreur inconnue"}`);
       setState("idle");
     }
-  }, [openPreview]);
+  }, []);
 
   // ── Actions ────────────────────────────────────────────────────────────────
   const handleStart = useCallback(async () => {
     if (disabled || state !== "idle") return;
-    if (speechProvider === "browser") {
-      browserTranscriptRef.current = "";
-      browserInterimTranscriptRef.current = "";
-      browserLiveBaseRef.current = liveValue;
-      browserStopModeRef.current = "idle";
-      setState("recording");
-      setElapsed(0);
-      startTimer();
-      startBrowserRecognition();
-      toast.info("Test Voice navigateur actif : reconnaissance native Chrome/Edge, sans clé API.");
-      maxTimerRef.current = setTimeout(() => {
-        toast.warning("Durée maximale atteinte (5 min). Arrêt automatique.");
-        browserStopModeRef.current = "finish";
-        browserRecognitionRef.current?.stop();
-        stopTimer();
-        setState("transcribing");
-      }, MAX_DURATION_MS);
-      return;
-    }
-
     if (!navigator.mediaDevices?.getUserMedia) {
       toast.error("La dictée vocale n'est pas supportée par ce navigateur.");
       return;
@@ -415,53 +217,32 @@ export function VoiceRecorderWithPreview({
       }
       setState("idle");
     }
-  }, [disabled, state, transcribeBlob, speechProvider, startBrowserRecognition, liveValue]);
+  }, [disabled, state, transcribeBlob]);
 
   const handlePause = useCallback(() => {
     if (state !== "recording") return;
-    if (speechProvider === "browser") {
-      browserStopModeRef.current = "pause";
-      browserRecognitionRef.current?.stop();
-      pauseTimer();
-      setState("paused");
-      return;
-    }
     if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.pause();
     pauseTimer();
     stopWave();
     setState("paused");
-  }, [state, speechProvider]);
+  }, [state]);
 
   const handleResume = useCallback(() => {
     if (state !== "paused") return;
-    if (speechProvider === "browser") {
-      browserStopModeRef.current = "idle";
-      startTimer();
-      setState("recording");
-      startBrowserRecognition();
-      return;
-    }
     if (mediaRecorderRef.current?.state === "paused") mediaRecorderRef.current.resume();
     startTimer();
     if (streamRef.current) startWave(streamRef.current);
     setState("recording");
-  }, [state, speechProvider, startBrowserRecognition]);
+  }, [state]);
 
   const handleStop = useCallback(() => {
     if (state !== "recording" && state !== "paused") return;
-    if (speechProvider === "browser") {
-      browserStopModeRef.current = "finish";
-      stopTimer();
-      setState("transcribing");
-      browserRecognitionRef.current?.stop();
-      return;
-    }
     if (mediaRecorderRef.current?.state === "paused") mediaRecorderRef.current.resume();
     mediaRecorderRef.current?.stop();
     stopTimer();
     stopWave();
     setState("transcribing");
-  }, [state, speechProvider]);
+  }, [state]);
 
   // Texte final à insérer = texte de l'onglet actif
   const getFinalText = () => {
@@ -482,8 +263,6 @@ export function VoiceRecorderWithPreview({
   }, [editedText, analyzedText, activeTab, onInsert, insertMode]);
 
   const handleCancel = useCallback(() => {
-    browserStopModeRef.current = "cancel";
-    browserRecognitionRef.current?.abort();
     setState("idle");
     setPreviewText("");
     setEditedText("");
@@ -506,30 +285,6 @@ export function VoiceRecorderWithPreview({
   return (
     <>
       <div className={cn("flex items-center gap-2 flex-wrap", className)}>
-        {isIdle && (
-          <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-1">
-            <Button
-              type="button"
-              variant={speechProvider === "openai" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setSpeechProvider("openai")}
-              disabled={disabled}
-              className="h-7 px-2 text-xs"
-            >
-              OpenAI
-            </Button>
-            <Button
-              type="button"
-              variant={speechProvider === "browser" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setSpeechProvider("browser")}
-              disabled={disabled}
-              className="h-7 px-2 text-xs"
-            >
-              Test Voice navigateur
-            </Button>
-          </div>
-        )}
 
         {/* START */}
         {isIdle && (
@@ -545,7 +300,7 @@ export function VoiceRecorderWithPreview({
                 className="gap-1.5 border-primary/40 text-primary hover:bg-primary/5 hover:border-primary transition-all duration-150"
               >
                 <Mic className="w-3.5 h-3.5" />
-                <span className="text-xs">{speechProvider === "browser" ? "Dicter Chrome/Edge" : "Dicter"}</span>
+                <span className="text-xs">Dicter</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top"><p className="text-xs">Démarrer la dictée vocale</p></TooltipContent>
@@ -626,7 +381,7 @@ export function VoiceRecorderWithPreview({
         {isTranscribing && (
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-primary/20 bg-primary/5 text-xs text-primary">
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            <span>Transcription {speechProvider === "browser" ? "navigateur" : "OpenAI"} en cours…</span>
+            <span>Transcription en cours…</span>
           </div>
         )}
       </div>
@@ -670,9 +425,7 @@ export function VoiceRecorderWithPreview({
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                       Texte transcrit (modifiable)
                     </span>
-                    <Badge variant="secondary" className="text-xs">
-                      {lastProvider === "browser" ? "Web Speech Chrome/Edge" : "OpenAI Whisper"}
-                    </Badge>
+                    <Badge variant="secondary" className="text-xs">Whisper FR</Badge>
                   </div>
                   <Textarea
                     value={editedText}
