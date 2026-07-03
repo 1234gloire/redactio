@@ -817,6 +817,8 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                             }}
                             fieldLabel="Traitement d'entrée"
                             insertMode="append"
+                            liveValue={treatmentEntryData}
+                            onLiveChange={(text) => setTreatmentEntryData(text.slice(0, RAW_DATA_MAX_CHARS))}
                           />
                         </div>
                       </div>
@@ -850,6 +852,8 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                             }}
                             fieldLabel="Traitement de sortie"
                             insertMode="append"
+                            liveValue={treatmentExitData}
+                            onLiveChange={(text) => setTreatmentExitData(text.slice(0, RAW_DATA_MAX_CHARS))}
                           />
                         </div>
                       </div>
@@ -895,6 +899,8 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                         fieldLabel="Données médicales brutes"
                         insertMode="append"
                         disabled={isGenerating}
+                        liveValue={rawData}
+                        onLiveChange={(text) => setRawData(text.slice(0, RAW_DATA_MAX_CHARS))}
                       />
                     </div>
                   </div>
@@ -1062,6 +1068,8 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                     }}
                     fieldLabel="Observation médicale"
                     insertMode="append"
+                    liveValue={observationText}
+                    onLiveChange={(text) => setObservationText(text.slice(0, RAW_DATA_MAX_CHARS))}
                   />
                 </div>
               </div>

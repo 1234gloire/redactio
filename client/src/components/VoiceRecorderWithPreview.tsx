@@ -72,6 +72,10 @@ interface VoiceRecorderWithPreviewProps {
   className?: string;
   /** Désactiver le composant */
   disabled?: boolean;
+  /** Valeur du champ cible pour la dictée navigateur en direct */
+  liveValue?: string;
+  /** Mise à jour directe du champ cible pendant la dictée navigateur */
+  onLiveChange?: (text: string) => void;
 }
 
 const MAX_DURATION_MS = 5 * 60 * 1000;
@@ -82,6 +86,8 @@ export function VoiceRecorderWithPreview({
   insertMode = "append",
   className,
   disabled = false,
+  liveValue = "",
+  onLiveChange,
 }: VoiceRecorderWithPreviewProps) {
   const [state, setState] = useState<RecordingState>("idle");
   const [elapsed, setElapsed] = useState(0);
@@ -98,6 +104,7 @@ export function VoiceRecorderWithPreview({
   const browserRecognitionRef = useRef<BrowserSpeechRecognition | null>(null);
   const browserTranscriptRef = useRef("");
   const browserInterimTranscriptRef = useRef("");
+  const browserLiveBaseRef = useRef("");
   const browserStopModeRef = useRef<"idle" | "pause" | "finish" | "cancel">("idle");
   const stateRef = useRef<RecordingState>(state);
   const chunksRef = useRef<Blob[]>([]);
@@ -196,6 +203,22 @@ export function VoiceRecorderWithPreview({
     setState("preview");
   }, []);
 
+  const getBrowserFullTranscript = () => {
+    return `${browserTranscriptRef.current} ${browserInterimTranscriptRef.current}`.trim();
+  };
+
+  const publishBrowserLiveText = useCallback(() => {
+    if (!onLiveChange) return;
+    const transcript = applyVoicePunctuation(getBrowserFullTranscript()).text;
+    const base = browserLiveBaseRef.current.trimEnd();
+    if (!transcript) {
+      onLiveChange(base);
+      return;
+    }
+    const separator = base ? (base.endsWith("\n") ? "" : "\n") : "";
+    onLiveChange(`${base}${separator}${transcript}`);
+  }, [onLiveChange]);
+
   const startBrowserRecognition = useCallback(() => {
     const Recognition = getBrowserSpeechRecognition();
     if (!Recognition) {
@@ -227,6 +250,7 @@ export function VoiceRecorderWithPreview({
       } else {
         browserInterimTranscriptRef.current = interimText.trim();
       }
+      publishBrowserLiveText();
     };
 
     recognition.onerror = (event) => {
@@ -250,7 +274,16 @@ export function VoiceRecorderWithPreview({
       }
       if (mode === "finish") {
         browserStopModeRef.current = "idle";
-        openPreview(`${browserTranscriptRef.current} ${browserInterimTranscriptRef.current}`, "browser");
+        if (onLiveChange) {
+          const transcript = getBrowserFullTranscript();
+          publishBrowserLiveText();
+          if (transcript) toast.success("Dictée Chrome/Edge ajoutée directement.");
+          else toast.warning("Aucun texte détecté. Veuillez réessayer.");
+          setState("idle");
+          setElapsed(0);
+        } else {
+          openPreview(getBrowserFullTranscript(), "browser");
+        }
         return;
       }
       if (mode === "cancel") {
@@ -263,7 +296,13 @@ export function VoiceRecorderWithPreview({
           startBrowserRecognition();
         } catch {
           browserStopModeRef.current = "finish";
-          openPreview(`${browserTranscriptRef.current} ${browserInterimTranscriptRef.current}`, "browser");
+          if (onLiveChange) {
+            publishBrowserLiveText();
+            setState("idle");
+            setElapsed(0);
+          } else {
+            openPreview(getBrowserFullTranscript(), "browser");
+          }
         }
       }
     };
@@ -277,7 +316,7 @@ export function VoiceRecorderWithPreview({
       setState("idle");
       setElapsed(0);
     }
-  }, [openPreview]);
+  }, [openPreview, onLiveChange, publishBrowserLiveText]);
 
   // ── Transcription ──────────────────────────────────────────────────────────
   const transcribeBlob = useCallback(async (blob: Blob, mime: string) => {
@@ -309,6 +348,7 @@ export function VoiceRecorderWithPreview({
     if (speechProvider === "browser") {
       browserTranscriptRef.current = "";
       browserInterimTranscriptRef.current = "";
+      browserLiveBaseRef.current = liveValue;
       browserStopModeRef.current = "idle";
       setState("recording");
       setElapsed(0);
@@ -375,7 +415,7 @@ export function VoiceRecorderWithPreview({
       }
       setState("idle");
     }
-  }, [disabled, state, transcribeBlob, speechProvider, startBrowserRecognition]);
+  }, [disabled, state, transcribeBlob, speechProvider, startBrowserRecognition, liveValue]);
 
   const handlePause = useCallback(() => {
     if (state !== "recording") return;
