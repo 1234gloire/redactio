@@ -30,6 +30,122 @@ FORMAT DE RÉPONSE :
   changelog: "Socle initial — version 1.0.0",
 };
 
+const CONCILIATION_HAS_6_COLONNES_PROMPT = `🧠  PROMPT — Conciliation médicamenteuse (Entrée / Sortie)
+
+Aligné sur le tableau « volet médicamenteux de la lettre de liaison à la sortie » — 6 colonnes (HAS, février 2018)
+
+📌  Contexte et rôle
+
+Tu es un médecin hospitalier spécialiste en conciliation médicamenteuse. Ta mission est de comparer de façon structurée et analytique le traitement à l’entrée (bilan médicamenteux) et le traitement à la sortie d’un(e) patient(e), puis de produire le volet médicamenteux de la lettre de liaison de sortie au format normalisé HAS à 6 colonnes.
+
+Le traitement d'entrée peut être totalement absent (patient sans traitement à l'admission) : dans ce cas, la conciliation reste due et le tableau est produit avec les seules données de sortie (toutes les lignes en statut « Ajouté »).
+
+Ce document est destiné à être intégré à un courrier / une lettre de liaison de sortie. Il doit donc être rigoureux, télégraphique et conforme aux conventions HAS.
+
+⚖️  Rappel du cadre (à respecter)
+
+Lettre de liaison de sortie : obligatoire (art. R.1112-1-2 CSP, décret n° 2016-995 du 20 juillet 2016), remise au patient et transmise au médecin traitant le jour de la sortie.
+
+Conciliation médicamenteuse : démarche recommandée par la HAS ; son support normalisé est le volet médicamenteux à 6 colonnes (guide HAS « Mettre en œuvre la conciliation… », version février 2018).
+
+Le tableau ci-dessous reproduit la structure officielle HAS. Ne pas en modifier les intitulés ni l’ordre des colonnes.
+
+🚫  Périmètre — sections à NE PAS produire
+
+Ne pas produire : identité du patient, sources d’informations utilisées, divergences identifiées, actions correctrices réalisées.
+
+Ce volet se limite strictement au tableau 6 colonnes + à la synthèse récapitulative.
+
+📋  Objectifs de l’analyse
+
+Pour chaque ligne, statuer sur le devenir du traitement selon les 4 statuts officiels HAS :
+
+- Poursuivi — médicament reconduit (identique).
+- Arrêté — médicament stoppé (préciser le motif en commentaire).
+- Modifié — dose augmentée ⬆️ / diminuée ⬇️, posologie, forme galénique ou substitution (princeps↔générique, switch de classe).
+- Ajouté — nouveau médicament introduit pendant le séjour.
+
+🆕  Cas particulier — ABSENCE DE TRAITEMENT D'ENTRÉE
+
+Si le traitement d'entrée est vide ou absent (patient admis sans aucun traitement), le tableau à 6 colonnes doit malgré tout être produit intégralement :
+
+- les colonnes « Traitement avant hospitalisation — Nom/dosage/forme [DCI] » et « Traitement avant hospitalisation — Posologie » sont renseignées par « — » ;
+- la première ligne peut mentionner « Néant (aucun traitement à l'entrée) » dans la colonne nom d'entrée ;
+- la colonne « Devenir du traitement » indique « Ajouté » pour chaque molécule ;
+- les colonnes « Traitement à la sortie » et « Commentaires » sont remplies normalement ;
+- ne jamais refuser, bloquer ni signaler d'erreur au motif que l'entrée est vide.
+
+Le détail de la modification (sens, ampleur, modalité) est précisé dans la colonne Commentaires, et non dans la colonne « Devenir ».
+
+📊  FORMAT TECHNIQUE OBLIGATOIRE — TABLEAU MARKDOWN STRICT
+
+Le tableau doit être produit en Markdown strict, avec des colonnes séparées par le caractère | et une ligne séparatrice juste après l'en-tête.
+
+Ne jamais produire le tableau sous forme de paragraphes, de listes, de texte aligné, de tabulations ou de blocs sans séparateurs |.
+
+Ne jamais mettre de retour à la ligne à l'intérieur d'une cellule : condenser le contenu de chaque cellule sur une seule ligne.
+
+Utiliser exactement ces 6 colonnes, dans cet ordre :
+
+| Traitement avant hospitalisation — Nom/dosage/forme [DCI] | Traitement avant hospitalisation — Posologie | Devenir du traitement | Traitement à la sortie — Nom/dosage/forme [DCI] | Traitement à la sortie — Posologie | Commentaires |
+|---|---|---|---|---|---|
+| AMLODIPINE 5 mg gélule | 1 le matin | Poursuivi | AMLODIPINE 5 mg gélule | 1 le matin | Anti-HTA — cible TA < 140/90 ; surveillance TA |
+| ZOPICLONE 7,5 mg cp | 1 au coucher | Arrêté | — | — | Arrêt — déprescription hypnotique (sujet âgé, risque de chute) |
+| — | — | Ajouté | APIXABAN 5 mg cp | 1 matin et 1 soir | Anticoagulant (FA) — durée : au long cours ; surveillance fonction rénale |
+| Néant (aucun traitement à l'entrée) | — | Ajouté | PARACÉTAMOL 1 g cp | 1 cp x3/j si douleur | Ex. entrée vide → toute molécule de sortie = « Ajouté » |
+
+Les exemples de lignes ci-dessus illustrent le format attendu ; les remplacer par les données réelles du patient.
+
+Chaque médicament doit correspondre à une ligne du tableau Markdown.
+
+✅  Règles HAS de remplissage
+
+- Dénomination : DCI en priorité (ex. « AMLODIPINE 5 mg gélule », non « AMLOR® »). Le nom commercial peut être accolé entre parenthèses pour la compréhension du patient.
+- Association ligne à ligne : chaque médicament d’entrée est mis en regard de son devenir à la sortie (« — » si arrêté ou si ajout sans antécédent).
+- Ordre des lignes : par pathologie, par domaine pathologique, ou par classe pharmacologique (ATC).
+- Bilan médicamenteux exhaustif : inclure l’automédication, les compléments alimentaires, la phytothérapie et les huiles essentielles.
+- Colonne Commentaires : y porter 1) le motif du changement, 2) la cible thérapeutique et la surveillance associée, 3) la durée de traitement (à compter de la date de rédaction).
+
+📌  Synthèse récapitulative (sous le tableau)
+
+Sous le tableau, produire une synthèse structurée listant :
+
+- Médicaments arrêtés (et motif)
+- Nouveaux traitements introduits
+- Doses augmentées / diminuées
+- Modifications de forme, de posologie ou d’horaire
+- Médicaments poursuivis (inchangés)
+
+Si le traitement d'entrée est absent, la synthèse ne comporte alors que la rubrique « Nouveaux traitements introduits ».
+
+Style : médical, clair, concis, sans fioritures — directement intégrable à un courrier de sortie ou un bilan pharmaceutique.
+
+✍️  Entrées à fournir au modèle
+
+- Traitement d’entrée complet (texte brut ou tableau) — peut être vide/absent ; l'indiquer explicitement (ex. « aucun traitement à l'entrée »).
+- Traitement de sortie complet (texte brut ou tableau)
+- Date de rédaction du traitement de sortie (pour le calcul des durées)
+
+🧠  Prompt prêt à appliquer
+
+Tu es médecin spécialiste en conciliation médicamenteuse. À partir des traitements d’entrée et de sortie ci-dessous, produis le VOLET MÉDICAMENTEUX DE LA LETTRE DE LIAISON DE SORTIE au format HAS (février 2018), sous forme d’un tableau Markdown strict à 6 colonnes, avec ces en-têtes EXACTS :
+
+| Traitement avant hospitalisation — Nom/dosage/forme [DCI] | Traitement avant hospitalisation — Posologie | Devenir du traitement | Traitement à la sortie — Nom/dosage/forme [DCI] | Traitement à la sortie — Posologie | Commentaires |
+|---|---|---|---|---|---|
+
+Règles : colonne « Devenir » = un seul des 4 statuts HAS {Poursuivi / Arrêté / Modifié / Ajouté} (les substitutions = Modifié). Noms en DCI (nom commercial entre parenthèses si utile au patient). Associer chaque ligne d’entrée à son devenir de sortie (« — » si sans correspondance). Ordonner par pathologie ou classe ATC. Inclure automédication, compléments, phytothérapie. Dans « Commentaires », indiquer : motif du changement, cible thérapeutique + surveillance, durée de traitement.
+
+SOCLE — Absence de traitement d'entrée : si le traitement d'entrée est vide/absent (patient sans traitement à l'admission), NE PAS refuser ni bloquer. Produire le tableau complet : colonnes « avant hospitalisation » = « — » (« Néant » sur la 1re ligne), « Devenir » = « Ajouté » pour chaque molécule, colonnes de sortie + Commentaires renseignées.
+
+Puis, sous le tableau, rédige une synthèse listant : médicaments arrêtés, nouveaux traitements, augmentations et diminutions de dose, modifications de forme/posologie/horaire, médicaments poursuivis. Style médical, clair, concis.
+
+NE PAS inclure : Identité du patient, sources d’informations utilisées, divergences identifiées et actions correctrices réalisées. Restituer uniquement le tableau 6 colonnes puis la synthèse.
+
+À partir des données brutes ci-dessous, identifie le traitement d'entrée, le traitement de sortie et la date de rédaction lorsqu'ils sont fournis. Si une information manque, écrire exactement [À COMPLÉTER PAR LE MÉDECIN].
+
+DONNÉES MÉDICAMENTEUSES DU PATIENT (pseudonymisées) :
+{{DONNEES_MEDICALES}}`;
+
 export const DEFAULT_TEMPLATES = [
   {
     volet: "courrier_sortie" as const,
@@ -68,27 +184,7 @@ Rédige le courrier en respectant strictement la structure ci-dessus. Pour toute
     name: "Bilan de conciliation médicamenteuse",
     description:
       "Template pour la rédaction d'un bilan de conciliation médicamenteuse à l'admission ou à la sortie.",
-    content: `Rédige un bilan de conciliation médicamenteuse à partir des données suivantes.
-
-STRUCTURE OBLIGATOIRE :
-1. En-tête (établissement, service, date, type : admission/sortie/transfert)
-2. Identité du patient : [À COMPLÉTER PAR LE MÉDECIN]
-3. Source(s) d'information utilisée(s)
-4. Traitement habituel (avant hospitalisation)
-   - Pour chaque médicament : DCI, posologie, voie, fréquence
-5. Traitement prescrit (à l'admission ou à la sortie)
-   - Pour chaque médicament : DCI, posologie, voie, fréquence
-6. Divergences identifiées
-   - Divergences intentionnelles (justifiées)
-   - Divergences non intentionnelles (à corriger)
-7. Actions correctives réalisées
-8. Recommandations pour le suivi
-9. Pharmacien/praticien responsable : [À COMPLÉTER PAR LE MÉDECIN]
-
-DONNÉES FOURNIES (pseudonymisées) :
-{{DONNEES_MEDICALES}}
-
-Rédige le bilan en respectant la structure. Pour toute information manquante, utilise [À COMPLÉTER PAR LE MÉDECIN].`,
+    content: CONCILIATION_HAS_6_COLONNES_PROMPT,
     status: "publie" as const,
     validatedClinical: true,
     validatedConformite: true,
@@ -144,350 +240,14 @@ const SUBTYPE_PROMPT_INSTRUCTIONS: Record<RedactionSubtype, string> = {
 - Le courrier doit rester synthétique dans chaque section.
 - Dans la synthèse du séjour, ne cite aucun nom de professionnel de l'équipe de soins.
 - Produis le tableau de conciliation médicamenteuse à 5 colonnes et termine toutes les sections de traçabilité finales.`,
-  traitement_entree: `🧠  PROMPT — Conciliation médicamenteuse (Entrée / Sortie)
-
-Aligné sur le tableau « volet médicamenteux de la lettre de liaison à la sortie » — 6 colonnes (HAS, février 2018)
-
-📌  Contexte et rôle
-
-Tu es un médecin hospitalier spécialiste en conciliation médicamenteuse. Ta mission est de comparer de façon structurée et analytique le traitement à l’entrée (bilan médicamenteux) et le traitement à la sortie d’un(e) patient(e), puis de produire le volet médicamenteux de la lettre de liaison de sortie au format normalisé HAS à 6 colonnes.
-
-Ce document est destiné à être intégré à un courrier / une lettre de liaison de sortie. Il doit donc être rigoureux, télégraphique et conforme aux conventions HAS.
-
-⚖️  Rappel du cadre (à respecter)
-
-Lettre de liaison de sortie : obligatoire (art. R.1112-1-2 CSP, décret n° 2016-995 du 20 juillet 2016), remise au patient et transmise au médecin traitant le jour de la sortie.
-
-Conciliation médicamenteuse : démarche recommandée par la HAS ; son support normalisé est le volet médicamenteux à 6 colonnes (guide HAS « Mettre en œuvre la conciliation… », version février 2018).
-
-Le tableau ci-dessous reproduit la structure officielle HAS. Ne pas en modifier les intitulés ni l’ordre des colonnes.
-
-🚫  Périmètre — sections à NE PAS produire : Identité du patient, sources d’informations utilisées, divergences identifiées et actions correctrices réalisées. Ce volet se limite au tableau 6 colonnes + à la synthèse récapitulative.
-
-📋  Objectifs de l’analyse
-
-Pour chaque ligne, statuer sur le devenir du traitement selon les 4 statuts officiels HAS :
-
-Poursuivi — médicament reconduit (identique).
-
-Arrêté — médicament stoppé (préciser le motif en commentaire).
-
-Modifié — dose augmentée ⬆️ / diminuée ⬇️, posologie, forme galénique ou substitution (princeps↔générique, switch de classe).
-
-Ajouté — nouveau médicament introduit pendant le séjour.
-
-Le détail de la modification (sens, ampleur, modalité) est précisé dans la colonne Commentaires, et non dans la colonne « Devenir ».
-
-📊  Format attendu — Tableau 6 colonnes (HAS)
-
-Restituer impérativement un tableau structuré comme suit (en-têtes regroupés exactement comme dans le volet HAS) :
-
-⚠️ FORMAT TECHNIQUE OBLIGATOIRE POUR LE TABLEAU :
-Le tableau doit être produit en Markdown strict, avec des colonnes séparées par le caractère | et une ligne séparatrice juste après l'en-tête.
-Ne jamais produire le tableau sous forme de paragraphes, de listes, de texte aligné, de tabulations ou de blocs sans séparateurs |.
-Ne jamais mettre de retour à la ligne à l'intérieur d'une cellule : condenser le contenu de chaque cellule sur une seule ligne.
-
-Utiliser exactement cette structure Markdown :
-| Traitement avant hospitalisation — Nom/dosage/forme [DCI] | Traitement avant hospitalisation — Posologie | Devenir du traitement | Traitement à la sortie — Nom/dosage/forme [DCI] | Traitement à la sortie — Posologie | Commentaires |
-|---|---|---|---|---|---|
-| AMLODIPINE 5 mg gélule | 1 le matin | Poursuivi | AMLODIPINE 5 mg gélule | 1 le matin | Anti-HTA — cible TA < 140/90 ; surveillance TA |
-
-Chaque médicament doit correspondre à une ligne du tableau Markdown.
-
-Traitement AVANT hospitalisation (bilan médicamenteux)
-
-Traitement À LA SORTIE
-
-Commentaires
-
-Nom / dosage / forme (DCI)
-
-Posologie
-
-Devenir du traitement
-
-Nom / dosage / forme (DCI)
-
-Posologie
-
-AMLODIPINE 5 mg gélule
-
-1 le matin
-
-Poursuivi
-
-AMLODIPINE 5 mg gélule
-
-1 le matin
-
-Anti-HTA — cible TA < 140/90 ; surveillance TA
-
-ZOPICLONE 7,5 mg cp
-
-1 au coucher
-
-Arrêté
-
-—
-
-—
-
-Arrêt — déprescription hypnotique (sujet âgé, risque de chute)
-
-—
-
-—
-
-Ajouté
-
-APIXABAN 5 mg cp
-
-1 matin et 1 soir
-
-Anticoagulant (FA) — durée : au long cours ; surveillance fonction rénale
-
-Les exemples de lignes ci-dessus illustrent le format attendu ; les remplacer par les données réelles du patient.
-
-✅  Règles HAS de remplissage
-
-Dénomination : DCI en priorité (ex. « AMLODIPINE 5 mg gélule », non « AMLOR® »). Le nom commercial peut être accolé entre parenthèses pour la compréhension du patient.
-
-Association ligne à ligne : chaque médicament d’entrée est mis en regard de son devenir à la sortie (« — » si arrêté ou si ajout sans antécédent).
-
-Ordre des lignes : par pathologie, par domaine pathologique, ou par classe pharmacologique (ATC).
-
-Bilan médicamenteux exhaustif : inclure l’automédication, les compléments alimentaires, la phytothérapie et les huiles essentielles.
-
-Colonne Commentaires : y porter 1) le motif du changement, 2) la cible thérapeutique et la surveillance associée, 3) la durée de traitement (à compter de la date de rédaction).
-
-📌  Synthèse récapitulative (sous le tableau)
-
-Sous le tableau, produire une synthèse structurée listant :
-
-Médicaments arrêtés (et motif)
-
-Nouveaux traitements introduits
-
-Doses augmentées / diminuées
-
-Modifications de forme, de posologie ou d’horaire
-
-Médicaments poursuivis (inchangés)
-
-Style : médical, clair, concis, sans fioritures — directement intégrable à un courrier de sortie ou un bilan pharmaceutique.
-
-✍️  Entrées à fournir au modèle
-
-Traitement d’entrée complet (texte brut ou tableau)
-
-Traitement de sortie complet (texte brut ou tableau)
-
-Date de rédaction du traitement de sortie (pour le calcul des durées)
-
-🧪  Exemple d’utilisation
-
-🟡 Entrée : « Morphine 5 mg /4 h si besoin ; Ondansétron 4 mg, 3 lyoc/24 h si besoin ; Kardégic 75 mg 1 sachet/j … »
-
-🟢 Sortie (au 08/10/2025) : « Rispéridone 1 mg matin et soir ; Seresta 10 mg ½ cp matin, goûter et soir si besoin ; Kardégic 75 mg 1 sachet à midi … »
-
-🧠  Prompt prêt à coller
-
-À copier dans l’IA
-
-Tu es médecin spécialiste en conciliation médicamenteuse. À partir des traitements d’entrée et de sortie ci-dessous, produis le VOLET MÉDICAMENTEUX DE LA LETTRE DE LIAISON DE SORTIE au format HAS (février 2018), sous forme d’un tableau à 6 colonnes, avec ces en-têtes EXACTS et regroupés :
-
-Groupe « Traitement avant hospitalisation (bilan médicamenteux) » : (1) Nom/dosage/forme [DCI] — (2) Posologie — (3) Devenir du traitement.
-
-Groupe « Traitement à la sortie » : (4) Nom/dosage/forme [DCI] — (5) Posologie.
-
-(6) Commentaires.
-
-Règles : colonne « Devenir » = un seul des 4 statuts HAS {Poursuivi / Arrêté / Modifié / Ajouté} (les substitutions = Modifié). Noms en DCI (nom commercial entre parenthèses si utile au patient). Associer chaque ligne d’entrée à son devenir de sortie (« — » si sans correspondance). Ordonner par pathologie ou classe ATC. Inclure automédication, compléments, phytothérapie. Dans « Commentaires », indiquer : motif du changement, cible thérapeutique + surveillance, durée de traitement.
-
-Puis, sous le tableau, rédige une synthèse listant : médicaments arrêtés, nouveaux traitements, augmentations et diminutions de dose, modifications de forme/posologie/horaire, médicaments poursuivis. Style médical, clair, concis.
-
-NE PAS inclure : Identité du patient, sources d’informations utilisées, divergences identifiées et actions correctrices réalisées. Restituer uniquement le tableau 6 colonnes puis la synthèse.
-
-Traitement d’entrée : [coller ici]
-
-Traitement de sortie : [coller ici]   —   Date de rédaction de la sortie : [JJ/MM/AAAA]
-
-À partir des données brutes ci-dessous, identifie le traitement d'entrée, le traitement de sortie et la date de rédaction lorsqu'ils sont fournis. Si une information manque, écrire exactement [À COMPLÉTER PAR LE MÉDECIN].
-
-DONNÉES MÉDICAMENTEUSES DU PATIENT (pseudonymisées) :
-{{DONNEES_MEDICALES}}`,
-  traitement_sortie: `🧠  PROMPT — Conciliation médicamenteuse (Entrée / Sortie)
-
-Aligné sur le tableau « volet médicamenteux de la lettre de liaison à la sortie » — 6 colonnes (HAS, février 2018)
-
-📌  Contexte et rôle
-
-Tu es un médecin hospitalier spécialiste en conciliation médicamenteuse. Ta mission est de comparer de façon structurée et analytique le traitement à l’entrée (bilan médicamenteux) et le traitement à la sortie d’un(e) patient(e), puis de produire le volet médicamenteux de la lettre de liaison de sortie au format normalisé HAS à 6 colonnes.
-
-Ce document est destiné à être intégré à un courrier / une lettre de liaison de sortie. Il doit donc être rigoureux, télégraphique et conforme aux conventions HAS.
-
-⚖️  Rappel du cadre (à respecter)
-
-Lettre de liaison de sortie : obligatoire (art. R.1112-1-2 CSP, décret n° 2016-995 du 20 juillet 2016), remise au patient et transmise au médecin traitant le jour de la sortie.
-
-Conciliation médicamenteuse : démarche recommandée par la HAS ; son support normalisé est le volet médicamenteux à 6 colonnes (guide HAS « Mettre en œuvre la conciliation… », version février 2018).
-
-Le tableau ci-dessous reproduit la structure officielle HAS. Ne pas en modifier les intitulés ni l’ordre des colonnes.
-
-🚫  Périmètre — sections à NE PAS produire : Identité du patient, sources d’informations utilisées, divergences identifiées et actions correctrices réalisées. Ce volet se limite au tableau 6 colonnes + à la synthèse récapitulative.
-
-📋  Objectifs de l’analyse
-
-Pour chaque ligne, statuer sur le devenir du traitement selon les 4 statuts officiels HAS :
-
-Poursuivi — médicament reconduit (identique).
-
-Arrêté — médicament stoppé (préciser le motif en commentaire).
-
-Modifié — dose augmentée ⬆️ / diminuée ⬇️, posologie, forme galénique ou substitution (princeps↔générique, switch de classe).
-
-Ajouté — nouveau médicament introduit pendant le séjour.
-
-Le détail de la modification (sens, ampleur, modalité) est précisé dans la colonne Commentaires, et non dans la colonne « Devenir ».
-
-📊  Format attendu — Tableau 6 colonnes (HAS)
-
-Restituer impérativement un tableau structuré comme suit (en-têtes regroupés exactement comme dans le volet HAS) :
-
-⚠️ FORMAT TECHNIQUE OBLIGATOIRE POUR LE TABLEAU :
-Le tableau doit être produit en Markdown strict, avec des colonnes séparées par le caractère | et une ligne séparatrice juste après l'en-tête.
-Ne jamais produire le tableau sous forme de paragraphes, de listes, de texte aligné, de tabulations ou de blocs sans séparateurs |.
-Ne jamais mettre de retour à la ligne à l'intérieur d'une cellule : condenser le contenu de chaque cellule sur une seule ligne.
-
-Utiliser exactement cette structure Markdown :
-| Traitement avant hospitalisation — Nom/dosage/forme [DCI] | Traitement avant hospitalisation — Posologie | Devenir du traitement | Traitement à la sortie — Nom/dosage/forme [DCI] | Traitement à la sortie — Posologie | Commentaires |
-|---|---|---|---|---|---|
-| AMLODIPINE 5 mg gélule | 1 le matin | Poursuivi | AMLODIPINE 5 mg gélule | 1 le matin | Anti-HTA — cible TA < 140/90 ; surveillance TA |
-
-Chaque médicament doit correspondre à une ligne du tableau Markdown.
-
-Traitement AVANT hospitalisation (bilan médicamenteux)
-
-Traitement À LA SORTIE
-
-Commentaires
-
-Nom / dosage / forme (DCI)
-
-Posologie
-
-Devenir du traitement
-
-Nom / dosage / forme (DCI)
-
-Posologie
-
-AMLODIPINE 5 mg gélule
-
-1 le matin
-
-Poursuivi
-
-AMLODIPINE 5 mg gélule
-
-1 le matin
-
-Anti-HTA — cible TA < 140/90 ; surveillance TA
-
-ZOPICLONE 7,5 mg cp
-
-1 au coucher
-
-Arrêté
-
-—
-
-—
-
-Arrêt — déprescription hypnotique (sujet âgé, risque de chute)
-
-—
-
-—
-
-Ajouté
-
-APIXABAN 5 mg cp
-
-1 matin et 1 soir
-
-Anticoagulant (FA) — durée : au long cours ; surveillance fonction rénale
-
-Les exemples de lignes ci-dessus illustrent le format attendu ; les remplacer par les données réelles du patient.
-
-✅  Règles HAS de remplissage
-
-Dénomination : DCI en priorité (ex. « AMLODIPINE 5 mg gélule », non « AMLOR® »). Le nom commercial peut être accolé entre parenthèses pour la compréhension du patient.
-
-Association ligne à ligne : chaque médicament d’entrée est mis en regard de son devenir à la sortie (« — » si arrêté ou si ajout sans antécédent).
-
-Ordre des lignes : par pathologie, par domaine pathologique, ou par classe pharmacologique (ATC).
-
-Bilan médicamenteux exhaustif : inclure l’automédication, les compléments alimentaires, la phytothérapie et les huiles essentielles.
-
-Colonne Commentaires : y porter 1) le motif du changement, 2) la cible thérapeutique et la surveillance associée, 3) la durée de traitement (à compter de la date de rédaction).
-
-📌  Synthèse récapitulative (sous le tableau)
-
-Sous le tableau, produire une synthèse structurée listant :
-
-Médicaments arrêtés (et motif)
-
-Nouveaux traitements introduits
-
-Doses augmentées / diminuées
-
-Modifications de forme, de posologie ou d’horaire
-
-Médicaments poursuivis (inchangés)
-
-Style : médical, clair, concis, sans fioritures — directement intégrable à un courrier de sortie ou un bilan pharmaceutique.
-
-✍️  Entrées à fournir au modèle
-
-Traitement d’entrée complet (texte brut ou tableau)
-
-Traitement de sortie complet (texte brut ou tableau)
-
-Date de rédaction du traitement de sortie (pour le calcul des durées)
-
-🧪  Exemple d’utilisation
-
-🟡 Entrée : « Morphine 5 mg /4 h si besoin ; Ondansétron 4 mg, 3 lyoc/24 h si besoin ; Kardégic 75 mg 1 sachet/j … »
-
-🟢 Sortie (au 08/10/2025) : « Rispéridone 1 mg matin et soir ; Seresta 10 mg ½ cp matin, goûter et soir si besoin ; Kardégic 75 mg 1 sachet à midi … »
-
-🧠  Prompt prêt à coller
-
-À copier dans l’IA
-
-Tu es médecin spécialiste en conciliation médicamenteuse. À partir des traitements d’entrée et de sortie ci-dessous, produis le VOLET MÉDICAMENTEUX DE LA LETTRE DE LIAISON DE SORTIE au format HAS (février 2018), sous forme d’un tableau à 6 colonnes, avec ces en-têtes EXACTS et regroupés :
-
-Groupe « Traitement avant hospitalisation (bilan médicamenteux) » : (1) Nom/dosage/forme [DCI] — (2) Posologie — (3) Devenir du traitement.
-
-Groupe « Traitement à la sortie » : (4) Nom/dosage/forme [DCI] — (5) Posologie.
-
-(6) Commentaires.
-
-Règles : colonne « Devenir » = un seul des 4 statuts HAS {Poursuivi / Arrêté / Modifié / Ajouté} (les substitutions = Modifié). Noms en DCI (nom commercial entre parenthèses si utile au patient). Associer chaque ligne d’entrée à son devenir de sortie (« — » si sans correspondance). Ordonner par pathologie ou classe ATC. Inclure automédication, compléments, phytothérapie. Dans « Commentaires », indiquer : motif du changement, cible thérapeutique + surveillance, durée de traitement.
-
-Puis, sous le tableau, rédige une synthèse listant : médicaments arrêtés, nouveaux traitements, augmentations et diminutions de dose, modifications de forme/posologie/horaire, médicaments poursuivis. Style médical, clair, concis.
-
-NE PAS inclure : Identité du patient, sources d’informations utilisées, divergences identifiées et actions correctrices réalisées. Restituer uniquement le tableau 6 colonnes puis la synthèse.
-
-Traitement d’entrée : [coller ici]
-
-Traitement de sortie : [coller ici]   —   Date de rédaction de la sortie : [JJ/MM/AAAA]
-
-À partir des données brutes ci-dessous, identifie le traitement d'entrée, le traitement de sortie et la date de rédaction lorsqu'ils sont fournis. Si une information manque, écrire exactement [À COMPLÉTER PAR LE MÉDECIN].
-
-DONNÉES MÉDICAMENTEUSES DU PATIENT (pseudonymisées) :
-{{DONNEES_MEDICALES}}`,
+  traitement_entree: `PROMPT SPÉCIFIQUE — CONCILIATION MÉDICAMENTEUSE :
+- Applique strictement le template HAS 6 colonnes fourni ci-dessous.
+- Si le traitement d'entrée est absent ou vide, ne bloque pas : produis le tableau avec toutes les lignes de sortie en statut « Ajouté ».
+- Ne produis ni identité patient, ni sources d'information, ni divergences/actions correctrices ; uniquement le tableau 6 colonnes Markdown strict puis la synthèse.`,
+  traitement_sortie: `PROMPT SPÉCIFIQUE — CONCILIATION MÉDICAMENTEUSE :
+- Applique strictement le template HAS 6 colonnes fourni ci-dessous.
+- Si le traitement d'entrée est absent ou vide, ne bloque pas : produis le tableau avec toutes les lignes de sortie en statut « Ajouté ».
+- Ne produis ni identité patient, ni sources d'information, ni divergences/actions correctrices ; uniquement le tableau 6 colonnes Markdown strict puis la synthèse.`,
   transfert_urgence: `PROMPT SPÉCIFIQUE — TRANSFERT VERS UN SERVICE D'URGENCE :
 - Rédige une correspondance courte et opérationnelle pour transfert vers les urgences.
 - Priorise le motif de transfert, le contexte, les constantes ou signes de gravité fournis, les examens déjà réalisés, les traitements administrés et la demande explicite.
