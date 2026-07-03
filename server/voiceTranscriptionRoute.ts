@@ -5,7 +5,6 @@
  */
 import { Express, Request, Response } from "express";
 import multer from "multer";
-import { transcribeAudioWithGoogle } from "./_core/googleSpeechTranscription";
 import { transcribeAudio } from "./_core/voiceTranscription";
 import { sdk } from "./_core/sdk";
 
@@ -57,29 +56,7 @@ export function registerVoiceTranscription(app: Express): void {
       }
 
       try {
-        const provider = req.body.provider === "google" ? "google" : "openai";
         const mimeType = req.file.mimetype;
-
-        if (provider === "google") {
-          const result = await transcribeAudioWithGoogle({
-            audioBuffer: req.file.buffer,
-            mimeType,
-            language: req.body.language || "fr",
-          });
-
-          if ("error" in result) {
-            res.status(422).json({ error: result.error, details: result.details, provider });
-            return;
-          }
-
-          res.json({
-            text: result.text,
-            language: result.language,
-            duration: result.duration,
-            provider,
-          });
-          return;
-        }
 
         // Convertir le buffer en Data URL pour le helper transcribeAudio
         const base64 = req.file.buffer.toString("base64");
@@ -102,7 +79,7 @@ export function registerVoiceTranscription(app: Express): void {
           text: result.text,
           language: result.language ?? "fr",
           duration: result.duration ?? null,
-          provider,
+          provider: "openai",
         });
       } catch (err) {
         console.error("[VoiceTranscription] Erreur inattendue (sans contenu)");
