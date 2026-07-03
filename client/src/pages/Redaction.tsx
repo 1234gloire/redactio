@@ -230,6 +230,7 @@ export default function Redaction() {
   const [treatmentEntryData, setTreatmentEntryData] = useState("");
   const [treatmentExitData, setTreatmentExitData] = useState("");
   const [treatmentExitDate, setTreatmentExitDate] = useState("");
+  const [noTreatmentEntry, setNoTreatmentEntry] = useState(false);
   const [conciliationImportTarget, setConciliationImportTarget] = useState<ConciliationImportTarget>("entry");
   const [observationText, setObservationText] = useState("");
   const [generatedDoc, setGeneratedDoc] = useState("");
@@ -338,20 +339,20 @@ export default function Redaction() {
   const buildGenerationRawData = useCallback(() => {
     if (selectedVolet !== "conciliation") return rawData;
     return `TRAITEMENT D'ENTRÉE :
-${treatmentEntryData.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}
+${noTreatmentEntry ? "Aucun traitement à l'entrée" : treatmentEntryData.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}
 
 TRAITEMENT DE SORTIE :
 ${treatmentExitData.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}
 
 DATE DE RÉDACTION DE LA SORTIE :
 ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
-  }, [rawData, selectedVolet, treatmentEntryData, treatmentExitData, treatmentExitDate]);
+  }, [rawData, selectedVolet, noTreatmentEntry, treatmentEntryData, treatmentExitData, treatmentExitDate]);
 
   const currentInputLength = selectedVolet === "conciliation"
     ? treatmentEntryData.length + treatmentExitData.length + treatmentExitDate.length
     : rawData.length;
   const canGenerate = selectedVolet === "conciliation"
-    ? Boolean(selectedSubtype && treatmentEntryData.trim().length >= 3 && treatmentExitData.trim().length >= 3)
+    ? Boolean(selectedSubtype && (noTreatmentEntry || treatmentEntryData.trim().length >= 3) && treatmentExitData.trim().length >= 3)
     : Boolean(selectedSubtype && rawData.trim().length >= 10);
 
   const handleGenerate = useCallback(() => {
@@ -800,7 +801,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     {/* Colonne Traitement d'entrée */}
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-3">
                         <label htmlFor="treatmentEntryData" className="redaction-field-label">
                           Traitement d'entrée
                           <span className="text-muted-foreground font-normal ml-1">(bilan médicamenteux)</span>
@@ -809,6 +810,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                           <span className="text-xs text-muted-foreground hidden sm:inline">Dictée</span>
                           <VoiceRecorderWithPreview
                             onInsert={(text) => {
+                              if (noTreatmentEntry) return;
                               setConciliationImportTarget("entry");
                               setTreatmentEntryData((prev) => {
                                 if (!prev.trim()) return text;
@@ -817,19 +819,51 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                             }}
                             fieldLabel="Traitement d'entrée"
                             insertMode="append"
+                            disabled={noTreatmentEntry}
                           />
                         </div>
                       </div>
+                      <Button
+                        type="button"
+                        variant={noTreatmentEntry ? "default" : "outline"}
+                        size="sm"
+                        className="w-fit gap-2"
+                        aria-pressed={noTreatmentEntry}
+                        onClick={() => {
+                          setNoTreatmentEntry((current) => {
+                            const next = !current;
+                            if (next) {
+                              setTreatmentEntryData("");
+                              setConciliationImportTarget("exit");
+                            }
+                            return next;
+                          });
+                        }}
+                      >
+                        {noTreatmentEntry && <Check className="h-4 w-4" />}
+                        Pas de traitement d'entrée
+                      </Button>
                       <MedicalAutocomplete
                         id="treatmentEntryData"
                         value={treatmentEntryData}
-                        onChange={setTreatmentEntryData}
-                        onFocus={() => setConciliationImportTarget("entry")}
-                        placeholder={`Exemple :\nAMLODIPINE 5 mg gélule : 1 le matin\nZOPICLONE 7,5 mg cp : 1 au coucher\nKARDEGIC 75 mg : 1 sachet à midi`}
+                        onChange={(value) => {
+                          setTreatmentEntryData(value);
+                          if (value.trim()) setNoTreatmentEntry(false);
+                        }}
+                        onFocus={() => {
+                          if (!noTreatmentEntry) setConciliationImportTarget("entry");
+                        }}
+                        placeholder={noTreatmentEntry ? "Aucun traitement à l'entrée : le tableau HAS sera généré avec les traitements de sortie en statut Ajouté." : `Exemple :\nAMLODIPINE 5 mg gélule : 1 le matin\nZOPICLONE 7,5 mg cp : 1 au coucher\nKARDEGIC 75 mg : 1 sachet à midi`}
                         className="min-h-[220px]"
                         rows={10}
                         maxLength={RAW_DATA_MAX_CHARS}
+                        disabled={noTreatmentEntry}
                       />
+                      {noTreatmentEntry && (
+                        <p className="text-xs text-muted-foreground">
+                          Cas activé : la génération utilisera « Aucun traitement à l'entrée » et classera les traitements de sortie en ajoutés.
+                        </p>
+                      )}
                     </div>
                     {/* Colonne Traitement de sortie */}
                     <div className="space-y-2">
