@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import MedicalTextHighlighter from "./MedicalTextHighlighter";
 
 type RecordingState = "idle" | "recording" | "paused" | "transcribing" | "preview";
+type SpeechProvider = "openai" | "google";
 
 interface VoiceRecorderWithPreviewProps {
   /** Appelé quand l'utilisateur valide la transcription */
@@ -63,6 +64,8 @@ export function VoiceRecorderWithPreview({
   const [activeTab, setActiveTab] = useState<"edit" | "analyze">("edit");
   const [bars, setBars] = useState([0.3, 0.6, 1.0, 0.6, 0.3]);
   const [mimeType, setMimeType] = useState("");
+  const [speechProvider, setSpeechProvider] = useState<SpeechProvider>("openai");
+  const [lastProvider, setLastProvider] = useState<SpeechProvider>("openai");
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -138,6 +141,7 @@ export function VoiceRecorderWithPreview({
       const ext = mime.includes("webm") ? "webm" : mime.includes("ogg") ? "ogg" : mime.includes("mp4") ? "mp4" : "audio";
       formData.append("audio", blob, `recording.${ext}`);
       formData.append("language", "fr");
+      formData.append("provider", speechProvider);
 
       const res = await fetch("/api/voice/transcribe", { method: "POST", body: formData, credentials: "include" });
       if (!res.ok) {
@@ -145,6 +149,7 @@ export function VoiceRecorderWithPreview({
         throw new Error(err.error || `HTTP ${res.status}`);
       }
       const data = await res.json();
+      const provider = data.provider === "google" ? "google" : "openai";
       const text: string = data.text?.trim() || "";
       if (!text) {
         toast.warning("Aucun texte détecté. Veuillez réessayer.");
@@ -156,13 +161,14 @@ export function VoiceRecorderWithPreview({
       setPreviewText(normalizedText);
       setEditedText(normalizedText);
       setAnalyzedText(normalizedText);
+      setLastProvider(provider);
       setActiveTab("analyze"); // Ouvrir directement l'onglet analyse
       setState("preview");
     } catch (err: unknown) {
       toast.error(`Transcription échouée : ${err instanceof Error ? err.message : "Erreur inconnue"}`);
       setState("idle");
     }
-  }, []);
+  }, [speechProvider]);
 
   // ── Actions ────────────────────────────────────────────────────────────────
   const handleStart = useCallback(async () => {
@@ -285,6 +291,30 @@ export function VoiceRecorderWithPreview({
   return (
     <>
       <div className={cn("flex items-center gap-2 flex-wrap", className)}>
+        {isIdle && (
+          <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-1">
+            <Button
+              type="button"
+              variant={speechProvider === "openai" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSpeechProvider("openai")}
+              disabled={disabled}
+              className="h-7 px-2 text-xs"
+            >
+              OpenAI
+            </Button>
+            <Button
+              type="button"
+              variant={speechProvider === "google" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSpeechProvider("google")}
+              disabled={disabled}
+              className="h-7 px-2 text-xs"
+            >
+              Test Voice Google
+            </Button>
+          </div>
+        )}
 
         {/* START */}
         {isIdle && (
@@ -381,7 +411,7 @@ export function VoiceRecorderWithPreview({
         {isTranscribing && (
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-primary/20 bg-primary/5 text-xs text-primary">
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            <span>Transcription en cours…</span>
+            <span>Transcription {speechProvider === "google" ? "Google" : "OpenAI"} en cours…</span>
           </div>
         )}
       </div>
@@ -425,7 +455,9 @@ export function VoiceRecorderWithPreview({
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                       Texte transcrit (modifiable)
                     </span>
-                    <Badge variant="secondary" className="text-xs">Whisper FR</Badge>
+                    <Badge variant="secondary" className="text-xs">
+                      {lastProvider === "google" ? "Google Speech-to-Text" : "OpenAI Whisper"}
+                    </Badge>
                   </div>
                   <Textarea
                     value={editedText}

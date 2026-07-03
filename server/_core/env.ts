@@ -13,6 +13,7 @@ export const ENV = {
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   transcriptionApiUrl: process.env.OPENAI_TRANSCRIPTION_BASE_URL ?? process.env.BUILT_IN_FORGE_API_URL ?? "https://api.openai.com/",
   transcriptionApiKey: process.env.OPENAI_API_KEY ?? process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  googleSpeechApiKey: process.env.GOOGLE_SPEECH_API_KEY ?? "",
   anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? "",
   anthropicModel: process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6",
   anthropicMaxTokens: Number.isFinite(configuredAnthropicMaxTokens)
