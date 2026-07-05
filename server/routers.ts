@@ -165,6 +165,7 @@ export const appRouter = router({
             .regex(/^\d{11}$/, "Le RPPS doit contenir 11 chiffres.")
             .optional()
             .or(z.literal("")),
+          marketingOptIn: z.boolean().optional().default(false),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -187,6 +188,9 @@ export const appRouter = router({
           passwordHash,
           passwordUpdatedAt: new Date(),
           loginMethod: "password",
+          marketingOptIn: input.marketingOptIn,
+          termsAcceptedAt: new Date(),
+          privacyAcceptedAt: new Date(),
         });
 
         const finalUser = await getUserByEmail(email);

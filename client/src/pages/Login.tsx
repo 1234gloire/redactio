@@ -30,6 +30,7 @@ export default function Login() {
     password: "",
     specialite: "",
     rpps: "",
+    marketingOptIn: false,
   });
 
   const finishAuth = () => {
@@ -254,12 +255,41 @@ export default function Login() {
                 </Field>
               </div>
 
+              <label className="flex cursor-pointer gap-4 rounded-[16px] border border-[#D7E5E2] bg-[#F8FBFA] p-4 text-base font-semibold leading-relaxed text-[#66807C] transition hover:border-[#26A69A]">
+                <span className="relative mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-[#26A69A] bg-white">
+                  <input
+                    type="checkbox"
+                    checked={registerForm.marketingOptIn}
+                    onChange={(event) =>
+                      setRegisterForm((form) => ({
+                        ...form,
+                        marketingOptIn: event.target.checked,
+                      }))
+                    }
+                    className="peer sr-only"
+                  />
+                  <span className="h-3.5 w-3.5 rounded-full bg-[#26A69A] opacity-0 transition peer-checked:opacity-100" />
+                </span>
+                <span>
+                  J'accepte de recevoir des emails d'information, newsletters et
+                  actualités de la formation d'Agape Formation.{" "}
+                  <span className="font-bold">(facultatif)</span>
+                </span>
+              </label>
+
               <AuthError message={error} />
 
               <SubmitButton pending={isPending} label="Créer mon compte" />
-              <p className="text-center text-xs font-medium text-[#7B918D]">
-                Plateforme réservée aux professionnels de santé. Les accès établissement
-                restent gérés par l'administrateur REDACTIO.
+              <p className="text-center text-sm font-semibold leading-relaxed text-[#66807C]">
+                En créant un compte, vous acceptez nos{" "}
+                <a className="text-[#07998F] hover:underline" href="/conditions-utilisation">
+                  Conditions d'utilisation
+                </a>{" "}
+                et notre{" "}
+                <a className="text-[#07998F] hover:underline" href="/politique-confidentialite">
+                  Politique de confidentialité
+                </a>
+                .
               </p>
             </form>
           )}
