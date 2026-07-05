@@ -2,6 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import RedactioLayout from "@/components/RedactioLayout";
 import MedicalAutocomplete from "@/components/MedicalAutocomplete";
 import VoiceRecorderWithPreview from "@/components/VoiceRecorderWithPreview";
+import { getLoginUrl } from "@/const";
 import {
   getDefaultSubtype,
   isValidVolet,
@@ -76,6 +77,11 @@ const VOLET_ICON_CLASSES: Record<string, string> = {
   seal: "volet-icon-seal",
   indigo: "volet-icon-indigo",
 };
+
+function getCurrentRedactionReturnPath() {
+  if (typeof window === "undefined") return "/redaction";
+  return `${window.location.pathname}${window.location.search}`;
+}
 
 function getSubtypeLabel(volet: Volet) {
   if (volet === "courrier_sortie") return "Service / spécialité";
@@ -214,7 +220,11 @@ function renderGeneratedDocumentHtml(documentText: string): string {
 
 export default function Redaction() {
   const [, setLocation] = useLocation();
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const loginUrl = getLoginUrl(getCurrentRedactionReturnPath());
+  const { isAuthenticated, loading: authLoading } = useAuth({
+    redirectOnUnauthenticated: true,
+    redirectPath: loginUrl,
+  });
 
   // Récupérer le volet depuis l'URL
   const searchParams = new URLSearchParams(window.location.search);
@@ -617,9 +627,9 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
   // Redirection via useEffect pour éviter setState pendant le rendu
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      setLocation("/");
+      setLocation(loginUrl);
     }
-  }, [authLoading, isAuthenticated, setLocation]);
+  }, [authLoading, isAuthenticated, loginUrl, setLocation]);
 
   if (authLoading || !isAuthenticated) return null;
 
