@@ -281,7 +281,7 @@ header.nav{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.85);bac
 .demo-pts svg{color:var(--soin)}
 .form{background:#fff;border:1px solid var(--line);border-radius:16px;padding:28px}
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
-.field{display:flex;flex-direction:column;gap:.35em}
+.field{display:flex;flex-direction:column;gap:.35em; position: relative; z-index: 1;}
 .field.full{grid-column:1/-1}
 .field label{font-size:.78rem;font-weight:600}
 .field input,.field select,.field textarea{font-family:var(--sans);font-size:.9rem;padding:.72em .85em;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);width:100%}
@@ -294,7 +294,7 @@ header.nav{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.85);bac
 .cta h2{font-family:var(--serif);font-weight:600;color:#fff;font-size:clamp(1.8rem,3.1vw,2.5rem);line-height:1.14;margin-bottom:.4em;max-width:22ch;margin-left:auto;margin-right:auto}
 .cta p{color:#B9C9D6;font-size:1.05rem;margin-bottom:1.9em;max-width:46ch;margin-left:auto;margin-right:auto}
 .cta-actions{display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap}
-footer{background:var(--paper);border-top:1px solid var(--line);padding:56px 0 40px}
+footer{background:var(--paper);border-top:1px solid var(--line);padding:56px 0 40px; position: relative; z-index: 2;}
 .foot-grid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:34px;margin-bottom:40px}
 .foot-brand p{font-size:.86rem;color:var(--muted);max-width:30ch;margin-top:14px}
 .foot-col h5{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-light);font-family:var(--mono);margin-bottom:14px;font-weight:500}
@@ -357,7 +357,7 @@ footer{background:var(--paper);border-top:1px solid var(--line);padding:56px 0 4
      <li><a href="#securite">Sécurité</a></li>
    </ul></nav>
    <div class="nav-cta">
-     <a class="nav-login" href="https://redactio.evc-pae.fr/dashboard">Connexion</a>
+     <a class="nav-login" href="/login">Connexion</a>
      <a class="btn btn-primary" href="#offres">Commencer</a>
      <button class="menu-btn" id="menuBtn" aria-label="Menu"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
    </div>
