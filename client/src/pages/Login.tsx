@@ -239,7 +239,7 @@ export default function Login() {
                 <Input
                   id="fullName"
                   type="text"
-                  placeholder="Dr Martin"
+                  placeholder="Jean Dupont"
                   autoComplete="name"
                   value={fullName}
                   onChange={(event) => setFullName(event.target.value)}
@@ -308,7 +308,7 @@ export default function Login() {
                 </div>
                 <div>
                   <Label htmlFor="rpps" className="text-[13px] font-bold text-[#0b1b29] mb-1.5 block">
-                    RPPS
+                    RPPS <span className="font-normal text-[#5a6b78]">(facultatif)</span>
                   </Label>
                   <Input
                     id="rpps"
@@ -319,7 +319,6 @@ export default function Login() {
                     title="Le numéro RPPS doit comporter 11 chiffres"
                     value={rpps}
                     onChange={(event) => setRpps(event.target.value)}
-                    required
                     className="bg-[#f6f9f9] border-[1.5px] border-[#e4ebee] rounded-[11px] px-3.5 py-3 text-[14.5px] placeholder:text-[#8a99a4] focus-visible:ring-[3px] focus-visible:ring-[#0e9c8e]/20 focus-visible:border-[#0e9c8e]"
                   />
                 </div>
