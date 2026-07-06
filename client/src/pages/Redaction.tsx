@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
+  Bone,
   BookOpen,
   Check,
   CheckCircle,
@@ -76,6 +77,7 @@ const VOLET_ICON_CLASSES: Record<string, string> = {
   slate: "volet-icon-slate",
   seal: "volet-icon-seal",
   indigo: "volet-icon-indigo",
+  ortho: "volet-icon-ortho",
 };
 
 function getCurrentRedactionReturnPath() {
@@ -726,6 +728,20 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                   )}
                 </button>
               ))}
+              <button
+                type="button"
+                className="volet-card text-left"
+                onClick={() => setLocation("/redaction/chirurgie-orthopedique")}
+                aria-label="Ouvrir Chirurgie orthopédique"
+              >
+                <div className={cn("volet-icon", VOLET_ICON_CLASSES.ortho)}>
+                  <Bone className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3>Chirurgie orthopédique</h3>
+                  <p>Rédaction structurée du courrier de sortie d'hospitalisation.</p>
+                </div>
+              </button>
             </div>
             <div className="step-foot">
               <span className="spacer" />

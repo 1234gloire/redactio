@@ -691,6 +691,10 @@
     background: #5b54cc;
   }
 
+  .volet-icon-ortho {
+    background: #0e6ba8;
+  }
+
   .volet-check {
     position: absolute;
     top: 1rem;
