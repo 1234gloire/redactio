@@ -1,4 +1,5 @@
 import { getSubtypeLabel, type RedactionSubtype, type Volet } from "@shared/redactionOptions";
+import { CHIRURGIE_ORTHOPEDIQUE_PROMPT } from "./prompts/chirurgieOrthopedique";
 
 /**
  * Prompts par défaut pour REDACTIO.
@@ -231,6 +232,10 @@ const SUBTYPE_PROMPT_INSTRUCTIONS: Record<RedactionSubtype, string> = {
 - Oriente le courrier vers une prise en charge chirurgicale.
 - Fais ressortir l'indication opératoire, le geste réalisé, les suites opératoires, les consignes de pansement, d'anticoagulation, d'antalgiques, de rééducation et de consultation postopératoire si ces informations sont fournies.
 - N'invente jamais de geste opératoire, de voie d'abord ou de complication.`,
+  chirurgie_orthopedique: `PROMPT SPÉCIFIQUE — CHIRURGIE ORTHOPÉDIQUE :
+- Applique le template complet de chirurgie orthopédique et traumatologique fourni ci-dessous.
+- Le rôle est strictement rédactionnel : ne recommande aucune durée, posologie, molécule, délai, appui ou immobilisation.
+- N'inclus aucune section traitement ni tableau médicamenteux ; le traitement de sortie et la conciliation sont transmis séparément.`,
   court_sejour_geriatrique: `PROMPT SPÉCIFIQUE — COURT SÉJOUR GÉRIATRIQUE :
 - Oriente le courrier vers une synthèse gériatrique globale.
 - Structure les éléments autour du motif d'hospitalisation, des comorbidités, de l'autonomie, du risque de chute, de la cognition, de la nutrition, du traitement et du devenir.
@@ -267,6 +272,7 @@ const SUBTYPE_PROMPT_INSTRUCTIONS: Record<RedactionSubtype, string> = {
 };
 
 const SUBTYPE_FULL_TEMPLATES: Partial<Record<RedactionSubtype, string>> = {
+  chirurgie_orthopedique: CHIRURGIE_ORTHOPEDIQUE_PROMPT,
   medecine_aigue: `# PROMPT — COURRIER DE SORTIE DE MÉDECINE POLYVALENTE
 
 > Modèle de prompt calqué **exactement** sur la structure du courrier de sortie du Service de Médecine Interne et Polyvalente. À copier-coller, puis injecter le contenu clinique du patient.

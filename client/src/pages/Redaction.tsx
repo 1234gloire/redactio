@@ -48,7 +48,7 @@ const VOLETS: Record<Volet, { label: string; icon: React.ReactNode; description:
   courrier_sortie: {
     label: "Courrier de sortie",
     icon: <FileText className="w-6 h-6" />,
-    description: "Rédaction du courrier de sortie d'hospitalisation à destination du médecin traitant ou d'un correspondant.",
+    description: "Rédaction structurée du courrier de sortie d'hospitalisation.",
     color: "teal",
   },
   conciliation: {
