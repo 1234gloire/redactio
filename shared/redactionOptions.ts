@@ -2,7 +2,6 @@ export const REDACTION_SUBTYPES = {
   courrier_sortie: [
     { id: "medecine_aigue", label: "Médecine aiguë" },
     { id: "chirurgie", label: "Chirurgie" },
-    { id: "chirurgie_orthopedique", label: "Chirurgie orthopédique" },
     { id: "court_sejour_geriatrique", label: "Court séjour gériatrique" },
     { id: "smr", label: "SMR (soins de suite et réadaptation)" },
   ],

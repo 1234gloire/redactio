@@ -9,11 +9,15 @@ import {
   getDefaultSubtype,
   isValidSubtypeForVolet,
   isValidVolet,
-  type RedactionSubtype,
 } from "@shared/redactionOptions";
 import { pseudonymise } from "./pseudonymisation";
 import { createAuditLog, getActivePromptBase, getActiveTemplateByVolet } from "./db";
-import { buildTemplateForSubtype, DEFAULT_PROMPT_BASE, DEFAULT_TEMPLATES } from "./defaultPrompts";
+import {
+  buildTemplateForSubtype,
+  CHIRURGIE_ORTHOPEDIQUE_SUBTYPE,
+  DEFAULT_PROMPT_BASE,
+  DEFAULT_TEMPLATES,
+} from "./defaultPrompts";
 import { sdk } from "./_core/sdk";
 import {
   createAnthropicStream,
@@ -93,9 +97,12 @@ export function registerStreamGeneration(app: Express) {
       res.status(400).json({ error: "Le volet observation est réservé aux notes libres et ne déclenche pas de génération IA." });
       return;
     }
-    const selectedSubtype: RedactionSubtype = subtype && isValidSubtypeForVolet(volet, subtype)
-      ? subtype
-      : getDefaultSubtype(volet);
+    const selectedSubtype =
+      volet === "courrier_sortie" && subtype === CHIRURGIE_ORTHOPEDIQUE_SUBTYPE
+        ? CHIRURGIE_ORTHOPEDIQUE_SUBTYPE
+        : subtype && isValidSubtypeForVolet(volet, subtype)
+          ? subtype
+          : getDefaultSubtype(volet);
     if (!rawData || typeof rawData !== "string" || rawData.trim().length < 10) {
       res.status(400).json({ error: "Données médicales trop courtes (min 10 caractères)." });
       return;

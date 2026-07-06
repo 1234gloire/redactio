@@ -223,7 +223,10 @@ Rédige la correspondance en respectant la structure. Pour toute information man
   },
 ];
 
-const SUBTYPE_PROMPT_INSTRUCTIONS: Record<RedactionSubtype, string> = {
+export const CHIRURGIE_ORTHOPEDIQUE_SUBTYPE = "chirurgie_orthopedique" as const;
+type PromptSubtype = RedactionSubtype | typeof CHIRURGIE_ORTHOPEDIQUE_SUBTYPE;
+
+const SUBTYPE_PROMPT_INSTRUCTIONS: Record<PromptSubtype, string> = {
   medecine_aigue: `PROMPT SPÉCIFIQUE — MÉDECINE AIGUË :
 - Oriente le courrier vers une synthèse de prise en charge médicale aiguë.
 - Mets en avant le motif d'admission, les diagnostics retenus, l'évolution clinique, les examens significatifs, les traitements modifiés et le suivi.
@@ -271,7 +274,7 @@ const SUBTYPE_PROMPT_INSTRUCTIONS: Record<RedactionSubtype, string> = {
 - Structure uniquement les informations fournies, sans inventer de donnée clinique.`,
 };
 
-const SUBTYPE_FULL_TEMPLATES: Partial<Record<RedactionSubtype, string>> = {
+const SUBTYPE_FULL_TEMPLATES: Partial<Record<PromptSubtype, string>> = {
   chirurgie_orthopedique: CHIRURGIE_ORTHOPEDIQUE_PROMPT,
   medecine_aigue: `# PROMPT — COURRIER DE SORTIE DE MÉDECINE POLYVALENTE
 
@@ -719,11 +722,14 @@ DONNÉES CLINIQUES DU PATIENT (pseudonymisées) :
 
 export function buildTemplateForSubtype(params: {
   volet: Volet;
-  subtype: RedactionSubtype;
+  subtype: PromptSubtype;
   baseTemplate: string;
   data: string;
 }) {
-  const subtypeLabel = getSubtypeLabel(params.volet, params.subtype);
+  const subtypeLabel =
+    params.subtype === CHIRURGIE_ORTHOPEDIQUE_SUBTYPE
+      ? "Chirurgie orthopédique"
+      : getSubtypeLabel(params.volet, params.subtype);
   const fullTemplate = SUBTYPE_FULL_TEMPLATES[params.subtype];
   if (fullTemplate) {
     return `TYPE SÉLECTIONNÉ PAR L'UTILISATEUR :
