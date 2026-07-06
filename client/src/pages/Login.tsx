@@ -216,6 +216,7 @@ export default function Login() {
                   autoComplete="new-password"
                   value={registerForm.password}
                   show={showPassword}
+                  minLength={8}
                   onToggle={() => setShowPassword((value) => !value)}
                   onChange={(password) =>
                     setRegisterForm((form) => ({ ...form, password }))
@@ -355,6 +356,7 @@ function PasswordInput({
   autoComplete,
   value,
   show,
+  minLength,
   onToggle,
   onChange,
 }: {
@@ -362,6 +364,7 @@ function PasswordInput({
   autoComplete: string;
   value: string;
   show: boolean;
+  minLength?: number;
   onToggle: () => void;
   onChange: (value: string) => void;
 }) {
@@ -375,7 +378,7 @@ function PasswordInput({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         required
-        minLength={8}
+        minLength={minLength}
         className="auth-input pr-14"
       />
       <button
