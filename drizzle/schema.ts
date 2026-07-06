@@ -50,6 +50,9 @@ export const users = mysqlTable("users", {
   rpps: varchar("rpps", { length: 11 }), // Numéro RPPS praticien
   twoFactorEnabled: boolean("twoFactorEnabled").default(false).notNull(),
   twoFactorSecret: varchar("twoFactorSecret", { length: 64 }),
+  marketingOptIn: boolean("marketingOptIn").default(false).notNull(),
+  termsAcceptedAt: timestamp("termsAcceptedAt"),
+  privacyAcceptedAt: timestamp("privacyAcceptedAt"),
   active: boolean("active").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

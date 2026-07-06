@@ -56,8 +56,9 @@ export function registerVoiceTranscription(app: Express): void {
       }
 
       try {
-        // Convertir le buffer en Data URL pour le helper transcribeAudio
         const mimeType = req.file.mimetype;
+
+        // Convertir le buffer en Data URL pour le helper transcribeAudio
         const base64 = req.file.buffer.toString("base64");
         const dataUrl = `data:${mimeType};base64,${base64}`;
 
@@ -78,6 +79,7 @@ export function registerVoiceTranscription(app: Express): void {
           text: result.text,
           language: result.language ?? "fr",
           duration: result.duration ?? null,
+          provider: "openai",
         });
       } catch (err) {
         console.error("[VoiceTranscription] Erreur inattendue (sans contenu)");

@@ -9,20 +9,35 @@ function wpGlue(pattern: string): RegExp {
 }
 
 const PUNCTUATION_RULES: [RegExp, string, boolean][] = [
-  [wpGlue("point (?:à|a) la ligne|point retour (?:à|a) la ligne|point nouvelle ligne"), ".\n", true],
-  [wpGlue("point nouveau paragraphe|point nouvelle paragraphe|point saut de paragraphe"), ".\n\n", true],
-  [wpGlue("nouveau paragraphe|nouvelle paragraphe|saut de paragraphe"), "\n\n", true],
-  [wpGlue("(?:à|a) la ligne|nouvelle ligne|saut de ligne|retour (?:à|a) la ligne|retour ligne"), "\n", true],
+  [wpGlue("point (?:à|a) la ligne|point retour(?:ne)? (?:à|a) la ligne|point nouvelle ligne|point ligne suivante"), ".\n", true],
+  [wpGlue("point nouveau paragraphe|point nouvelle paragraphe|point saut de paragraphe|point paragraphe suivant"), ".\n\n", true],
+  [wpGlue("nouveau paragraphe|nouvelle paragraphe|saut de paragraphe|paragraphe suivant|aller au paragraphe|passer au paragraphe"), "\n\n", true],
+  [wpGlue("(?:à|a) la ligne|nouvelle ligne|saut de ligne|retour(?:ne)? (?:à|a) la ligne|retour ligne|aller (?:à|a) la ligne|passer (?:à|a) la ligne|ligne suivante|va (?:à|a) la ligne"), "\n", true],
   [wpGlue("point d['’ ]interrogation|point interrogation"), "?", true],
   [wpGlue("point d['’ ]exclamation|point exclamation"), "!", true],
   [wpGlue("point-virgule|point virgule"), ";", true],
   [wpGlue("deux[- ]?points?"), ":", true],
+  [wpGlue("points? de suspension|trois points"), "…", true],
   [wpGlue("virgule"), ",", true],
   [wpGlue("point final|point"), ".", true],
   [wpGlue("ouvrir parenthèse|ouvrir parenthese|parenthèse ouvrante|parenthese ouvrante|ouvrir la parenthèse|ouvrir la parenthese"), "(", false],
   [wpGlue("fermer parenthèse|fermer parenthese|parenthèse fermante|parenthese fermante|fermer la parenthèse|fermer la parenthese"), ")", true],
+  [wpGlue("ouvrir crochet|crochet ouvrant|ouvrir le crochet"), "[", false],
+  [wpGlue("fermer crochet|crochet fermant|fermer le crochet"), "]", true],
   [wpGlue("ouvrir guillemets?|guillemets? ouvrants?|ouvrir les guillemets?"), "«\u00a0", false],
   [wpGlue("fermer guillemets?|guillemets? fermants?|fermer les guillemets?"), "\u00a0»", true],
+  [wpGlue("barre oblique|slash"), "/", true],
+  [wpGlue("trait d['’ ]union|trait union"), "-", true],
+  [wpGlue("apostrophe"), "’", true],
+  [wpGlue("pour cent|signe pour cent|pourcentage"), "%", true],
+  [wpGlue("plus ou moins|signe plus ou moins"), "±", true],
+  [wpGlue("signe plus"), "+", true],
+  [wpGlue("signe moins"), "-", true],
+  [wpGlue("inférieur ou égal|signe inférieur ou égal"), "≤", true],
+  [wpGlue("supérieur ou égal|signe supérieur ou égal"), "≥", true],
+  [wpGlue("signe inférieur"), "<", true],
+  [wpGlue("signe supérieur"), ">", true],
+  [wpGlue("signe égal"), "=", true],
   [wpGlue("tiret"), " -", true],
   [wpGlue("espace"), " ", false],
 ];
@@ -62,9 +77,12 @@ export function applyVoicePunctuation(raw: string): VoicePunctuationResult {
   }
 
   result = result.replace(/[ \t]{2,}/g, " ");
-  result = result.replace(/ ([,.:;?!)])/g, "$1");
+  result = result.replace(/ ([,.:;?!)\]\u00bb\/%…])/g, "$1");
   result = result.replace(/([.:;?!])(?=\S)/g, "$1 ");
+  result = result.replace(/\s*\/\s*/g, "/");
+  result = result.replace(/\s*([+\-=<>≤≥±])\s*/g, "$1");
   result = result.replace(/\( /g, "(");
+  result = result.replace(/\[ /g, "[");
   result = result.replace(/^[ \t]+|[ \t]+$/g, "");
   result = result.replace(/(^|[.?!\n]\s*)([a-zàâäéèêëîïôùûüç])/g, (_, before, letter) => {
     return before + letter.toUpperCase();
@@ -72,4 +90,3 @@ export function applyVoicePunctuation(raw: string): VoicePunctuationResult {
 
   return { text: result, isCommand: isPureCommand, deleteLastWord: false };
 }
-

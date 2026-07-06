@@ -2,6 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import {
   AlertTriangle,
   ArrowRight,
+  Bone,
   BookOpen,
   Check,
   ChevronRight,
@@ -51,6 +52,15 @@ const VOLETS = [
     icon: FilePenLine,
     accent: "#5B54CC",
     accentDeep: "#4842A8",
+  },
+  {
+    id: "chirurgie_orthopedique",
+    label: "Chirurgie orthopédique",
+    description: "Rédaction structurée du courrier de sortie d'hospitalisation.",
+    icon: Bone,
+    accent: "#0E6BA8",
+    accentDeep: "#0A4D78",
+    href: "/redaction/chirurgie-orthopedique",
   },
 ];
 
@@ -193,7 +203,7 @@ export default function Dashboard() {
             <span className="rd-dictee-pill">
               <span className="rd-dictee-new">Nouveau</span>
               <Mic size={14} strokeWidth={2} />
-              Dictée vocale disponible dans les 4 outils
+              Dictée vocale disponible dans les outils compatibles
             </span>
 
             <div className="rd-block-cap">Démarrer une rédaction</div>
@@ -203,7 +213,7 @@ export default function Dashboard() {
                 return (
                   <Link
                     key={volet.id}
-                    href={`/redaction?volet=${volet.id}`}
+                    href={volet.href ?? `/redaction?volet=${volet.id}`}
                     className="rd-card"
                     style={{
                       "--rd-ac": volet.accent,
@@ -641,7 +651,7 @@ const dashboardStyles = `
 
 .rd-cards {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
 }
 

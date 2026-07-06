@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pseudonymise, containsDirectIdentifier } from "./pseudonymisation";
+import { pseudonymise, containsDirectIdentifier, pseudonymiseExamExtractionOutput } from "./pseudonymisation";
 
 describe("pseudonymisation — règles regex", () => {
   it("masque un NIR (numéro de sécurité sociale)", () => {
@@ -55,5 +55,25 @@ describe("containsDirectIdentifier", () => {
 
   it("retourne false pour un texte sans identifiant", () => {
     expect(containsDirectIdentifier("Traitement par bêtabloquants et IEC")).toBe(false);
+  });
+});
+
+describe("pseudonymiseExamExtractionOutput", () => {
+  it("conserve les résultats négatifs et les dates cliniques", () => {
+    const result = pseudonymiseExamExtractionOutput(
+      "Indication : Début des symptômes le 03/06/2026.\nRésultat : Pas de saignement intracrânien ni de collection péricérébrale."
+    );
+
+    expect(result.filteredText).toContain("Début des symptômes le 03/06/2026");
+    expect(result.filteredText).toContain("Pas de saignement intracrânien");
+    expect(result.filteredText).not.toContain("[NOM_MASQUÉ]");
+    expect(result.filteredText).not.toContain("[DATE_MASQUÉE]");
+  });
+
+  it("masque une date de naissance explicite en sortie", () => {
+    const result = pseudonymiseExamExtractionOutput("Patiente née le 06/12/1928. Résultat : pas de syndrome de masse.");
+
+    expect(result.filteredText).not.toContain("06/12/1928");
+    expect(result.detectedCategories).toContain("DATE_NAISSANCE");
   });
 });

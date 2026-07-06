@@ -149,6 +149,85 @@ export const appRouter = router({
 
         return { success: true };
       }),
+    register: publicProcedure
+      .input(
+        z.object({
+          name: z.string().trim().min(2, "Le nom est requis.").max(128),
+          email: z.string().email(),
+          password: z
+            .string()
+            .min(8, "Le mot de passe doit contenir au moins 8 caractères.")
+            .max(128),
+          specialite: z.string().trim().max(128).optional(),
+          rpps: z
+            .string()
+            .trim()
+            .regex(/^\d{11}$/, "Le RPPS doit contenir 11 chiffres.")
+            .optional()
+            .or(z.literal("")),
+          marketingOptIn: z.boolean().optional().default(false),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const email = input.email.trim().toLowerCase();
+        const existingUser = await getUserByEmail(email);
+        if (existingUser) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Un compte existe déjà avec cette adresse email.",
+          });
+        }
+
+        const passwordHash = await hashPassword(input.password);
+        const openId = getLocalOpenId(email);
+        await upsertUser({
+          openId,
+          role: "praticien",
+          name: input.name.trim(),
+          email,
+          passwordHash,
+          passwordUpdatedAt: new Date(),
+          loginMethod: "password",
+          marketingOptIn: input.marketingOptIn,
+          termsAcceptedAt: new Date(),
+          privacyAcceptedAt: new Date(),
+        });
+
+        const finalUser = await getUserByEmail(email);
+        if (!finalUser) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Création du compte impossible pour le moment.",
+          });
+        }
+
+        const profileUpdates: { specialite?: string; rpps?: string } = {};
+        if (input.specialite?.trim()) profileUpdates.specialite = input.specialite.trim();
+        if (input.rpps?.trim()) profileUpdates.rpps = input.rpps.trim();
+        if (Object.keys(profileUpdates).length > 0) {
+          await updateUser(finalUser.id, profileUpdates);
+        }
+
+        await createAuditLog({
+          userId: finalUser.id,
+          action: "auth.register",
+          resource: "user",
+          resourceId: String(finalUser.id),
+          metadata: { role: "praticien" },
+        });
+
+        const sessionToken = await sdk.createSessionToken(finalUser.openId, {
+          name: finalUser.name ?? "",
+          expiresInMs: ONE_YEAR_MS,
+        });
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, sessionToken, {
+          ...cookieOptions,
+          maxAge: ONE_YEAR_MS,
+        });
+
+        return { success: true };
+      }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
