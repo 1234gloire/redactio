@@ -42,7 +42,7 @@ export default function Login() {
     },
   });
 
-  const signupMutation = trpc.auth.signup.useMutation({
+  const signupMutation = trpc.auth.register.useMutation({
     onSuccess: () => {
       setLocation("/dashboard");
       window.location.reload();
@@ -68,12 +68,12 @@ export default function Login() {
     event.preventDefault();
     setSignupError(null);
     signupMutation.mutate({
-      fullName,
+      name: fullName,
       email: signupEmail,
       password: signupPassword,
-      specialty,
+      specialite: specialty,
       rpps,
-      marketingConsent,
+      marketingOptIn: marketingConsent,
     });
   };
 
