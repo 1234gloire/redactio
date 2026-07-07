@@ -14,6 +14,7 @@ import {
   Info,
   LayoutDashboard,
   Mic,
+  PlayCircle,
   Shield,
   Stethoscope,
   Users,
@@ -126,6 +127,11 @@ export default function Dashboard() {
             <Link href="/redaction" className="rd-link">
               <FileText size={18} strokeWidth={1.9} />
               Nouvelle rédaction
+            </Link>
+
+            <Link href="/tutoriels" className="rd-link">
+              <PlayCircle size={18} strokeWidth={1.9} />
+              Tutoriel
             </Link>
 
             <div className="rd-cap">Repères</div>
