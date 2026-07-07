@@ -56,7 +56,7 @@ const VOLETS = [
   {
     id: "chirurgie_orthopedique",
     label: "Chirurgie orthopédique",
-    description: "Rédaction structurée du courrier de sortie d'hospitalisation.",
+    description: "Compte rendu opératoire et courrier de sortie structurés.",
     icon: Bone,
     accent: "#0E6BA8",
     accentDeep: "#0A4D78",
@@ -650,12 +650,16 @@ const dashboardStyles = `
 }
 
 .rd-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 16px;
 }
 
 .rd-card {
+  flex: 1 1 300px;
+  max-width: 340px;
+  min-width: 270px;
   background: var(--rd-bg);
   border: 1px solid var(--rd-line);
   border-radius: 15px;
@@ -908,12 +912,6 @@ const dashboardStyles = `
   border-radius: 6px;
 }
 
-@media (max-width: 1080px) {
-  .rd-cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 980px) {
   .rd-app {
     grid-template-columns: 1fr;
@@ -930,7 +928,6 @@ const dashboardStyles = `
     flex: initial;
   }
 
-  .rd-cards,
   .rd-row {
     grid-template-columns: 1fr;
   }

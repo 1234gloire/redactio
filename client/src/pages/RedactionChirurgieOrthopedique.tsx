@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Link } from "wouter";
 
 const ORTHO_SUBTYPE = "chirurgie_orthopedique";
+const MISS = "[à préciser par l'opérateur]";
 
 type Side = "D" | "G" | "B" | "";
 type Preset = {
@@ -215,24 +216,6 @@ const PRESETS = {
 
 type PresetKey = keyof typeof PRESETS;
 
-const MOTIFS = [
-  "Gonarthrose invalidante",
-  "Coxarthrose invalidante",
-  "Fracture pertrochantérienne de la hanche",
-  "Fracture du col fémoral",
-  "Fracture péri-prothétique de la hanche",
-  "Omarthrose",
-  "Fracture de l'extrémité supérieure de l'humérus",
-  "Luxation de l'épaule",
-  "Fracture de l'extrémité distale du radius",
-  "Fracture de l'olécrane",
-  "Lombosciatique sur hernie discale",
-  "Rupture du ligament croisé antérieur",
-  "Fracture bimalléolaire",
-  "Hallux valgus",
-  "Fracture du cadre obturateur",
-];
-
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -245,7 +228,7 @@ function addDaysIso(value: string, days: number) {
 }
 
 function formatDate(value: string) {
-  if (!value) return "[à compléter]";
+  if (!value) return MISS;
   const [year, month, day] = value.split("-");
   return `${day}/${month}/${year}`;
 }
@@ -272,6 +255,7 @@ export default function RedactionChirurgieOrthopedique() {
   const preset = PRESETS[presetKey];
   const [side, setSide] = useState<Side>("D");
   const [motif, setMotif] = useState(preset.motif);
+  const [age, setAge] = useState("");
   const [geste, setGeste] = useState(preset.geste);
   const [anesth, setAnesth] = useState(preset.anesth);
   const [perop, setPerop] = useState("sans particularité");
@@ -282,13 +266,13 @@ export default function RedactionChirurgieOrthopedique() {
   const [isTransfert, setIsTransfert] = useState(false);
   const [structureAval, setStructureAval] = useState("");
   const [antecedents, setAntecedents] = useState("sans particularité");
-  const [suites, setSuites] = useState("simples");
+  const [suites, setSuites] = useState<"simples" | "compliquees">("simples");
   const [suitesText, setSuitesText] = useState("");
   const [orthoGeriatrie, setOrthoGeriatrie] = useState(false);
   const [consignes, setConsignes] = useState(bulletList(preset.consignes));
   const [dateRdv, setDateRdv] = useState("");
   const [heureRdv, setHeureRdv] = useState("10:30");
-  const [radios, setRadios] = useState(preset.radios);
+  const [radios, setRadios] = useState("");
   const [generatedText, setGeneratedText] = useState("");
   const [streamingText, setStreamingText] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -300,7 +284,6 @@ export default function RedactionChirurgieOrthopedique() {
     setMotif(next.motif);
     setGeste(next.geste);
     setAnesth(next.anesth);
-    setRadios(next.radios);
     setConsignes(bulletList(next.consignes));
   }, []);
 
@@ -319,19 +302,25 @@ export default function RedactionChirurgieOrthopedique() {
     return `${geste}${suffix ? ` ${suffix}` : ""}`.trim();
   }, [geste, preset.gesteGender, side]);
 
-  const peropValue = perop === "__" ? peropText || "[à préciser]" : perop;
-  const suitesValue = suites === "__" ? suitesText || "[à préciser]" : "simples";
+  const peropValue = perop === "__" ? peropText.trim() || MISS : perop;
+  const ageValue = age.trim() ? `${age.trim()} ans` : MISS;
+  const suitesValue = suites === "compliquees" ? suitesText.trim() || MISS : "simples";
 
-  const blocText = useMemo(() => `1. MOTIF D'ENTRÉE     : ${motifSided || "[à compléter]"}
-2. DATE DE CHIRURGIE  : chirurgie ${formatDate(dateChirurgie)} ; entrée ${formatDate(dateEntree)} ; ${isTransfert ? "transfert" : "sortie"} ${formatDate(dateSortie)}${isTransfert && structureAval ? ` (${structureAval})` : ""}
-3. TYPE DE CHIRURGIE  : ${gesteSided || "[à compléter]"}, ${anesth}
-4. DÉROULEMENT PER-OP : ${peropValue}
-5. ANTÉCÉDENTS       : ${antecedents || "sans particularité"}
-6. SUITES OPÉRATOIRES : ${suitesValue}${orthoGeriatrie ? " ; prise en charge ortho-gériatrique conjointe" : ""}
-7. CONSIGNES DE SUIVI :
+  const blocText = useMemo(() => `1. MOTIF D'ENTRÉE        : ${motifSided || MISS}
+2. ÂGE DU PATIENT        : ${ageValue}
+3. DATES (réelles, à recopier telles quelles — ne pas remplacer par un placeholder) :
+   - Entrée               : ${formatDate(dateEntree)}
+   - Intervention         : ${formatDate(dateChirurgie)}
+   - ${isTransfert ? "Transfert            " : "Sortie               "} : ${formatDate(dateSortie)}${isTransfert && structureAval ? ` (${structureAval})` : ""}
+4. TYPE DE CHIRURGIE     : ${gesteSided || MISS}, ${anesth}
+5. DÉROULEMENT PER-OP    : ${peropValue}
+6. ANTÉCÉDENTS           : ${antecedents.trim() || "sans particularité"}
+7. SUITES POST-OP        : ${suitesValue}${orthoGeriatrie ? " ; prise en charge ortho-gériatrique conjointe" : ""}
+8. CONSIGNES DE SUIVI    :
 ${consignes.replace(/^/gm, "   ")}
-   Suivi : consultation de contrôle radio-clinique le ${formatDate(dateRdv)} à ${heureRdv || "[à compléter]"}.
-   Radiographies : ${radios || "[à préciser]"}.`, [
+   Suivi : consultation de contrôle radio-clinique le ${formatDate(dateRdv)} à ${heureRdv || MISS}.
+   Radiographies : ${radios.trim() || MISS}.`, [
+    ageValue,
     anesth,
     antecedents,
     consignes,
@@ -459,29 +448,39 @@ ${consignes.replace(/^/gm, "   ")}
               </button>
             ))}
           </div>
-          <p className="ortho-hint">Un clic pré-remplit le motif probable, le geste, les rubriques de consignes et les radios. Les valeurs cliniques restent en [ ] à compléter.</p>
+          <p className="ortho-hint">Un clic pré-remplit le motif probable, le geste et les rubriques de consignes. La radio reste libre : le preset propose seulement une suggestion.</p>
 
           <h2>2 · Contexte</h2>
           <label>Motif d'entrée — pathologie causale</label>
-          <input value={motif} list="ortho-motifs" onChange={(event) => setMotif(event.target.value)} placeholder="ex. Gonarthrose invalidante" />
-          <datalist id="ortho-motifs">{MOTIFS.map((item) => <option value={item} key={item} />)}</datalist>
+          <textarea value={motif} onChange={(event) => setMotif(event.target.value)} placeholder="Saisie libre. Ex. Gonarthrose invalidante ; fracture pertrochantérienne de la hanche ; rupture du ligament croisé antérieur..." />
+          <p className="ortho-hint">Zone de texte libre : décrivez la pathologie causale, jamais le geste.</p>
 
-          <label>Latéralité</label>
-          <div className="ortho-seg">
-            {[
-              ["D", "Droite"],
-              ["G", "Gauche"],
-              ["B", "Bilatérale"],
-              ["", "Sans objet"],
-            ].map(([value, label]) => (
-              <button key={label} type="button" className={side === value ? "on" : ""} onClick={() => setSide(value as Side)}>
-                {label}
-              </button>
-            ))}
+          <div className="ortho-row">
+            <div>
+              <label>Âge du patient</label>
+              <input type="number" min={0} max={120} value={age} onChange={(event) => setAge(event.target.value)} placeholder="ex. 82" />
+              <p className="ortho-hint">Conservé dans le courrier (« ... ans »).</p>
+            </div>
+            <div>
+              <label>Latéralité</label>
+              <div className="ortho-seg">
+                {[
+                  ["D", "Droite"],
+                  ["G", "Gauche"],
+                  ["B", "Bilatérale"],
+                  ["", "Sans objet"],
+                ].map(([value, label]) => (
+                  <button key={label} type="button" className={side === value ? "on" : ""} onClick={() => setSide(value as Side)}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           <label>Type de chirurgie (geste + matériel)</label>
-          <input value={geste} onChange={(event) => setGeste(event.target.value)} placeholder="ex. arthroplastie totale du genou" />
+          <textarea value={geste} onChange={(event) => setGeste(event.target.value)} placeholder="Saisie libre. Ex. arthroplastie totale du genou ; ostéosynthèse par clou gamma ; plaque antérieure du radius distal..." />
+          <p className="ortho-hint">Zone de texte libre : modifiable même après un preset.</p>
 
           <div className="ortho-row">
             <div>
@@ -511,18 +510,19 @@ ${consignes.replace(/^/gm, "   ")}
             <div><label>Chirurgie</label><input type="date" value={dateChirurgie} onChange={(event) => handleDateChirurgieChange(event.target.value)} /></div>
             <div><label>Sortie / transfert</label><input type="date" value={dateSortie} onChange={(event) => setDateSortie(event.target.value)} /></div>
           </div>
+          <p className="ortho-hint">Les dates saisies sont recopiées telles quelles dans le courrier. Une date laissée vide devient « [à préciser par l'opérateur] ».</p>
           <label className="ortho-check"><input type="checkbox" checked={isTransfert} onChange={(event) => setIsTransfert(event.target.checked)} /> Sortie = transfert</label>
           {isTransfert && <input value={structureAval} onChange={(event) => setStructureAval(event.target.value)} placeholder="structure d'aval (SMR, service...)" className="ortho-inline-input" />}
 
           <h2>4 · Clinique</h2>
           <label>Antécédents (+ allergies)</label>
           <textarea value={antecedents} onChange={(event) => setAntecedents(event.target.value)} />
-          <label>Suites opératoires</label>
-          <select value={suites} onChange={(event) => setSuites(event.target.value)}>
+          <label>Suites post-opératoires</label>
+          <select value={suites} onChange={(event) => setSuites(event.target.value as "simples" | "compliquees")}>
             <option value="simples">simples</option>
-            <option value="__">à préciser…</option>
+            <option value="compliquees">compliquées → à décrire</option>
           </select>
-          {suites === "__" && <input value={suitesText} onChange={(event) => setSuitesText(event.target.value)} placeholder="ex. anémie post-op, escarre..." className="ortho-inline-input" />}
+          {suites === "compliquees" && <textarea value={suitesText} onChange={(event) => setSuitesText(event.target.value)} placeholder="Décrire les suites compliquées (ex. escarre talonnière ; anémie post-op ayant nécessité VENOFER ; sigmoïdite ; confusion post-op...)" className="ortho-inline-input" />}
           <label className="ortho-check"><input type="checkbox" checked={orthoGeriatrie} onChange={(event) => setOrthoGeriatrie(event.target.checked)} /> Prise en charge ortho-gériatrique conjointe</label>
 
           <h2>5 · Consignes de suivi</h2>
@@ -534,8 +534,9 @@ ${consignes.replace(/^/gm, "   ")}
             <div><label>RDV de contrôle</label><input type="date" value={dateRdv} onChange={(event) => setDateRdv(event.target.value)} /></div>
             <div><label>Heure</label><input type="time" value={heureRdv} onChange={(event) => setHeureRdv(event.target.value)} /></div>
           </div>
-          <label>Radiographies de contrôle</label>
-          <input value={radios} onChange={(event) => setRadios(event.target.value)} />
+          <label>Radiographies de contrôle <span className="ortho-badge">saisie libre</span></label>
+          <input value={radios} onChange={(event) => setRadios(event.target.value)} placeholder={preset.radios ? `Suggestion : ${preset.radios} — à valider / compléter` : "À remplir par le médecin"} />
+          <p className="ortho-hint">Champ libre : non rempli automatiquement. Le preset propose seulement une suggestion en placeholder.</p>
         </section>
 
         <section className="ortho-card">
@@ -588,6 +589,7 @@ const orthoStyles = `
 .ortho-card h2{margin:18px 0 12px;font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--brand-d);font-weight:800}.ortho-card h2:first-child{margin-top:0}
 .ortho-presets{display:flex;flex-wrap:wrap;gap:8px}.ortho-preset{border:1px solid var(--line);background:#EEF3F5;border-radius:999px;padding:7px 13px;font-size:.82rem;font-weight:700;cursor:pointer;color:var(--brand-d);transition:.15s}.ortho-preset:hover{background:var(--accent);border-color:var(--brand)}.ortho-preset.active{background:var(--brand);color:#fff;border-color:var(--brand)}
 .ortho-hint{font-size:.78rem;color:var(--muted);margin:10px 0 0}
+.ortho-badge{display:inline-block;background:var(--accent);color:var(--brand-d);border-radius:6px;padding:2px 8px;font-size:.72rem;font-weight:800;margin-left:6px}
 .ortho-card label{display:block;font-weight:700;font-size:.82rem;color:var(--muted);margin:12px 0 5px}
 .ortho-card input[type=text],.ortho-card input[type=date],.ortho-card input[type=time],.ortho-card select,.ortho-card textarea{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:10px;font-size:.92rem;font-family:inherit;background:#fff;color:var(--ink)}
 .ortho-card textarea{resize:vertical;min-height:72px}.ortho-consignes{min-height:170px!important}
