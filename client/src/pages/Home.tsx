@@ -71,25 +71,59 @@ export default function Home() {
     const onMenuClick = () => root.querySelector("#produits")?.scrollIntoView({ behavior: "smooth" });
     menuButton?.addEventListener("click", onMenuClick);
 
-    const tallyForm = root.querySelector<HTMLFormElement>("#tallyDemoForm");
-    const onTallySubmit = (event: Event) => {
+    const demoForm = root.querySelector<HTMLFormElement>("#demoRequestForm");
+    const demoStatus = root.querySelector<HTMLElement>("#demoRequestStatus");
+    const demoSubmit = demoForm?.querySelector<HTMLButtonElement>('button[type="submit"]');
+    const onDemoSubmit = async (event: Event) => {
       event.preventDefault();
-      const formData = new FormData(tallyForm!);
-      const params = new URLSearchParams();
-      for (const [key, value] of Array.from(formData.entries())) {
-        const text = String(value).trim();
-        if (text) params.set(key, text);
+      if (!demoForm) return;
+      const formData = new FormData(demoForm);
+      const payload = {
+        name: String(formData.get("name") ?? "").trim(),
+        fonction: String(formData.get("fonction") ?? "").trim(),
+        etablissement: String(formData.get("etablissement") ?? "").trim(),
+        email: String(formData.get("email") ?? "").trim(),
+        praticiensConcernes: String(formData.get("praticiensConcernes") ?? "").trim(),
+        besoin: String(formData.get("besoin") ?? "").trim(),
+      };
+
+      if (demoStatus) {
+        demoStatus.textContent = "Envoi de la demande...";
+        demoStatus.dataset.state = "pending";
       }
-      const query = params.toString();
-      window.location.href = `https://tally.so/r/VLy8dE${query ? `?${query}` : ""}`;
+      if (demoSubmit) demoSubmit.disabled = true;
+
+      try {
+        const response = await fetch("/api/demo-request", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.error || "Demande non envoyée.");
+        }
+        demoForm.reset();
+        if (demoStatus) {
+          demoStatus.textContent = "Demande envoyée. Nous vous recontacterons rapidement.";
+          demoStatus.dataset.state = "success";
+        }
+      } catch (error) {
+        if (demoStatus) {
+          demoStatus.textContent = error instanceof Error ? error.message : "Demande non envoyée.";
+          demoStatus.dataset.state = "error";
+        }
+      } finally {
+        if (demoSubmit) demoSubmit.disabled = false;
+      }
     };
-    tallyForm?.addEventListener("submit", onTallySubmit);
+    demoForm?.addEventListener("submit", onDemoSubmit);
 
     return () => {
       observer.disconnect();
       tabs.forEach((button) => button.removeEventListener("click", onTabClick));
       menuButton?.removeEventListener("click", onMenuClick);
-      tallyForm?.removeEventListener("submit", onTallySubmit);
+      demoForm?.removeEventListener("submit", onDemoSubmit);
     };
   }, []);
 
@@ -302,7 +336,11 @@ header.nav{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.85);bac
 .field input,.field select,.field textarea{font-family:var(--sans);font-size:.9rem;padding:.72em .85em;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);width:100%}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--soin);box-shadow:0 0 0 3px var(--soin-tint)}
 .form .btn{width:100%;justify-content:center;margin-top:4px}
+.form .btn:disabled{opacity:.65;cursor:not-allowed;transform:none;box-shadow:none}
 .form-note{font-size:.72rem;color:var(--muted-light);margin-top:10px;text-align:center}
+.form-note[data-state="pending"]{color:var(--slate)}
+.form-note[data-state="success"]{color:var(--soin-deep);font-weight:600}
+.form-note[data-state="error"]{color:#B42318;font-weight:600}
 .cta{background:var(--slate);color:#fff;border-radius:24px;padding:62px;text-align:center;position:relative;overflow:hidden}
 .cta::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 18% 0%,rgba(14,156,142,.34),transparent 52%),radial-gradient(circle at 100% 100%,rgba(143,216,206,.16),transparent 46%)}
 .cta-in{position:relative;z-index:1}
@@ -465,7 +503,7 @@ footer{background:var(--paper);border-top:1px solid var(--line);padding:56px 0 4
 
 <section class="band band-mist" id="offres"><div class="wrap"><div class="sec-head center reveal"><span class="eyebrow">Offres</span><h2>Une porte d'entrée pour chacun.</h2><p>Commencez seul en quelques minutes, ou équipez tout un service.</p></div><div class="plans"><div class="plan plan-prat reveal"><span class="plan-k">Praticien</span><h3>À titre individuel</h3><p class="plan-desc">Pour un médecin, un interne ou un candidat PADHUE qui rédige pour lui-même.</p><ul><li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Les 4 outils, dictée comprise</li><li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Compte personnel immédiat</li><li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Confidentialité par conception</li></ul><a class="btn btn-primary" href="https://redactio.evc-pae.fr/dashboard">Essayer gratuitement</a></div><div class="plan plan-etab etab-plan reveal"><span class="badge">Recommandé</span><span class="plan-k plan-etab-k">Établissement</span><h3>Service · Hôpital · GHT</h3><p class="plan-desc">Pour équiper des équipes et fiabiliser vos lettres de liaison à l'échelle.</p><ul><li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Comptes équipes &amp; déploiement par service</li><li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Accompagnement &amp; interlocuteur dédié</li><li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Convention de traitement (DPA) sur mesure</li></ul><a class="btn btn-slate" href="#demo">Demander une démo &amp; un devis</a></div></div></div></section>
 
-<section class="band" id="demo"><div class="wrap"><div class="demo reveal"><div><span class="eyebrow">Établissements</span><h2 style="margin-top:.6em">Parlons de votre service.</h2><p>Une démonstration de 30 minutes, adaptée à votre activité (MCO, SSR/SMR, psychiatrie…) et à vos enjeux QLS.</p><ul class="demo-pts"><li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Cas d'usage sur vos propres types de courriers</li><li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Réponse à vos questions sécurité &amp; conformité</li><li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Proposition de pilote sur un service</li></ul></div><form class="form" id="tallyDemoForm"><div class="frow"><div class="field"><label for="f-nom">Nom</label><input id="f-nom" name="Nom complet" type="text" placeholder="Dr Martin"></div><div class="field"><label for="f-fonction">Fonction</label><input id="f-fonction" name="Fonction" type="text" placeholder="Chef de service, DIM, DSI…"></div></div><div class="frow"><div class="field full"><label for="f-etab">Établissement</label><input id="f-etab" name="Etablissement" type="text" placeholder="CH / CHU / Clinique / GHT"></div></div><div class="frow"><div class="field"><label for="f-mail">E-mail professionnel</label><input id="f-mail" name="E-mail professionnel" type="email" placeholder="nom@etablissement.fr"></div><div class="field"><label for="f-taille">Praticiens concernés</label><select id="f-taille" name="Praticiens concernés"><option>1 à 10</option><option>10 à 50</option><option>50 à 200</option><option>200+</option></select></div></div><div class="field full"><label for="f-msg">Votre besoin (facultatif)</label><textarea id="f-msg" name="Votre besoin ( facultatif)" rows="3" placeholder="Type de courriers, volumétrie, échéances…"></textarea></div><button type="submit" class="btn btn-slate">Demander une démonstration</button><p class="form-note">Formulaire sécurisé via Tally. Aucune donnée patient ici.</p></form></div></div></section>
+<section class="band" id="demo"><div class="wrap"><div class="demo reveal"><div><span class="eyebrow">Établissements</span><h2 style="margin-top:.6em">Parlons de votre service.</h2><p>Une démonstration de 30 minutes, adaptée à votre activité (MCO, SSR/SMR, psychiatrie…) et à vos enjeux QLS.</p><ul class="demo-pts"><li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Cas d'usage sur vos propres types de courriers</li><li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Réponse à vos questions sécurité &amp; conformité</li><li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> Proposition de pilote sur un service</li></ul></div><form class="form" id="demoRequestForm"><div class="frow"><div class="field"><label for="f-nom">Nom</label><input id="f-nom" name="name" type="text" placeholder="Dr Martin" required></div><div class="field"><label for="f-fonction">Fonction</label><input id="f-fonction" name="fonction" type="text" placeholder="Chef de service, DIM, DSI…"></div></div><div class="frow"><div class="field full"><label for="f-etab">Établissement</label><input id="f-etab" name="etablissement" type="text" placeholder="CH / CHU / Clinique / GHT" required></div></div><div class="frow"><div class="field"><label for="f-mail">E-mail professionnel</label><input id="f-mail" name="email" type="email" placeholder="nom@etablissement.fr" required></div><div class="field"><label for="f-taille">Praticiens concernés</label><select id="f-taille" name="praticiensConcernes"><option>1 à 10</option><option>10 à 50</option><option>50 à 200</option><option>200+</option></select></div></div><div class="field full"><label for="f-msg">Votre besoin (facultatif)</label><textarea id="f-msg" name="besoin" rows="3" placeholder="Type de courriers, volumétrie, échéances…"></textarea></div><button type="submit" class="btn btn-slate">Demander une démonstration</button><p class="form-note" id="demoRequestStatus" aria-live="polite">Formulaire sécurisé REDACTIO. Aucune donnée patient ici.</p></form></div></div></section>
 
 <section class="band" style="padding-top:0"><div class="wrap"><div class="cta reveal"><div class="cta-in"><h2>Votre prochain document hospitalier, structuré en quelques instants.</h2><p>Que vous écriviez pour vous ou pour tout un service — sans jamais conserver vos patients.</p><div class="cta-actions"><a class="btn btn-light" href="https://redactio.evc-pae.fr/dashboard">Essayer gratuitement</a><a class="btn btn-primary" href="#demo">Demander une démo établissement</a></div></div></div></div></section>
 

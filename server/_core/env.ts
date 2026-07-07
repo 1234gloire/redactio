@@ -24,4 +24,6 @@ export const ENV = {
   localAdminEmail: process.env.LOCAL_ADMIN_EMAIL ?? "",
   localAdminPassword: process.env.LOCAL_ADMIN_PASSWORD ?? "",
   localAdminName: process.env.LOCAL_ADMIN_NAME ?? "Administrateur REDACTIO",
+  makeDemoWebhookUrl: process.env.MAKE_DEMO_WEBHOOK_URL ?? "",
+  makeSignupWebhookUrl: process.env.MAKE_SIGNUP_WEBHOOK_URL ?? "",
 };

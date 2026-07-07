@@ -11,7 +11,7 @@ import { registerFileExtraction } from "../fileExtraction";
 import { registerObservationExamExtraction } from "../observationExamExtraction";
 import { registerStreamGeneration } from "../streamGeneration";
 import { registerVoiceTranscription } from "../voiceTranscriptionRoute";
-import { appRouter } from "../routers";
+import { registerMakeWebhookRoutes } from "../makeWebhooks";
 import { createContext } from "./context";
 import { registerStorageProxy } from "./storageProxy";
 import { serveStatic, setupVite } from "./vite";
@@ -51,6 +51,7 @@ async function startServer() {
   registerStreamGeneration(app);
   registerExportRoutes(app);
   registerVoiceTranscription(app);
+  registerMakeWebhookRoutes(app);
   // tRPC API
   app.use(
     "/api/trpc",

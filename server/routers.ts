@@ -48,6 +48,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { analyzeText, invalidateDictCache } from "./medicalAnalyzer";
 import { createAnthropicMessage } from "./_core/anthropic";
+import { notifySignupCreated } from "./makeWebhooks";
 import {
   DEFAULT_PROMPT_BASE,
   DEFAULT_TEMPLATES,
@@ -213,6 +214,16 @@ export const appRouter = router({
           resource: "user",
           resourceId: String(finalUser.id),
           metadata: { role: "praticien" },
+        });
+
+        void notifySignupCreated({
+          userId: finalUser.id,
+          name: finalUser.name,
+          email: finalUser.email,
+          role: finalUser.role,
+          specialite: input.specialite?.trim() || undefined,
+          rpps: input.rpps?.trim() || undefined,
+          marketingOptIn: input.marketingOptIn,
         });
 
         const sessionToken = await sdk.createSessionToken(finalUser.openId, {
