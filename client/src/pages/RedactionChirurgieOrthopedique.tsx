@@ -11,6 +11,7 @@ const ORTHO_SUBTYPE = "chirurgie_orthopedique";
 const MISS = "[à préciser par l'opérateur]";
 
 type Side = "D" | "G" | "B" | "";
+type PreviewMode = "bloc" | "prompt" | "json";
 type Preset = {
   label: string;
   motif: string;
@@ -233,6 +234,17 @@ function formatDate(value: string) {
   return `${day}/${month}/${year}`;
 }
 
+const ORTHO_DIRECTIVE = `# CONSIGNE — Aide RÉDACTIONNELLE. Mets en forme le courrier de sortie à partir du bloc ci-dessous.
+Respecte la trame du prompt "Prompt_Courrier_Sortie_Chirurgie_Ortho.md" :
+- MOTIF = pathologie causale ayant conduit au geste (jamais le geste seul).
+- DATES : les dates du champ 3 (Entrée / Intervention / Sortie ou Transfert) sont RÉELLES et VALIDÉES par le médecin. Recopie-les TELLES QUELLES dans « SÉJOUR HOSPITALIER » et dans la phrase d'introduction. N'écris JAMAIS "${MISS}" à la place d'une date fournie ; seule une date réellement vide reste un espace à compléter.
+- ÂGE : reprends l'âge du champ 2 dans la phrase d'introduction (« … ans »).
+- Reformule et structure UNIQUEMENT ce qui est saisi. N'ajoute AUCUNE valeur clinique (durée, délai, rythme, molécule, modalité d'appui/immobilisation) : laisse les [ ] tels quels ou "${MISS}".
+- SUITES POST-OP : si « simples », bloc stéréotypé ; sinon intègre le texte du champ 7 sous forme « À noter : … ».
+- N'inclus AUCUNE section traitement ni tableau de médicaments (transmis séparément).
+- Aucun nom de professionnel ni donnée d'identité (cryptés en entrée). Conserve dates, âge, latéralité, matériel, antécédents complets, noms des structures.
+- Ton confraternel, 3e personne, synthétique. L'outil met en forme, il ne décide pas.`;
+
 function sideWord(gender: Preset["motifGender"] | Preset["gesteGender"], side: Side) {
   if (!side || gender === "n") return "";
   const masculine = { D: "droit", G: "gauche", B: "bilatéral" } as const;
@@ -277,6 +289,7 @@ export default function RedactionChirurgieOrthopedique() {
   const [streamingText, setStreamingText] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [pseudoInfo, setPseudoInfo] = useState<{ maskCount: number; detectedCategories: string[] } | null>(null);
+  const [previewMode, setPreviewMode] = useState<PreviewMode>("bloc");
 
   const applyPreset = useCallback((key: PresetKey) => {
     const next = PRESETS[key];
@@ -338,6 +351,57 @@ ${consignes.replace(/^/gm, "   ")}
     structureAval,
     suitesValue,
   ]);
+
+  const technicalPayload = useMemo(() => ({
+    motif: motifSided || MISS,
+    age: age.trim() ? Number(age) : null,
+    lateralite: { D: "droite", G: "gauche", B: "bilatérale", "": "sans objet" }[side],
+    dateEntree,
+    dateChirurgie,
+    transfert: isTransfert,
+    dateSortie,
+    structureAval,
+    typeChirurgie: gesteSided || MISS,
+    anesthesie: anesth,
+    deroulementPerop: peropValue,
+    antecedents: antecedents.trim() || "sans particularité",
+    suitesPostOp: suitesValue,
+    orthoGeriatrie,
+    consignes: consignes
+      .split("\n")
+      .map((line) => line.replace(/^•\s*/, "").trim())
+      .filter(Boolean),
+    rdv: { date: dateRdv, heure: heureRdv },
+    radiographies: radios.trim(),
+    bloc: blocText,
+    prompt: `${ORTHO_DIRECTIVE}\n\n${blocText}`,
+  }), [
+    age,
+    anesth,
+    antecedents,
+    blocText,
+    consignes,
+    dateChirurgie,
+    dateEntree,
+    dateRdv,
+    dateSortie,
+    gesteSided,
+    heureRdv,
+    isTransfert,
+    motifSided,
+    orthoGeriatrie,
+    peropValue,
+    radios,
+    side,
+    structureAval,
+    suitesValue,
+  ]);
+
+  const technicalPreview = previewMode === "prompt"
+    ? technicalPayload.prompt
+    : previewMode === "json"
+      ? JSON.stringify(technicalPayload, null, 2)
+      : blocText;
 
   const missingCount = (blocText.match(/\[/g) ?? []).length;
 
@@ -493,7 +557,7 @@ ${consignes.replace(/^/gm, "   ")}
               </select>
             </div>
             <div>
-              <label>Déroulement per-op</label>
+              <label>Déroulement per-opératoire</label>
               <select value={perop} onChange={(event) => setPerop(event.target.value)}>
                 <option>sans particularité</option>
                 <option>sans incident</option>
@@ -502,7 +566,7 @@ ${consignes.replace(/^/gm, "   ")}
               </select>
             </div>
           </div>
-          {perop === "__" && <input value={peropText} onChange={(event) => setPeropText(event.target.value)} placeholder="précision per-op" className="ortho-inline-input" />}
+          {perop === "__" && <textarea value={peropText} onChange={(event) => setPeropText(event.target.value)} placeholder="Décrire le déroulement per-opératoire (saignement, difficulté technique, incident...)" className="ortho-inline-input" />}
 
           <h2>3 · Dates</h2>
           <div className="ortho-row">
@@ -561,12 +625,32 @@ ${consignes.replace(/^/gm, "   ")}
 
           <div className="ortho-flag">
             Aide rédactionnelle : l'outil met en forme ce que vous saisissez et ne recommande aucune valeur.
-            Le protocole de l'opérateur prime.
+            Complétez les [ ] et vérifiez côté, dates et consignes. Le protocole de l'opérateur prime.
           </div>
 
           <details className="ortho-details">
-            <summary>Aperçu technique</summary>
-            <pre>{blocText}</pre>
+            <summary>Aperçu technique — développeur</summary>
+            <p className="ortho-hint">Ce qui est transmis à l'IA / au backend. À ne pas montrer à l'utilisateur final.</p>
+            <div className="ortho-tabbar">
+              {[
+                ["bloc", "Bloc §2"],
+                ["prompt", "Prompt complet"],
+                ["json", "Données (JSON)"],
+              ].map(([mode, label]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  className={previewMode === mode ? "on" : ""}
+                  onClick={() => setPreviewMode(mode as PreviewMode)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <pre>{technicalPreview}</pre>
+            <Button type="button" variant="outline" className="ortho-copy-preview" onClick={() => navigator.clipboard.writeText(technicalPreview).then(() => toast.success("Aperçu copié."))}>
+              <Copy size={15} /> Copier l'aperçu
+            </Button>
           </details>
         </section>
       </main>
@@ -591,7 +675,7 @@ const orthoStyles = `
 .ortho-hint{font-size:.78rem;color:var(--muted);margin:10px 0 0}
 .ortho-badge{display:inline-block;background:var(--accent);color:var(--brand-d);border-radius:6px;padding:2px 8px;font-size:.72rem;font-weight:800;margin-left:6px}
 .ortho-card label{display:block;font-weight:700;font-size:.82rem;color:var(--muted);margin:12px 0 5px}
-.ortho-card input[type=text],.ortho-card input[type=date],.ortho-card input[type=time],.ortho-card select,.ortho-card textarea{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:10px;font-size:.92rem;font-family:inherit;background:#fff;color:var(--ink)}
+.ortho-card input[type=text],.ortho-card input[type=number],.ortho-card input[type=date],.ortho-card input[type=time],.ortho-card select,.ortho-card textarea{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:10px;font-size:.92rem;font-family:inherit;background:#fff;color:var(--ink)}
 .ortho-card textarea{resize:vertical;min-height:72px}.ortho-consignes{min-height:170px!important}
 .ortho-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.ortho-row:has(> div:nth-child(3)){grid-template-columns:repeat(3,minmax(0,1fr))}
 .ortho-seg{display:flex;gap:7px;flex-wrap:wrap}.ortho-seg button{flex:1;min-width:76px;padding:9px;border:1px solid var(--line);background:#fff;border-radius:9px;cursor:pointer;font-size:.84rem;font-weight:700;color:var(--muted)}.ortho-seg button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
@@ -603,6 +687,8 @@ const orthoStyles = `
 .ortho-mask{border:1px solid #BFE6E0;background:#E7F4F2;color:#0A7B70;border-radius:999px;display:inline-flex;padding:6px 11px;font-size:.8rem;font-weight:700;margin:10px 0}
 .ortho-letter{background:#fff;border:1px dashed var(--line);border-radius:12px;padding:18px;min-height:360px;white-space:pre-wrap;font-size:.94rem;color:var(--ink)}
 .ortho-details{border-top:1px solid var(--line);margin-top:16px;padding-top:12px}.ortho-details summary{cursor:pointer;font-size:.85rem;font-weight:800;color:var(--muted)}.ortho-details pre{background:#0f1b26;color:#e7eef5;border-radius:10px;padding:14px;overflow:auto;font-size:.78rem;white-space:pre-wrap;margin:12px 0 0;font-family:'JetBrains Mono',monospace}
+.ortho-tabbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.ortho-tabbar button{padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:.82rem;font-weight:800;color:var(--muted)}.ortho-tabbar button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.ortho-copy-preview{margin-top:10px}
 .ortho-page :focus-visible{outline:2px solid #0E9C8E;outline-offset:2px;border-radius:5px}
 @media(max-width:900px){.ortho-wrap{grid-template-columns:1fr;padding:18px}.ortho-row,.ortho-row:has(> div:nth-child(3)){grid-template-columns:1fr}.ortho-top{padding:20px}.ortho-top h1{font-size:1.45rem}}
 `;
