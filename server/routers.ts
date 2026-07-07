@@ -117,16 +117,15 @@ export const appRouter = router({
             throw new TRPCError({ code: "UNAUTHORIZED", message: "Identifiants invalides." });
           }
 
-          // On récupère ou on crée l'utilisateur admin en base.
-          const existingUser = await getUserByEmail(email);
-          const openId = existingUser?.openId ?? getLocalOpenId(email);
-          const passwordHash = await hashPassword(ENV.localAdminPassword);
-          await upsertUser({ openId, role: "admin", name: ENV.localAdminName, email, passwordHash, loginMethod: "password" });
-          const finalUser = await getUserByEmail(email);
+          // L'utilisateur admin est déjà créé au démarrage par `ensureLocalAdmin`.
+          // On le récupère simplement pour créer la session.
+          const adminUser = await getUserByEmail(email);
 
-          if (!finalUser) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+          if (!adminUser) {
+            throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Le compte administrateur local n'a pas pu être trouvé." });
+          }
 
-          const sessionToken = await sdk.createSessionToken(finalUser.openId, { name: finalUser.name ?? "", expiresInMs: ONE_YEAR_MS });
+          const sessionToken = await sdk.createSessionToken(adminUser.openId, { name: adminUser.name ?? "", expiresInMs: ONE_YEAR_MS });
           const cookieOptions = getSessionCookieOptions(ctx.req);
           ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
           return { success: true };

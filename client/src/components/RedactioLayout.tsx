@@ -3,6 +3,7 @@ import { getLoginUrl } from "@/const";
 import {
   AlertTriangle,
   BookOpen,
+  PlayCircle,
   Building2,
   ChevronRight,
   FileText,
@@ -53,6 +54,11 @@ const NAV_ITEMS: NavItem[] = [
     href: "/redaction",
     icon: <FileText className="w-4 h-4" />,
     roles: ["praticien", "admin"],
+  },
+  {
+    label: "Tutoriels",
+    href: "/tutoriels",
+    icon: <PlayCircle className="w-4 h-4" />,
   },
   {
     label: "Back-office prompts",

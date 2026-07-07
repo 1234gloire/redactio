@@ -24,15 +24,15 @@ import {
   Copy,
   Download,
   FilePenLine,
-  FileUp,
   FileText,
+  FileUp,
   Loader2,
   RotateCcw,
   Shield,
   Stethoscope,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type DragEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
 import { useLocation } from "wouter";
 import { cn } from "../lib/utils";
 import { toast } from "sonner";
@@ -45,7 +45,7 @@ type PseudonymisationInfo = {
   hasPotentialOvermasking: boolean;
 };
 
-const VOLETS: Record<Volet, { label: string; icon: React.ReactNode; description: string; color: string }> = {
+const VOLETS: Record<Volet, { label: string; icon: ReactNode; description: string; color: string }> = {
   courrier_sortie: {
     label: "Courrier de sortie",
     icon: <FileText className="w-6 h-6" />,
@@ -74,10 +74,15 @@ const VOLETS: Record<Volet, { label: string; icon: React.ReactNode; description:
 
 const VOLET_ICON_CLASSES: Record<string, string> = {
   teal: "volet-icon-teal",
+  teal_accent: "var(--teal)",
   slate: "volet-icon-slate",
+  slate_accent: "var(--navy)",
   seal: "volet-icon-seal",
+  seal_accent: "var(--gold)",
   indigo: "volet-icon-indigo",
+  indigo_accent: "var(--purple)",
   ortho: "volet-icon-ortho",
+  blue_accent: "var(--blue)",
 };
 
 function getCurrentRedactionReturnPath() {
@@ -633,16 +638,12 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     }
   }, [authLoading, isAuthenticated, loginUrl, setLocation]);
 
-  if (authLoading || !isAuthenticated) return null;
 
   const STEPS = selectedVolet === "observation" ? STEPS_OBSERVATION : STEPS_DEFAULT;
 
-  const progressStyle = {
-    "--redaction-progress": `${(step / STEPS.length) * 100}%`,
-  } as CSSProperties;
-
   return (
     <RedactioLayout>
+      <style>{newRedactionStyles}</style>
       <div className="redaction-compliance-bar" aria-label="Conformité données de santé">
         <span className="redaction-compliance-lead">
           <Shield className="h-3.5 w-3.5" />
@@ -656,7 +657,6 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
         </span>
       </div>
       <div className="redaction-shell">
-        {/* En-tête avec étapes */}
         <div className="redaction-header">
           <div className="redaction-title-row">
             <h1 className="redaction-page-title">Nouvelle rédaction</h1>
@@ -665,39 +665,25 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
               Recommencer
             </Button>
           </div>
-
-          {/* Indicateur d'étapes */}
-          <div className="redaction-stepper" style={progressStyle} role="list" aria-label="Étapes du parcours">
-              {STEPS.map((s) => (
-                <div
-                  key={s.id}
-                  className={cn("step-indicator", {
-                    current: step === s.id,
-                    done: step > s.id,
-                  })}
-                  role="listitem"
-                >
-                  <div
-                    className={cn("step-dot", {
-                      active: step === s.id,
-                      completed: step > s.id,
-                      pending: step < s.id,
-                    })}
-                    aria-current={step === s.id ? "step" : undefined}
-                  >
+          <div className="redaction-stepper" role="list" aria-label="Étapes du parcours">
+            {STEPS.map((s, index) => (
+              <div key={s.id} className="step-wrap">
+                <div className={cn("step-indicator", { current: step === s.id, done: step > s.id })} role="listitem">
+                  <div className={cn("step-dot", { active: step === s.id, completed: step > s.id, pending: step < s.id })} aria-current={step === s.id ? "step" : undefined}>
                     {step > s.id ? <Check className="w-3 h-3" /> : s.id}
                   </div>
                   <span className="step-label">{s.label}</span>
                 </div>
-              ))}
+                {index < STEPS.length - 1 && <span className="step-sep" aria-hidden="true" />}
+              </div>
+            ))}
           </div>
         </div>
-
         {/* ─── Étape 1 : Choix du volet ─── */}
         {step === 1 && (
           <div className="redaction-panel animate-fade-in">
             <div>
-              <h2 className="redaction-step-title">Choisissez un volet</h2>
+              <h2 className="redaction-section-title">Choisissez un volet</h2>
               <p className="redaction-step-subtitle">
                 Sélectionnez le type de document à rédiger.
               </p>
@@ -706,57 +692,47 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
               {(Object.entries(VOLETS) as [Volet, typeof VOLETS[Volet]][]).map(([id, volet]) => (
                 <button
                   key={id}
-                  className={cn("volet-card text-left", { selected: selectedVolet === id })}
-                  onClick={() => {
-                    setSelectedVolet(id);
-                    setSelectedSubtype(getDefaultSubtype(id));
-                  }}
-                  aria-pressed={selectedVolet === id}
-                  aria-label={`Sélectionner ${volet.label}`}
-                >
-                  <div className={cn("volet-icon", VOLET_ICON_CLASSES[volet.color])}>
+                  type="button"
+                  className={cn("volet", { sel: selectedVolet === id })}
+                  style={{ "--accent": VOLET_ICON_CLASSES[`${volet.color}_accent`] } as CSSProperties}
+                  onClick={() => { setSelectedVolet(id); setSelectedSubtype(getDefaultSubtype(id)); }}>
+                  <span className="check"><Check /></span>
+                  <div className="ic">
                     {volet.icon}
                   </div>
                   <div>
                     <h3>{volet.label}</h3>
                     <p>{volet.description}</p>
                   </div>
-                  {selectedVolet === id && (
-                    <div className="volet-check">
-                      <Check className="w-3.5 h-3.5" />
-                    </div>
-                  )}
                 </button>
               ))}
               <button
                 type="button"
-                className="volet-card text-left"
+                className="volet"
+                style={{ "--accent": VOLET_ICON_CLASSES.blue_accent } as CSSProperties}
                 onClick={() => setLocation("/redaction/chirurgie-orthopedique")}
                 aria-label="Ouvrir Chirurgie orthopédique"
               >
-                <div className={cn("volet-icon", VOLET_ICON_CLASSES.ortho)}>
+                <span className="check"><Check /></span>
+                <div className="ic">
                   <Bone className="w-6 h-6" />
                 </div>
                 <div>
                   <h3>Chirurgie orthopédique</h3>
-                  <p>Rédaction structurée du courrier de sortie d'hospitalisation.</p>
+                  <p>Compte rendu opératoire et courrier de sortie d'hospitalisation structurés.</p>
                 </div>
               </button>
             </div>
             <div className="step-foot">
-              <span className="spacer" />
-              <Button
-                onClick={() => setStep(2)}
-                disabled={!selectedVolet}
-                className="gap-2 redaction-primary-button"
-              >
-                Continuer
-                <ArrowRight className="w-4 h-4" />
+              <span className="hint">
+                {selectedVolet ? `Volet sélectionné : ${VOLETS[selectedVolet].label}` : "Sélectionnez un volet pour continuer."}
+              </span>
+              <Button onClick={() => setStep(2)} disabled={!selectedVolet} className="gap-2 redaction-primary-button">
+                Continuer <ArrowRight className="w-4 h-4" />
               </Button>
             </div>
           </div>
         )}
-
         {/* ─── Étape 2 : Injection des données ─── */}
         {step === 2 && selectedVolet && selectedVolet !== "observation" && (
           <div className="redaction-panel animate-fade-in">
@@ -1487,3 +1463,596 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     </RedactioLayout>
   );
 }
+
+const newRedactionStyles = `
+@import url("https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,500;0,600;0,700&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap");
+
+:root{
+  --ink:#0b1b29;
+  --ink-soft:#5a6b78;
+  --ink-faint:#8a99a4;
+  --teal:#0e9c8e;
+  --teal-deep:#0a7b70;
+  --line:#e6edf0;
+  --field:#f6f9f9;
+  --mint:#eef6f4;
+  --navy:#1e3a5f;
+  --gold:#c58a17;
+  --purple:#6d5bd0;
+  --blue:#2f6fb0;
+  --bg:#f3f6f7;
+}
+
+.redaction-shell,
+.redaction-shell *{
+  box-sizing:border-box;
+}
+
+.redaction-shell{
+  width:100%;
+  max-width:1180px;
+  min-height:calc(100vh - 40px);
+  margin:0 auto;
+  padding:34px 44px 40px;
+  display:flex;
+  flex-direction:column;
+  color:var(--ink);
+  font-family:"Hanken Grotesk",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+
+.redaction-compliance-bar{
+  max-width:1180px;
+  margin:0 auto 14px;
+  padding:10px 16px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:#fff;
+  color:var(--ink-soft);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  font-family:"Hanken Grotesk",system-ui,sans-serif;
+  box-shadow:0 2px 8px rgba(11,27,41,.04);
+}
+
+.redaction-compliance-lead,
+.redaction-compliance-items,
+.redaction-compliance-items span{
+  display:flex;
+  align-items:center;
+  gap:7px;
+}
+
+.redaction-compliance-lead{
+  font-weight:700;
+  color:var(--ink);
+  font-size:13px;
+}
+
+.redaction-compliance-items{
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  font-size:12px;
+  font-weight:600;
+  color:var(--ink-soft);
+}
+
+.redaction-header{
+  margin-bottom:8px;
+}
+
+.redaction-title-row{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:20px;
+  margin-bottom:22px;
+}
+
+.redaction-page-title{
+  font-family:"Spectral",Georgia,serif;
+  font-weight:600;
+  font-size:29px;
+  line-height:1.1;
+  letter-spacing:-.2px;
+  margin:0;
+  color:var(--ink);
+}
+
+.redaction-restart{
+  display:inline-flex !important;
+  align-items:center;
+  gap:8px;
+  height:auto !important;
+  min-height:40px;
+  background:#fff !important;
+  border:1px solid var(--line) !important;
+  border-radius:11px !important;
+  padding:10px 16px !important;
+  font-weight:600 !important;
+  font-size:13.5px !important;
+  color:var(--ink-soft) !important;
+  box-shadow:none !important;
+  transition:.15s ease;
+}
+
+.redaction-restart:hover{
+  color:var(--ink) !important;
+  border-color:#d3dde2 !important;
+  background:#fff !important;
+}
+
+.redaction-restart svg{
+  width:15px;
+  height:15px;
+}
+
+/* ---------- PROGRESSION ---------- */
+.redaction-stepper{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:40px;
+  flex-wrap:wrap;
+}
+
+.step-wrap{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.step-indicator{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.step-dot{
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:700;
+  font-size:13px;
+  line-height:1;
+  flex:none;
+  border:1.5px solid var(--line);
+  color:var(--ink-faint);
+  background:#fff;
+  transition:.18s ease;
+}
+
+.step-indicator.done .step-dot,
+.step-indicator.current .step-dot{
+  border-color:var(--navy);
+  background:var(--navy);
+  color:#fff;
+}
+
+.step-dot svg{
+  width:14px;
+  height:14px;
+}
+
+.step-label{
+  font-weight:600;
+  font-size:14px;
+  color:var(--ink-faint);
+}
+
+.step-indicator.current .step-label{
+  color:var(--ink);
+}
+
+.step-sep{
+  width:46px;
+  height:1.5px;
+  background:var(--line);
+  display:inline-flex;
+}
+
+/* ---------- PANELS ---------- */
+.redaction-panel{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  flex:1;
+}
+
+.redaction-section-title,
+.h2,
+.redaction-step-title{
+  font-family:"Spectral",Georgia,serif;
+  font-weight:600;
+  font-size:22px;
+  line-height:1.2;
+  margin:0 0 6px;
+  color:var(--ink);
+}
+
+.redaction-step-subtitle{
+  color:var(--ink-soft);
+  font-size:14.5px;
+  line-height:1.5;
+  margin:0 0 24px;
+}
+
+.redaction-back-heading{
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  margin-bottom:20px;
+}
+
+.redaction-back-heading > button{
+  border-radius:10px !important;
+  color:var(--ink-soft) !important;
+}
+
+/* ---------- BLOC SÉLECTION ---------- */
+.redaction-volets{
+  display:flex;
+  flex-wrap:wrap;
+  gap:20px;
+  justify-content:center;
+}
+
+.volet{
+  appearance:none;
+  -webkit-appearance:none;
+  position:relative;
+  flex:1 1 300px;
+  max-width:344px;
+  min-width:272px;
+  min-height:210px;
+  background:#fff;
+  border:1.5px solid var(--line);
+  border-radius:16px;
+  padding:24px 24px 22px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  text-align:left;
+  color:var(--ink);
+  box-shadow:0 2px 6px rgba(11,27,41,.04);
+  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  cursor:pointer;
+  font:inherit;
+}
+
+.volet:hover{
+  transform:translateY(-3px);
+  box-shadow:0 20px 40px -22px rgba(11,27,41,.32);
+  border-color:color-mix(in srgb,var(--accent) 45%,var(--line));
+}
+
+.volet.sel{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent),0 18px 38px -22px rgba(11,27,41,.35);
+}
+
+.volet .ic{
+  width:52px;
+  height:52px;
+  border-radius:13px;
+  background:var(--accent);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin-bottom:18px;
+}
+
+.volet .ic svg{
+  width:25px;
+  height:25px;
+}
+
+.volet h3{
+  font-family:"Spectral",Georgia,serif;
+  font-weight:600;
+  font-size:20px;
+  line-height:1.2;
+  margin:0 0 9px;
+  color:var(--ink);
+}
+
+.volet p{
+  color:var(--ink-soft);
+  font-size:13.7px;
+  line-height:1.5;
+  margin:0;
+}
+
+.volet .check{
+  position:absolute;
+  top:18px;
+  right:18px;
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  border:1.5px solid var(--line);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#fff;
+  transition:.15s ease;
+}
+
+.volet .check svg{
+  width:14px;
+  height:14px;
+  opacity:0;
+  transition:.15s ease;
+  stroke-width:3px;
+}
+
+.volet.sel .check{
+  background:var(--accent);
+  border-color:var(--accent);
+}
+
+.volet.sel .check svg{
+  opacity:1;
+}
+
+/* ---------- FORMULAIRES ---------- */
+.redaction-confidentiality{
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  margin:0 0 22px;
+  padding:16px 18px;
+  border:1px solid rgba(197,138,23,.28);
+  border-radius:14px;
+  background:#fff8ed;
+  color:#6f4a08;
+}
+
+.redaction-confidentiality p{
+  margin:0;
+  line-height:1.45;
+}
+
+.redaction-field-group{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:20px;
+  box-shadow:0 2px 6px rgba(11,27,41,.04);
+  margin-bottom:18px;
+}
+
+.redaction-field-label{
+  display:block;
+  color:var(--ink);
+  font-size:13.5px;
+  font-weight:700;
+  margin-bottom:8px;
+}
+
+.redaction-dropzone{
+  border:1.5px dashed #cbd6dc;
+  border-radius:15px;
+  background:var(--field);
+  padding:16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  flex-wrap:wrap;
+  transition:.15s ease;
+}
+
+.redaction-dropzone.is-over{
+  border-color:var(--teal);
+  background:var(--mint);
+}
+
+.redaction-dropzone-icon{
+  width:38px;
+  height:38px;
+  border-radius:11px;
+  background:#fff;
+  color:var(--teal-deep);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid var(--line);
+}
+
+.mask-badge,
+.tag-a-completer{
+  display:inline-flex;
+  align-items:center;
+  border-radius:999px;
+  padding:3px 8px;
+  font-size:11px;
+  font-weight:700;
+}
+
+.mask-badge{
+  color:var(--teal-deep);
+  background:var(--mint);
+  border:1px solid rgba(14,156,142,.18);
+}
+
+.tag-a-completer{
+  color:#7a4a00;
+  background:#fff1c2;
+  border:1px solid #ffd56b;
+}
+
+.tableWrapper{
+  width:100%;
+  overflow-x:auto;
+  margin:14px 0;
+  border:1px solid var(--line);
+  border-radius:12px;
+}
+
+.tableWrapper table{
+  width:100%;
+  border-collapse:collapse;
+  background:#fff;
+}
+
+.tableWrapper th,
+.tableWrapper td{
+  padding:10px 12px;
+  border-bottom:1px solid var(--line);
+  text-align:left;
+  vertical-align:top;
+  font-size:13px;
+}
+
+.tableWrapper th{
+  background:var(--field);
+  color:var(--ink);
+  font-weight:800;
+}
+
+.tiptap-editor{
+  min-height:420px;
+  background:#fff;
+  padding:22px;
+  color:var(--ink);
+  line-height:1.65;
+  outline:none;
+}
+
+.tiptap-editor h2,
+.tiptap-editor h3,
+.tiptap-editor h4{
+  font-family:"Spectral",Georgia,serif;
+  color:var(--ink);
+  margin:18px 0 8px;
+}
+
+.tiptap-editor p{
+  margin:0 0 8px;
+}
+
+/* ---------- GÉNÉRATION / EXPORT ---------- */
+.redaction-generation{
+  min-height:420px;
+  border:1px solid var(--line);
+  border-radius:18px;
+  background:#fff;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:20px;
+  text-align:center;
+  box-shadow:0 2px 6px rgba(11,27,41,.04);
+}
+
+.redaction-spinner-ring{
+  width:72px;
+  height:72px;
+  border-radius:50%;
+  background:var(--mint);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* ---------- BARRE ACTIONS ---------- */
+.step-foot{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:14px;
+  margin-top:40px;
+  padding-top:34px;
+  border-top:1px solid var(--line);
+}
+
+.spacer{
+  flex:1;
+}
+
+.hint{
+  margin-right:auto;
+  font-size:13px;
+  color:var(--ink-faint);
+}
+
+.redaction-primary-button{
+  display:inline-flex !important;
+  align-items:center;
+  gap:9px;
+  min-height:46px;
+  background:var(--teal) !important;
+  color:#fff !important;
+  border:none !important;
+  border-radius:12px !important;
+  padding:13px 24px !important;
+  font-weight:700 !important;
+  font-size:14.5px !important;
+  box-shadow:0 12px 24px -12px rgba(14,156,142,.9);
+  transition:.15s ease;
+}
+
+.redaction-primary-button:hover:not(:disabled){
+  background:var(--teal-deep) !important;
+}
+
+.redaction-primary-button:disabled{
+  background:#a8d8d2 !important;
+  box-shadow:none !important;
+  cursor:not-allowed;
+  opacity:.85;
+}
+
+@media(max-width:860px){
+  .redaction-shell{
+    padding:26px 20px 34px;
+  }
+  .redaction-compliance-bar{
+    margin:0 20px 12px;
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .step-label{
+    display:none;
+  }
+  .step-sep{
+    width:20px;
+  }
+  .redaction-volets{
+    justify-content:stretch;
+  }
+  .volet{
+    max-width:none;
+    min-width:100%;
+  }
+}
+
+@media(max-width:560px){
+  .redaction-title-row,
+  .step-foot{
+    align-items:stretch;
+    flex-direction:column;
+  }
+  .hint,
+  .spacer{
+    margin-right:0;
+  }
+  .redaction-restart,
+  .redaction-primary-button{
+    width:100%;
+    justify-content:center;
+  }
+  .redaction-dropzone{
+    align-items:stretch;
+    flex-direction:column;
+  }
+}
+`;

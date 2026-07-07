@@ -1,5 +1,6 @@
 import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import { hashPassword } from "./_core/passwords";
 import {
   AuditLog,
   InsertAuditLog,
@@ -111,9 +112,14 @@ export async function getUserByOpenId(openId: string): Promise<User | undefined>
 export async function getUserByEmail(email: string): Promise<User | undefined> {
   const db = await getDb();
   if (!db) return undefined;
-  const normalizedEmail = email.trim().toLowerCase();
-  const result = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  try {
+    const normalizedEmail = email.trim().toLowerCase();
+    const result = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
+    return result[0];
+  } catch (error) {
+    console.error(`[Database] Failed to get user by email ${email}:`, error);
+    return undefined;
+  }
 }
 
 export async function getUserById(id: number): Promise<User | undefined> {
@@ -127,6 +133,34 @@ export async function updateUser(id: number, data: Partial<InsertUser>): Promise
   const db = await getDb();
   if (!db) return;
   await db.update(users).set(data).where(eq(users.id, id));
+}
+
+export async function ensureLocalAdmin() {
+  if (!ENV.localAdminEmail || !ENV.localAdminPassword) {
+    return;
+  }
+
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot ensure local admin: database not available");
+    return;
+  }
+
+  const existingAdmin = await getUserByEmail(ENV.localAdminEmail);
+  if (existingAdmin) {
+    return;
+  }
+
+  console.log(`[Database] Creating local admin user: ${ENV.localAdminEmail}`);
+  const passwordHash = await hashPassword(ENV.localAdminPassword);
+  await upsertUser({
+    openId: `local:${ENV.localAdminEmail}`,
+    email: ENV.localAdminEmail,
+    name: ENV.localAdminName ?? "Admin",
+    passwordHash,
+    role: "admin",
+    loginMethod: "password",
+  });
 }
 
 export async function listUsersByOrg(organisationId: number): Promise<User[]> {

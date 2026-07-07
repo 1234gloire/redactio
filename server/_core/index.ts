@@ -3,8 +3,9 @@ import express from "express";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
+import { ensureLocalAdmin } from "../db";
+import { appRouter } from "../routers";
 import { registerOAuthRoutes } from "./oauth";
-import { registerStorageProxy } from "./storageProxy";
 import { registerExportRoutes } from "../exportRoute";
 import { registerFileExtraction } from "../fileExtraction";
 import { registerObservationExamExtraction } from "../observationExamExtraction";
@@ -12,8 +13,8 @@ import { registerStreamGeneration } from "../streamGeneration";
 import { registerVoiceTranscription } from "../voiceTranscriptionRoute";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
+import { registerStorageProxy } from "./storageProxy";
 import { serveStatic, setupVite } from "./vite";
-
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
     const server = net.createServer();
@@ -34,6 +35,10 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  // S'assurer que l'admin local existe AVANT de démarrer le serveur.
+  // C'est crucial pour que la connexion admin fonctionne dès le premier lancement.
+  await ensureLocalAdmin();
+
   const app = express();
   const server = createServer(app);
   // Configure body parser with larger size limit for file uploads

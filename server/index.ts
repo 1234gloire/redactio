@@ -1,40 +1,25 @@
-import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import express from "express";
-import path from "path";
-import { fileURLToPath } from "url";
+import { createHTTPServer } from "@trpc/server/adapters/standalone";
+import { appRouter } from "../routers";
+import { createContext } from "./context";
+import { ENV } from "./env";
+import { ensureLocalAdmin } from "../db";
 
-import { registerFileExtraction } from "./fileExtraction";
-import { registerExportRoutes } from "./exportRoute";
-import { registerObservationExamExtraction } from "./observationExamExtraction";
-import { registerStreamGeneration } from "./streamGeneration";
-import { registerVoiceTranscription } from "./voiceTranscriptionRoute";
-import { appRouter } from "./routers";
-import { createContext } from "./_core/context";
+async function main() {
+  if (ENV.isDev) {
+    console.log("🌱 Starting development server...");
+  }
 
-const PORT = process.env.PORT ?? 3001;
-const app = express();
+  // Ensure local admin exists on startup
+  await ensureLocalAdmin();
 
-// --- Middlewares essentiels ---
-app.use(express.json());
-
-// --- Enregistrement des routes API ---
-app.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext }));
-registerStreamGeneration(app);
-registerVoiceTranscription(app);
-registerFileExtraction(app);
-registerObservationExamExtraction(app);
-registerExportRoutes(app);
-
-// --- Service des fichiers statiques (pour la production) ---
-if (process.env.NODE_ENV === "production") {
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  const clientPath = path.join(__dirname, "../../client/dist");
-  app.use(express.static(clientPath));
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(clientPath, "index.html"));
+  const server = createHTTPServer({
+    router: appRouter,
+    createContext,
   });
+
+  server.listen(ENV.port);
+
+  console.log(`🚀 Server listening on http://localhost:${ENV.port}`);
 }
 
-app.listen(PORT, () => {
-  console.log(`[REDACTIO] Serveur démarré sur http://localhost:${PORT}`);
-});
+main().catch((err) => console.error(err));
