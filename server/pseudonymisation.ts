@@ -41,18 +41,14 @@ const RULES: Array<{ name: string; pattern: RegExp; replacement: string }> = [
     pattern: /\b(?:séjour|n°\s?séjour|hospitalisation)\s*:?\s*[A-Z0-9]{6,14}\b/gi,
     replacement: "[SEJOUR_MASQUÉ]",
   },
-  // Date de naissance complète (JJ/MM/AAAA, JJ-MM-AAAA, AAAA-MM-JJ)
+  // Date de naissance complète (JJ/MM/AAAA, JJ-MM-AAAA, AAAA-MM-JJ).
+  // Les dates de parcours de soins (entrée, intervention, sortie, RDV)
+  // ne sont pas des identifiants directs et doivent rester lisibles.
   {
     name: "DATE_NAISSANCE",
     pattern:
       /\b(?:né(?:e)?\s+le|date\s+de\s+naissance|DDN|ddn)\s*:?\s*\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}\b/gi,
     replacement: "[DATE_NAISSANCE_MASQUÉE]",
-  },
-  // Date seule au format JJ/MM/AAAA dans un contexte d'identité
-  {
-    name: "DATE_SENSIBLE",
-    pattern: /\b\d{1,2}[\/\-\.]\d{1,2}[\/\-\.](19|20)\d{2}\b/g,
-    replacement: "[DATE_MASQUÉE]",
   },
   // Numéro de téléphone français (06, 07, 01-05, +33)
   {
@@ -286,7 +282,7 @@ export function pseudonymiseExamExtractionOutput(rawText: string): Pseudonymisat
   let text = rawText;
   let totalMaskCount = 0;
   const detectedCategories: string[] = [];
-  const allowedRules = RULES.filter((rule) => rule.name !== "DATE_SENSIBLE");
+  const allowedRules = RULES;
 
   for (const rule of allowedRules) {
     const before = text;

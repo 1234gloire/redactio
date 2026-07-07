@@ -27,6 +27,29 @@ describe("pseudonymisation — règles regex", () => {
     expect(result.detectedCategories).toContain("DATE_NAISSANCE");
   });
 
+  it("masque une date de naissance avec libellé explicite", () => {
+    const result = pseudonymise("Date de naissance : 03/05/1941");
+    expect(result.filteredText).not.toContain("03/05/1941");
+    expect(result.filteredText).toContain("[DATE_NAISSANCE_MASQUÉE]");
+    expect(result.detectedCategories).toContain("DATE_NAISSANCE");
+  });
+
+  it("conserve les dates de séjour et d'intervention", () => {
+    const result = pseudonymise("Entrée le 18/02/2026, intervention le 20/02/2026, sortie le 27/02/2026.");
+    expect(result.filteredText).toContain("18/02/2026");
+    expect(result.filteredText).toContain("20/02/2026");
+    expect(result.filteredText).toContain("27/02/2026");
+    expect(result.filteredText).not.toContain("[DATE_MASQUÉE]");
+    expect(result.detectedCategories).not.toContain("DATE_SENSIBLE");
+  });
+
+  it("conserve les dates et horaires de rendez-vous de contrôle", () => {
+    const result = pseudonymise("RDV de contrôle le 26/03/2026 à 10h30.");
+    expect(result.filteredText).toContain("26/03/2026");
+    expect(result.filteredText).toContain("10h30");
+    expect(result.filteredText).not.toContain("[DATE_MASQUÉE]");
+  });
+
   it("masque un code postal", () => {
     const result = pseudonymise("Adresse : 12 rue de la Paix, 75001 Paris");
     expect(result.filteredText).not.toContain("75001");
