@@ -67,19 +67,13 @@ const RULES: Array<{ name: string; pattern: RegExp; replacement: string }> = [
   {
     name: "ADRESSE",
     pattern:
-      /\b\d{1,4}(?:\s+(?:bis|ter|quater))?\s+(?:rue|avenue|boulevard|allée|impasse|chemin|place|route|voie|passage|square|résidence)\s+[^\n,;]{3,50}(?:\s+\d{5}\s+[A-ZÀ-Ÿa-zà-ÿ\-]+)?\b/gi,
+      /\b\d{1,4}(?:\s+(?:bis|ter|quater))?\s+(?:rue|avenue|boulevard|allée|impasse|chemin|place|route|voie|passage|square|résidence)\s+[^\n,;]{3,50}(?:\s*,?\s+\d{5}\s+[A-ZÀ-Ÿa-zà-ÿ\-]+)?\b/gi,
     replacement: "[ADRESSE_MASQUÉE]",
   },
-  // Code postal seul (5 chiffres)
-  {
-    name: "CODE_POSTAL",
-    pattern: /\b(?:75|77|78|91|92|93|94|95|0[1-9]|[1-9]\d)\d{3}\b/g,
-    replacement: "[CP_MASQUÉ]",
-  },
-  // Numéro RPPS (11 chiffres)
+  // Numéro RPPS (8 à 11 chiffres selon les sources transmises)
   {
     name: "RPPS",
-    pattern: /\b(?:RPPS|rpps)\s*:?\s*\d{11}\b/gi,
+    pattern: /\b(?:RPPS|rpps)\s*:?\s*\d{8,11}\b/gi,
     replacement: "[RPPS_MASQUÉ]",
   },
 ];
@@ -100,23 +94,17 @@ const FRENCH_TITLES = [
   "Pr",
   "Pr\\.",
   "Professeur",
-  "Patient",
-  "Patiente",
 ];
 
 const CONTEXT_KEYWORDS = [
   "patient",
   "patiente",
-  "né",
-  "née",
   "identité",
   "nom",
   "prénom",
   "appelé",
   "appelée",
   "concernant",
-  "pour",
-  "de",
   "personne de confiance",
   "accompagnant",
   "parent",
@@ -126,10 +114,14 @@ const CONTEXT_KEYWORDS = [
   "enfant",
 ];
 
+const NAME_TOKEN =
+  "[A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ][A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇa-zàâäéèêëîïôùûüç\\-']+";
+const NAME_SEQUENCE = `${NAME_TOKEN}(?:\\s+${NAME_TOKEN}){0,3}`;
+
 /**
  * Détection NER heuristique des noms propres.
- * Privilégie le rappel : masque tout ce qui ressemble à un nom propre
- * dans un contexte d'identité patient.
+ * Le périmètre EXG-PSE-01 est volontairement strict : seuls les noms de
+ * personnes ancrés par une civilité ou un libellé d'identité sont masqués.
  */
 function applyNER(text: string): { result: string; count: number } {
   let result = text;
@@ -137,7 +129,7 @@ function applyNER(text: string): { result: string; count: number } {
 
   // Pattern 1 : Titre civil suivi d'un ou plusieurs mots capitalisés
   const titlePattern = new RegExp(
-    `\\b(${FRENCH_TITLES.join("|")})\\s+([A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ][a-zàâäéèêëîïôùûüç\\-']+(?:\\s+[A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ][a-zàâäéèêëîïôùûüç\\-']+){0,3})`,
+    `\\b(${FRENCH_TITLES.join("|")})\\s+(${NAME_SEQUENCE})`,
     "g"
   );
   result = result.replace(titlePattern, (_match, title) => {
@@ -147,20 +139,12 @@ function applyNER(text: string): { result: string; count: number } {
 
   // Pattern 2 : Contexte "patient(e) : Prénom NOM" ou "nom : NOM"
   const contextPattern = new RegExp(
-    `\\b(${CONTEXT_KEYWORDS.join("|")})\\s*:?\\s+([A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ][a-zàâäéèêëîïôùûüç\\-']+(?:\\s+[A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ][a-zàâäéèêëîïôùûüç\\-']+){0,3})`,
+    `\\b(${CONTEXT_KEYWORDS.join("|")})\\s*:?\\s+(${NAME_SEQUENCE})`,
     "gi"
   );
   result = result.replace(contextPattern, (_match, keyword) => {
     count++;
     return `${keyword} [NOM_MASQUÉ]`;
-  });
-
-  // Pattern 3 : Deux mots capitalisés consécutifs en début de ligne (souvent un nom complet)
-  const lineStartPattern =
-    /^([A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ][A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ\-']+)\s+([A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ][a-zàâäéèêëîïôùûüç\-']+)/gm;
-  result = result.replace(lineStartPattern, () => {
-    count++;
-    return "[NOM_MASQUÉ]";
   });
 
   return { result, count };
@@ -171,7 +155,7 @@ function applyExamOutputNER(text: string): { result: string; count: number } {
   let count = 0;
 
   const titlePattern = new RegExp(
-    `\\b(${FRENCH_TITLES.join("|")})\\s+([A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ][a-zàâäéèêëîïôùûüç\\-']+(?:\\s+[A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ][a-zàâäéèêëîïôùûüç\\-']+){0,3})`,
+    `\\b(${FRENCH_TITLES.join("|")})\\s+(${NAME_SEQUENCE})`,
     "g"
   );
   result = result.replace(titlePattern, (_match, title) => {
@@ -189,7 +173,7 @@ function applyExamOutputNER(text: string): { result: string; count: number } {
     "appelée",
   ];
   const contextPattern = new RegExp(
-    `\\b(${identityKeywords.join("|")})\\s*:?\\s+([A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ][a-zàâäéèêëîïôùûüç\\-']+(?:\\s+[A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ][a-zàâäéèêëîïôùûüç\\-']+){0,3})`,
+    `\\b(${identityKeywords.join("|")})\\s*:?\\s+(${NAME_SEQUENCE})`,
     "gi"
   );
   result = result.replace(contextPattern, (_match, keyword) => {

@@ -71,6 +71,59 @@ describe("pseudonymisation — règles regex", () => {
   });
 });
 
+describe("pseudonymisation — documents de sortie", () => {
+  it("conserve les diagnostics et lésions orthopédiques", () => {
+    const text = "fracture per-trochantérienne de l'extrémité supérieure du fémur droit";
+    const result = pseudonymise(text);
+
+    expect(result.filteredText).toBe(text);
+    expect(result.filteredText).not.toContain("[NOM_MASQUÉ]");
+    expect(result.maskCount).toBe(0);
+  });
+
+  it("conserve les services et établissements cités dans le corps clinique", () => {
+    const text = "transférée en Service de Réanimation du Centre Hospitalier de Denain";
+    const result = pseudonymise(text);
+
+    expect(result.filteredText).toBe(text);
+    expect(result.filteredText).toContain("Service de Réanimation");
+    expect(result.filteredText).toContain("Centre Hospitalier de Denain");
+    expect(result.filteredText).not.toContain("[NOM_MASQUÉ]");
+  });
+
+  it("masque l'identité directe du praticien et son RPPS", () => {
+    const result = pseudonymise("Dr SARRAZIN, RPPS 12345678");
+
+    expect(result.filteredText).not.toContain("SARRAZIN");
+    expect(result.filteredText).not.toContain("12345678");
+    expect(result.filteredText).toContain("Dr [NOM_MASQUÉ]");
+    expect(result.filteredText).toContain("[RPPS_MASQUÉ]");
+    expect(result.detectedCategories).toContain("NOM_PROPRE");
+    expect(result.detectedCategories).toContain("RPPS");
+  });
+
+  it("masque le nom patient et la date de naissance explicite", () => {
+    const result = pseudonymise("Madame DENIS LOUISETTE, née le 19/04/1952");
+
+    expect(result.filteredText).not.toContain("DENIS");
+    expect(result.filteredText).not.toContain("LOUISETTE");
+    expect(result.filteredText).not.toContain("19/04/1952");
+    expect(result.filteredText).toContain("Madame [NOM_MASQUÉ]");
+    expect(result.filteredText).toContain("[DATE_NAISSANCE_MASQUÉE]");
+    expect(result.detectedCategories).toContain("NOM_PROPRE");
+    expect(result.detectedCategories).toContain("DATE_NAISSANCE");
+  });
+
+  it("conserve les médicaments, posologies et durées", () => {
+    const text = "KARDEGIC 75 mg, 1 sachet/jour pendant 14 jours";
+    const result = pseudonymise(text);
+
+    expect(result.filteredText).toBe(text);
+    expect(result.filteredText).not.toContain("[NOM_MASQUÉ]");
+    expect(result.maskCount).toBe(0);
+  });
+});
+
 describe("containsDirectIdentifier", () => {
   it("détecte un NIR dans le texte", () => {
     expect(containsDirectIdentifier("NIR 1 85 06 75 112 345 12")).toBe(true);
@@ -98,5 +151,19 @@ describe("pseudonymiseExamExtractionOutput", () => {
 
     expect(result.filteredText).not.toContain("06/12/1928");
     expect(result.detectedCategories).toContain("DATE_NAISSANCE");
+  });
+
+  it("conserve les services, termes cliniques et médicaments en sortie d'extraction", () => {
+    const text = [
+      "transférée en Service de Réanimation du Centre Hospitalier de Denain",
+      "fracture per-trochantérienne de l'extrémité supérieure du fémur droit",
+      "KARDEGIC 75 mg, 1 sachet/jour pendant 14 jours",
+    ].join("\n");
+    const result = pseudonymiseExamExtractionOutput(text);
+
+    expect(result.filteredText).toBe(text);
+    expect(result.filteredText).not.toContain("[NOM_MASQUÉ]");
+    expect(result.filteredText).not.toContain("[DATE_MASQUÉE]");
+    expect(result.maskCount).toBe(0);
   });
 });
