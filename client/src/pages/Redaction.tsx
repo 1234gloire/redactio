@@ -264,6 +264,7 @@ export default function Redaction() {
   const documentEditorRef = useRef<HTMLDivElement | null>(null);
   const [streamingText, setStreamingText] = useState("");
   const [renderedDocumentHtml, setRenderedDocumentHtml] = useState("");
+  const [editedDocumentHtml, setEditedDocumentHtml] = useState("");
 
   // Génération via streaming SSE
   const handleStreamGenerate = useCallback(async (
@@ -273,6 +274,7 @@ export default function Redaction() {
   ) => {
     setIsGenerating(true);
     setGeneratedDoc("");
+    setEditedDocumentHtml("");
     setStreamingText("");
     setValidated(false);
     setPseudoInfo(null);
@@ -349,7 +351,9 @@ export default function Redaction() {
 
   useEffect(() => {
     if (generatedDoc) {
-      setRenderedDocumentHtml(renderGeneratedDocumentHtml(generatedDoc));
+      const html = renderGeneratedDocumentHtml(generatedDoc);
+      setRenderedDocumentHtml(html);
+      setEditedDocumentHtml(html);
     }
   }, [generatedDoc]);
 
@@ -490,17 +494,18 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
 
   const handleCopy = useCallback(() => {
     if (!validated) return;
-    const text = documentEditorRef.current?.innerText ?? generatedDoc;
+    const html = documentEditorRef.current?.innerHTML ?? editedDocumentHtml;
+    const text = documentEditorRef.current?.innerText ?? html.replace(/<[^>]+>/g, "\n") ?? generatedDoc;
     navigator.clipboard.writeText(text).then(() => {
       toast.success("Document copié dans le presse-papier.");
     });
-  }, [validated, generatedDoc]);
+  }, [validated, editedDocumentHtml, generatedDoc]);
 
   const handleDownloadWord = useCallback(async () => {
     if (!validated) return;
     try {
       toast.info("Génération du document Word en cours...");
-      const html = documentEditorRef.current?.innerHTML ?? renderedDocumentHtml;
+      const html = (documentEditorRef.current?.innerHTML ?? editedDocumentHtml) || renderedDocumentHtml;
       const response = await fetch("/api/export/docx", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -523,7 +528,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Téléchargement Word impossible.");
     }
-  }, [validated, generatedDoc, selectedVolet]);
+  }, [validated, editedDocumentHtml, renderedDocumentHtml, selectedVolet]);
 
   const handleSecureObservation = useCallback(async () => {
     if (selectedVolet !== "observation" || !observationText.trim()) return;
@@ -613,6 +618,16 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     });
   }, [getObservationExportText]);
 
+  const handleDocumentEditorInput = useCallback(() => {
+    setEditedDocumentHtml(documentEditorRef.current?.innerHTML ?? renderedDocumentHtml);
+  }, [renderedDocumentHtml]);
+
+  const handleValidateDocument = useCallback(() => {
+    setEditedDocumentHtml((documentEditorRef.current?.innerHTML ?? editedDocumentHtml) || renderedDocumentHtml);
+    setValidated(true);
+    setStep(5);
+  }, [editedDocumentHtml, renderedDocumentHtml]);
+
   const handleReset = useCallback(() => {
     setStep(1);
     setSelectedVolet(null);
@@ -627,6 +642,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     setConciliationImportTarget("entry");
     setGeneratedDoc("");
     setRenderedDocumentHtml("");
+    setEditedDocumentHtml("");
     setValidated(false);
     setPseudoInfo(null);
   }, []);
@@ -1236,7 +1252,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => { setStep(2); setGeneratedDoc(""); }}
+                onClick={() => { setStep(2); setGeneratedDoc(""); setEditedDocumentHtml(""); }}
                 className="gap-1.5"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -1284,6 +1300,8 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                 role="textbox"
                 aria-label="Éditeur de document médical"
                 aria-multiline="true"
+                onInput={handleDocumentEditorInput}
+                onBlur={handleDocumentEditorInput}
                 dangerouslySetInnerHTML={{ __html: renderedDocumentHtml }}
               />
             </div>
@@ -1304,7 +1322,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                         </p>
                       </div>
                       <Button
-                        onClick={() => { setValidated(true); setStep(5); }}
+                        onClick={handleValidateDocument}
                         className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
                       >
                         <Check className="w-4 h-4" />
