@@ -169,11 +169,11 @@ function renderMarkdownTable(headerLine: string, bodyLines: string[]): string {
     "<table>",
     "<tbody>",
     "<tr>",
-    ...headers.map((cell) => `<th>${renderInlineMarkdown(cell) || "&nbsp;"}</th>`),
+    ...headers.map((cell) => `<th contenteditable="true" spellcheck="false">${renderInlineMarkdown(cell) || "&nbsp;"}</th>`),
     "</tr>",
     ...rows.flatMap((cells) => [
       "<tr>",
-      ...headers.map((_, index) => `<td>${renderInlineMarkdown(cells[index] ?? "") || "&nbsp;"}</td>`),
+      ...headers.map((_, index) => `<td contenteditable="true" spellcheck="false">${renderInlineMarkdown(cells[index] ?? "") || "&nbsp;"}</td>`),
       "</tr>",
     ]),
     "</tbody>",
@@ -1927,6 +1927,7 @@ const newRedactionStyles = `
   text-align:left;
   vertical-align:top;
   font-size:13px;
+  cursor:text;
 }
 
 .tableWrapper th{
