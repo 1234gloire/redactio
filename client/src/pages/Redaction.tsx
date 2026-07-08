@@ -618,10 +618,6 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     });
   }, [getObservationExportText]);
 
-  const handleDocumentEditorInput = useCallback(() => {
-    setEditedDocumentHtml(documentEditorRef.current?.innerHTML ?? renderedDocumentHtml);
-  }, [renderedDocumentHtml]);
-
   const handleValidateDocument = useCallback(() => {
     setEditedDocumentHtml((documentEditorRef.current?.innerHTML ?? editedDocumentHtml) || renderedDocumentHtml);
     setValidated(true);
@@ -1300,9 +1296,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                 role="textbox"
                 aria-label="Éditeur de document médical"
                 aria-multiline="true"
-                onInput={handleDocumentEditorInput}
-                onBlur={handleDocumentEditorInput}
-                dangerouslySetInnerHTML={{ __html: renderedDocumentHtml }}
+                dangerouslySetInnerHTML={{ __html: editedDocumentHtml || renderedDocumentHtml }}
               />
             </div>
 
@@ -1413,10 +1407,16 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
             </Card>
 
             <div className="flex justify-center">
-              <Button variant="outline" onClick={handleReset} className="gap-2">
-                <RotateCcw className="w-4 h-4" />
-                Nouvelle rédaction
-              </Button>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button variant="outline" onClick={() => setStep(4)} className="gap-2">
+                  <ArrowLeft className="w-4 h-4" />
+                  Revenir à la relecture
+                </Button>
+                <Button variant="outline" onClick={handleReset} className="gap-2">
+                  <RotateCcw className="w-4 h-4" />
+                  Nouvelle rédaction
+                </Button>
+              </div>
             </div>
           </div>
         )}
