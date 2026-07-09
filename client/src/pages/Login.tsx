@@ -3,18 +3,20 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, Eye, EyeOff, FileText, Lock, ShieldCheck } from "lucide-react";
+import { AlertCircle, Building2, Check, Eye, EyeOff, FileText, Lock, ShieldCheck, UserRound } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { useLocation } from "wouter";
 
 const TRUST_CHIPS = ["RGPD", "Hébergement HDS", "Secret médical", "Pseudonymisation"];
 
 type Tab = "login" | "signup";
+type SignupMode = "practitioner" | "hospital";
 
 export default function Login() {
   const { isAuthenticated, loading } = useAuth();
   const [, setLocation] = useLocation();
   const [tab, setTab] = useState<Tab>("login");
+  const [signupMode, setSignupMode] = useState<SignupMode>("practitioner");
 
   // --- Connexion ---
   const [email, setEmail] = useState("");
@@ -130,7 +132,7 @@ export default function Login() {
                 Créons votre <em className="italic text-[#0a7b70]">compte</em>.
               </h1>
               <p className="text-[#5a6b78] text-[14.5px] mb-6">
-                Rejoignez les praticiens qui rédigent avec REDACTIO.
+                Choisissez le parcours adapté : praticien individuel ou convention hospitalière.
               </p>
             </>
           )}
@@ -231,7 +233,39 @@ export default function Login() {
 
           {/* ===== INSCRIPTION ===== */}
           {tab === "signup" && (
+            <>
+            <div className="grid grid-cols-2 gap-2 mb-5 rounded-2xl bg-[#eef2f4] p-1.5">
+              <button
+                type="button"
+                onClick={() => setSignupMode("practitioner")}
+                className={`flex items-center justify-center gap-2 rounded-[10px] px-2 py-2.5 text-[13px] font-bold transition-all ${
+                  signupMode === "practitioner"
+                    ? "bg-white text-[#0a7b70] shadow-[0_4px_12px_-4px_rgba(11,27,41,0.18),0_0_0_1px_rgba(14,156,142,0.14)]"
+                    : "text-[#5a6b78]"
+                }`}
+              >
+                <UserRound className="h-4 w-4" />
+                Praticien
+              </button>
+              <button
+                type="button"
+                onClick={() => setSignupMode("hospital")}
+                className={`flex items-center justify-center gap-2 rounded-[10px] px-2 py-2.5 text-[13px] font-bold transition-all ${
+                  signupMode === "hospital"
+                    ? "bg-white text-[#0a7b70] shadow-[0_4px_12px_-4px_rgba(11,27,41,0.18),0_0_0_1px_rgba(14,156,142,0.14)]"
+                    : "text-[#5a6b78]"
+                }`}
+              >
+                <Building2 className="h-4 w-4" />
+                Convention
+              </button>
+            </div>
+
+            {signupMode === "practitioner" ? (
             <form className="space-y-4" onSubmit={handleSignup}>
+              <div className="rounded-[11px] border border-[#0e9c8e]/20 bg-[#eef6f4] px-3.5 py-3 text-[12.8px] leading-relaxed text-[#0a7b70]">
+                <strong>Inscription praticien individuel.</strong> Ce compte est personnel et déclenche le suivi d'inscription REDACTIO.
+              </div>
               <div>
                 <Label htmlFor="fullName" className="text-[13px] font-bold text-[#0b1b29] mb-1.5 block">
                   Nom complet
@@ -364,6 +398,51 @@ export default function Login() {
                 .
               </p>
             </form>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-[14px] border border-[#d9e2e7] bg-[#f8fbfb] p-4">
+                  <div className="mb-3 flex items-start gap-3">
+                    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#0b1b29] text-white">
+                      <Building2 className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <h2 className="text-[15px] font-extrabold text-[#0b1b29]">Convention hospitalière</h2>
+                      <p className="mt-1 text-[12.8px] leading-relaxed text-[#5a6b78]">
+                        Ce parcours n'ouvre pas un compte automatiquement. L'accès est créé après validation du contrat établissement.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2.5 text-[12.8px] leading-relaxed text-[#0b1b29]">
+                    <div className="flex gap-2.5">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#0e9c8e]" />
+                      <span>Un super utilisateur établissement est défini dans la convention.</span>
+                    </div>
+                    <div className="flex gap-2.5">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#0e9c8e]" />
+                      <span>Le contrat fixe le nombre de praticiens autorisés et les services concernés.</span>
+                    </div>
+                    <div className="flex gap-2.5">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#0e9c8e]" />
+                      <span>Le super utilisateur pourra ensuite inviter les praticiens de l'hôpital dans la limite du quota.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-[11px] border border-[#f0d9a8] bg-[#fff8e6] px-3.5 py-3 text-[12.7px] leading-relaxed text-[#7a5a0e]">
+                  Pour mettre en place une convention, passez par la demande de démonstration établissement ou par votre interlocuteur REDACTIO. Aucun webhook d'inscription individuelle n'est déclenché ici.
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={() => { window.location.href = "/#demo"; }}
+                  className="w-full bg-[#1e3a5f] hover:bg-[#0b1b29] text-white font-bold text-[15.5px] rounded-[11px] py-6 shadow-[0_12px_26px_-12px_rgba(30,58,95,0.75)] transition-all"
+                >
+                  Demander une convention hospitalière
+                </Button>
+              </div>
+            )}
+            </>
           )}
 
           {/* Chips confiance */}
