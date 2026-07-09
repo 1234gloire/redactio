@@ -213,8 +213,16 @@ export async function getSubscriptionByOrg(organisationId: number): Promise<Subs
 export async function upsertSubscription(data: InsertSubscription): Promise<void> {
   const db = await getDb();
   if (!db) return;
+  const updateData: Partial<InsertSubscription> = {
+    plan: data.plan,
+    status: data.status,
+    seats: data.seats,
+  };
+  if (data.endDate !== undefined) {
+    updateData.endDate = data.endDate;
+  }
   await db.insert(subscriptions).values(data).onDuplicateKeyUpdate({
-    set: { plan: data.plan, status: data.status, seats: data.seats, endDate: data.endDate },
+    set: updateData,
   });
 }
 

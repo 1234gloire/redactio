@@ -23,6 +23,7 @@ import {
   getActivePromptBase,
   getActiveTemplateByVolet,
   getOrganisationById,
+  getSubscriptionByOrg,
   getPromptBaseById,
   getPromptTemplateById,
   getUserByEmail,
@@ -38,6 +39,7 @@ import {
   updatePromptTemplate,
   updateTestCase,
   updateUser,
+  upsertSubscription,
   upsertUser,
 } from "./db";
 import { pseudonymise } from "./pseudonymisation";
@@ -301,8 +303,21 @@ export const appRouter = router({
 
   // ─── Organisations ─────────────────────────────────────────────────────────
   organisations: router({
-    list: protectedProcedure.query(async () => {
-      return listOrganisations();
+    list: adminProcedure.query(async () => {
+      const orgs = await listOrganisations();
+      return Promise.all(
+        orgs.map(async (org) => {
+          const [subscription, users] = await Promise.all([
+            getSubscriptionByOrg(org.id),
+            listUsersByOrg(org.id),
+          ]);
+          return {
+            ...org,
+            subscription: subscription ?? null,
+            userCount: users.length,
+          };
+        })
+      );
     }),
 
     get: protectedProcedure
@@ -341,6 +356,7 @@ export const appRouter = router({
         z.object({
           id: z.number(),
           name: z.string().min(2).max(255).optional(),
+          type: z.string().max(64).optional(),
           address: z.string().optional(),
           contactEmail: z.string().email().optional(),
           active: z.boolean().optional(),
@@ -355,6 +371,38 @@ export const appRouter = router({
           resource: "organisation",
           resourceId: String(id),
           metadata: { fields: Object.keys(data) },
+        });
+        return { success: true };
+      }),
+
+    upsertSubscription: adminProcedure
+      .input(
+        z.object({
+          organisationId: z.number(),
+          plan: z.enum(["essai", "standard", "premium", "entreprise"]),
+          status: z.enum(["actif", "suspendu", "expire", "annule"]),
+          seats: z.number().int().min(1).max(10000),
+          endDate: z.string().optional().or(z.literal("")),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        await upsertSubscription({
+          organisationId: input.organisationId,
+          plan: input.plan,
+          status: input.status,
+          seats: input.seats,
+          endDate: input.endDate ? new Date(input.endDate) : undefined,
+        });
+        await createAuditLog({
+          userId: ctx.user.id,
+          action: "org.subscription_upsert",
+          resource: "organisation",
+          resourceId: String(input.organisationId),
+          metadata: {
+            plan: input.plan,
+            status: input.status,
+            seats: input.seats,
+          },
         });
         return { success: true };
       }),
