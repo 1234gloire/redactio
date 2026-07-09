@@ -430,7 +430,7 @@ export default function Login() {
                 </div>
 
                 <div className="rounded-[11px] border border-[#f0d9a8] bg-[#fff8e6] px-3.5 py-3 text-[12.7px] leading-relaxed text-[#7a5a0e]">
-                  Pour mettre en place une convention, passez par la demande de démonstration établissement ou par votre interlocuteur REDACTIO. Aucun webhook d'inscription individuelle n'est déclenché ici.
+                  Pour mettre en place une convention, passez par la demande de démonstration établissement ou par votre interlocuteur REDACTIO.
                 </div>
 
                 <Button
