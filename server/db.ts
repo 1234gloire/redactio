@@ -129,10 +129,22 @@ export async function getUserById(id: number): Promise<User | undefined> {
   return result.length > 0 ? result[0] : undefined;
 }
 
+export async function listUsers(): Promise<User[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(users).orderBy(desc(users.createdAt));
+}
+
 export async function updateUser(id: number, data: Partial<InsertUser>): Promise<void> {
   const db = await getDb();
   if (!db) return;
   await db.update(users).set(data).where(eq(users.id, id));
+}
+
+export async function deleteUser(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(users).where(eq(users.id, id));
 }
 
 export async function ensureLocalAdmin() {

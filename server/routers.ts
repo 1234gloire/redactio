@@ -11,6 +11,7 @@ import {
   countMedicalTerms,
   createMedicalTerm,
   deactivateMedicalTerm,
+  deleteUser,
   incrementMedicalTermUsage,
   listMedicalTermsPaginated,
   searchMedicalTerms,
@@ -33,6 +34,7 @@ import {
   listPromptBases,
   listPromptTemplates,
   listTestCases,
+  listUsers,
   listUsersByOrg,
   updateOrganisation,
   updatePromptBase,
@@ -269,6 +271,10 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    list: adminProcedure.query(async () => {
+      return listUsers();
+    }),
+
     listByOrg: adminProcedure
       .input(z.object({ organisationId: z.number() }))
       .query(async ({ input }) => {
@@ -297,6 +303,35 @@ export const appRouter = router({
           resourceId: String(input.userId),
           metadata: { newRole: input.role },
         });
+        return { success: true };
+      }),
+
+    delete: adminProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (input.userId === ctx.user.id) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Vous ne pouvez pas supprimer votre propre compte administrateur.",
+          });
+        }
+
+        const target = await getUserById(input.userId);
+        if (!target) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Utilisateur introuvable." });
+        }
+
+        await createAuditLog({
+          userId: ctx.user.id,
+          action: "admin.delete_user",
+          resource: "user",
+          resourceId: String(input.userId),
+          metadata: {
+            email: target.email,
+            role: target.role,
+          },
+        });
+        await deleteUser(input.userId);
         return { success: true };
       }),
   }),
