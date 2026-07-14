@@ -11,7 +11,6 @@ const ORTHO_SUBTYPE = "chirurgie_orthopedique";
 const MISS = "[à préciser par l'opérateur]";
 
 type Side = "D" | "G" | "B" | "";
-type PreviewMode = "bloc" | "prompt" | "json";
 type Preset = {
   label: string;
   motif: string;
@@ -313,7 +312,6 @@ export default function RedactionChirurgieOrthopedique() {
   const [streamingText, setStreamingText] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [pseudoInfo, setPseudoInfo] = useState<{ maskCount: number; detectedCategories: string[] } | null>(null);
-  const [previewMode, setPreviewMode] = useState<PreviewMode>("bloc");
 
   const applyPreset = useCallback((key: PresetKey) => {
     const next = PRESETS[key];
@@ -376,58 +374,14 @@ ${consignes.replace(/^/gm, "   ")}
     suitesValue,
   ]);
 
-  const technicalPayload = useMemo(() => ({
-    motif: motifSided || MISS,
-    age: age.trim() ? Number(age) : null,
-    lateralite: { D: "droite", G: "gauche", B: "bilatérale", "": "sans objet" }[side],
-    dateEntree,
-    dateChirurgie,
-    transfert: isTransfert,
-    dateSortie,
-    structureAval,
-    typeChirurgie: gesteSided || MISS,
-    anesthesie: anesth,
-    deroulementPerop: peropValue,
-    antecedents: antecedents.trim() || "sans particularité",
-    suitesPostOp: suitesValue,
-    orthoGeriatrie,
-    consignes: consignes
-      .split("\n")
-      .map((line) => line.replace(/^•\s*/, "").trim())
-      .filter(Boolean),
-    rdv: { date: dateRdv, heure: heureRdv },
-    radiographies: radios.trim(),
-    bloc: blocText,
-    prompt: `${ORTHO_DIRECTIVE}\n\n${blocText}`,
-  }), [
-    age,
-    anesth,
-    antecedents,
-    blocText,
-    consignes,
-    dateChirurgie,
-    dateEntree,
-    dateRdv,
-    dateSortie,
-    gesteSided,
-    heureRdv,
-    isTransfert,
-    motifSided,
-    orthoGeriatrie,
-    peropValue,
-    radios,
-    side,
-    structureAval,
-    suitesValue,
-  ]);
-
-  const technicalPreview = previewMode === "prompt"
-    ? technicalPayload.prompt
-    : previewMode === "json"
-      ? JSON.stringify(technicalPayload, null, 2)
-      : blocText;
-
   const missingCount = (blocText.match(/\[/g) ?? []).length;
+
+  const generationInput = useMemo(() => `${ORTHO_DIRECTIVE}
+
+BLOC §2 RENSEIGNÉ PAR LE MÉDECIN — UTILISER CES DONNÉES POUR RÉDIGER :
+${blocText}
+
+Rédige directement le courrier final. Ne demande pas de coller un autre bloc.`, [blocText]);
 
   const buildLocalCourrier = useCallback(() => {
     const finaliteMap: Record<Preset["finalite"], string> = {
@@ -517,7 +471,7 @@ Bien confraternellement,
         body: JSON.stringify({
           volet: "courrier_sortie",
           subtype: ORTHO_SUBTYPE,
-          rawData: blocText,
+          rawData: generationInput,
         }),
       });
 
@@ -552,8 +506,14 @@ Bien confraternellement,
             accumulated += String(parsed.content ?? "");
             setStreamingText(accumulated);
           } else if (parsed.type === "done") {
-            setGeneratedText(accumulated);
-            toast.success("Courrier généré.");
+            if (/coller ci-dessous le bloc|coller ici le bloc|pour générer le courrier/i.test(accumulated)) {
+              setStreamingText("");
+              setGeneratedText(buildLocalCourrier());
+              toast.warning("Le moteur a demandé le bloc au lieu de rédiger : courrier local généré à partir des données saisies.");
+            } else {
+              setGeneratedText(accumulated);
+              toast.success("Courrier généré.");
+            }
           } else if (parsed.type === "error") {
             throw new Error(parsed.message || "Erreur de génération.");
           }
@@ -570,7 +530,7 @@ Bien confraternellement,
     } finally {
       setIsGenerating(false);
     }
-  }, [blocText, buildLocalCourrier]);
+  }, [blocText, buildLocalCourrier, generationInput]);
 
   const handleCopy = useCallback(async () => {
     const text = generatedText || streamingText || blocText;
@@ -743,31 +703,6 @@ Bien confraternellement,
             Aide rédactionnelle : l'outil met en forme ce que vous saisissez et ne recommande aucune valeur.
             Complétez les [ ] et vérifiez côté, dates et consignes. Le protocole de l'opérateur prime.
           </div>
-
-          <details className="ortho-details">
-            <summary>Aperçu technique — développeur</summary>
-            <p className="ortho-hint">Ce qui est transmis à l'IA / au backend. À ne pas montrer à l'utilisateur final.</p>
-            <div className="ortho-tabbar">
-              {[
-                ["bloc", "Bloc §2"],
-                ["prompt", "Prompt complet"],
-                ["json", "Données (JSON)"],
-              ].map(([mode, label]) => (
-                <button
-                  key={mode}
-                  type="button"
-                  className={previewMode === mode ? "on" : ""}
-                  onClick={() => setPreviewMode(mode as PreviewMode)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <pre>{technicalPreview}</pre>
-            <Button type="button" variant="outline" className="ortho-copy-preview" onClick={() => navigator.clipboard.writeText(technicalPreview).then(() => toast.success("Aperçu copié."))}>
-              <Copy size={15} /> Copier l'aperçu
-            </Button>
-          </details>
         </section>
       </main>
     </div>

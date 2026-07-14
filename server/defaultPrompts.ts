@@ -732,10 +732,23 @@ export function buildTemplateForSubtype(params: {
       : getSubtypeLabel(params.volet, params.subtype);
   const fullTemplate = SUBTYPE_FULL_TEMPLATES[params.subtype];
   if (fullTemplate) {
+    const templateWithData = fullTemplate.includes("{{DONNEES_MEDICALES}}")
+      ? fullTemplate.replaceAll("{{DONNEES_MEDICALES}}", params.data)
+      : `${fullTemplate}
+
+---
+
+BLOC RENSEIGNÉ PAR LE MÉDECIN — DONNÉES À UTILISER MAINTENANT :
+\`\`\`
+${params.data}
+\`\`\`
+
+Rédige maintenant le document final à partir du bloc renseigné ci-dessus. Ne demande pas à l'utilisateur de coller un autre bloc.`;
+
     return `TYPE SÉLECTIONNÉ PAR L'UTILISATEUR :
 ${subtypeLabel}
 
-${fullTemplate}`.replaceAll("{{DONNEES_MEDICALES}}", params.data);
+${templateWithData}`;
   }
 
   const subtypeInstructions = SUBTYPE_PROMPT_INSTRUCTIONS[params.subtype];
