@@ -12,6 +12,7 @@ import Dictionnaire from "./pages/Dictionnaire";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Organisations from "./pages/Organisations";
+import Paiement from "./pages/Paiement";
 import Profil from "./pages/Profil";
 import Redaction from "./pages/Redaction";
 import RedactionChirurgieOrthopedique from "./pages/RedactionChirurgieOrthopedique";
@@ -23,6 +24,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
+      <Route path="/paiement" component={Paiement} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/conformite" component={Conformite} />
       <Route path="/redaction/chirurgie-orthopedique" component={RedactionChirurgieOrthopedique} />

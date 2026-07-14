@@ -82,7 +82,7 @@ export default function Login() {
 
   const signupMutation = trpc.auth.register.useMutation({
     onSuccess: () => {
-      setLocation("/dashboard");
+      setLocation("/paiement");
       window.location.reload();
     },
     onError: (err) => setSignupError(err.message || "Inscription impossible."),
