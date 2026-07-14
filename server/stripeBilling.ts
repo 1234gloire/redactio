@@ -56,6 +56,18 @@ function appendForm(params: URLSearchParams, key: string, value: string | number
   params.append(key, String(value));
 }
 
+function auditResourceId(value: string | null | undefined) {
+  return value ? value.slice(0, 64) : undefined;
+}
+
+async function safeCreateAuditLog(data: Parameters<typeof createAuditLog>[0]) {
+  try {
+    await createAuditLog(data);
+  } catch (error) {
+    console.warn("[Stripe] Audit log skipped", error);
+  }
+}
+
 async function stripeRequest<T>(path: string, params: URLSearchParams): Promise<T> {
   assertStripeConfigured();
   const response = await fetch(`${STRIPE_API_BASE}${path}`, {
@@ -132,12 +144,12 @@ export async function createStripeCheckoutSession(user: User, req: express.Reque
     });
   }
 
-  await createAuditLog({
+  await safeCreateAuditLog({
     userId: user.id,
     action: "billing.checkout_session_created",
     resource: "stripe.checkout_session",
-    resourceId: session.id,
-    metadata: { plan: PLAN_LABEL },
+    resourceId: auditResourceId(session.id),
+    metadata: { plan: PLAN_LABEL, stripeSessionId: session.id },
   });
 
   return { url: session.url };
@@ -159,12 +171,12 @@ export async function createStripeBillingPortalSession(user: User, req: express.
 
   const session = await stripeRequest<{ id: string; url: string }>("/billing_portal/sessions", params);
 
-  await createAuditLog({
+  await safeCreateAuditLog({
     userId: user.id,
     action: "billing.portal_session_created",
     resource: "stripe.billing_portal_session",
-    resourceId: session.id,
-    metadata: { customer: user.stripeCustomerId },
+    resourceId: auditResourceId(session.id),
+    metadata: { customer: user.stripeCustomerId, stripeSessionId: session.id },
   });
 
   return { url: session.url };
@@ -212,11 +224,11 @@ async function syncSubscription(subscription: StripeSubscription) {
     stripeCancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end),
   });
 
-  await createAuditLog({
+  await safeCreateAuditLog({
     userId: existingUser.id,
     action: "billing.subscription_synced",
     resource: "stripe.subscription",
-    resourceId: subscription.id,
+    resourceId: auditResourceId(subscription.id),
     metadata: { status: subscription.status },
   });
 }
@@ -228,12 +240,12 @@ async function handleCheckoutCompleted(session: StripeCheckoutSession) {
     stripeCustomerId: session.customer,
     stripeSubscriptionId: session.subscription ?? undefined,
   });
-  await createAuditLog({
+  await safeCreateAuditLog({
     userId,
     action: "billing.checkout_completed",
     resource: "stripe.checkout_session",
-    resourceId: session.id,
-    metadata: { subscription: session.subscription },
+    resourceId: auditResourceId(session.id),
+    metadata: { subscription: session.subscription, stripeSessionId: session.id },
   });
 }
 
