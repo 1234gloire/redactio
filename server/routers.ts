@@ -53,7 +53,7 @@ import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { analyzeText, invalidateDictCache } from "./medicalAnalyzer";
 import { createAnthropicMessage } from "./_core/anthropic";
 import { notifySignupCreated } from "./makeWebhooks";
-import { createStripeBillingPortalSession, createStripeCheckoutSession } from "./stripeBilling";
+import { createStripeBillingPortalSession, createStripeCheckoutSession, getStripeBillingPlan } from "./stripeBilling";
 import {
   DEFAULT_PROMPT_BASE,
   DEFAULT_TEMPLATES,
@@ -252,6 +252,9 @@ export const appRouter = router({
 
   // ─── Facturation Stripe ────────────────────────────────────────────────────
   billing: router({
+    getPlan: protectedProcedure.query(async () => {
+      return getStripeBillingPlan();
+    }),
     createCheckoutSession: protectedProcedure.mutation(async ({ ctx }) => {
       return createStripeCheckoutSession(ctx.user, ctx.req);
     }),

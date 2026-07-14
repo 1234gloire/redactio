@@ -23,6 +23,18 @@ type StripeCheckoutSession = {
   client_reference_id: string | null;
 };
 
+type StripePrice = {
+  id: string;
+  currency: string;
+  unit_amount: number | null;
+  nickname: string | null;
+  recurring: {
+    interval: "day" | "week" | "month" | "year";
+    interval_count: number;
+  } | null;
+  product: string | { id: string; name?: string | null };
+};
+
 type StripeSubscription = {
   id: string;
   customer: string;
@@ -92,6 +104,60 @@ async function stripeRequest<T>(path: string, params: URLSearchParams): Promise<
     });
   }
   return data as T;
+}
+
+async function stripeGet<T>(path: string): Promise<T> {
+  assertStripeConfigured();
+  const response = await fetch(`${STRIPE_API_BASE}${path}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${ENV.stripeSecretKey}`,
+      "Stripe-Version": STRIPE_API_VERSION,
+    },
+  });
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    const message =
+      data && typeof data === "object" && "error" in data
+        ? (data as { error?: { message?: string } }).error?.message
+        : undefined;
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: message ?? "Stripe a refusé la demande.",
+    });
+  }
+  return data as T;
+}
+
+function intervalLabel(price: StripePrice) {
+  const interval = price.recurring?.interval;
+  const count = price.recurring?.interval_count ?? 1;
+  const labels: Record<NonNullable<typeof interval>, string> = {
+    day: "jour",
+    week: "semaine",
+    month: "mois",
+    year: "an",
+  };
+  if (!interval) return "paiement unique";
+  const label = labels[interval];
+  return count > 1 ? `${count} ${label}s` : label;
+}
+
+export async function getStripeBillingPlan() {
+  assertStripeConfigured();
+  const priceId = encodeURIComponent(ENV.stripePriceId);
+  const price = await stripeGet<StripePrice>(`/prices/${priceId}?expand[]=product`);
+  const productName = typeof price.product === "object" ? price.product.name : null;
+
+  return {
+    priceId: price.id,
+    planLabel: productName || price.nickname || PLAN_LABEL,
+    amount: price.unit_amount ?? 0,
+    currency: price.currency.toUpperCase(),
+    interval: intervalLabel(price),
+    trialDays: TRIAL_DAYS,
+  };
 }
 
 async function createStripeCustomer(user: User) {

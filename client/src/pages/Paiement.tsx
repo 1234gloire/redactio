@@ -46,10 +46,25 @@ function formatTrialEndDate() {
   }).format(date);
 }
 
+function formatStripeAmount(amount: number | undefined, currency: string | undefined) {
+  if (amount === undefined || !currency) return "Chargement...";
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency,
+  }).format(amount / 100);
+}
+
 export default function Paiement() {
   const { isAuthenticated, loading } = useAuth();
   const [location, setLocation] = useLocation();
   const trialEnd = useMemo(() => formatTrialEndDate(), []);
+  const planQuery = trpc.billing.getPlan.useQuery(undefined, {
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000,
+  });
+  const plan = planQuery.data;
+  const amountLabel = formatStripeAmount(plan?.amount, plan?.currency);
+  const intervalLabel = plan?.interval ?? "mois";
   const createCheckoutSession = trpc.billing.createCheckoutSession.useMutation({
     onSuccess: ({ url }) => {
       window.location.href = url;
@@ -164,25 +179,22 @@ export default function Paiement() {
 
           <div className="mt-5 rounded-2xl border-[1.5px] border-[#e4ebee] bg-white p-5">
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-[15px] font-extrabold">Offre Praticien individuel</span>
+              <span className="text-[15px] font-extrabold">{plan?.planLabel ?? "Offre Praticien individuel"}</span>
               <span className="rounded-full border border-[#0e9c8e]/20 bg-[#eef6f4] px-3 py-1 text-[11px] font-bold text-[#0a7b70]">
-                Facturation mensuelle
+                Facturation / {intervalLabel}
               </span>
             </div>
             <div className="flex justify-between py-1.5 text-[13.5px] text-[#5a6b78]">
-              <span>Abonnement HT</span>
-              <b className="text-[#0b1b29]">32,00 €</b>
-            </div>
-            <div className="flex justify-between py-1.5 text-[13.5px] text-[#5a6b78]">
-              <span>TVA (20 %)</span>
-              <b className="text-[#0b1b29]">6,40 €</b>
+              <span>Prix configuré dans Stripe</span>
+              <b className="text-[#0b1b29]">{amountLabel}</b>
             </div>
             <div className="mt-2 flex justify-between border-t border-[#e4ebee] pt-3 text-[15px] font-extrabold">
-              <span>Total TTC / mois</span>
-              <span className="text-[#0a7b70]">38,40 €</span>
+              <span>Total / {intervalLabel}</span>
+              <span className="text-[#0a7b70]">{amountLabel}</span>
             </div>
             <p className="mt-2 text-[12px] leading-relaxed text-[#8a99a4]">
-              Renouvellement automatique mensuel à partir du {trialEnd}. Résiliable à tout moment depuis votre espace.
+              Renouvellement automatique tous les {intervalLabel} à partir du {trialEnd}. Résiliable à tout moment depuis votre espace.
+              {planQuery.isError ? " Le prix Stripe n'a pas pu être chargé pour le moment." : ""}
             </p>
           </div>
 
@@ -202,8 +214,8 @@ export default function Paiement() {
               </div>
               <ul className="ml-8 list-disc space-y-1">
                 <li>0,00 € aujourd&apos;hui.</li>
-                <li>Essai gratuit de 7 jours.</li>
-                <li>Premier prélèvement de 38,40 € TTC le {trialEnd}, sauf résiliation.</li>
+                <li>Essai gratuit de {plan?.trialDays ?? 7} jours.</li>
+                <li>Premier prélèvement de {amountLabel} le {trialEnd}, sauf résiliation.</li>
               </ul>
             </div>
 
