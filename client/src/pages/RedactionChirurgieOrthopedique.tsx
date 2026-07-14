@@ -18,6 +18,7 @@ type Preset = {
   motifGender: "m" | "f";
   geste: string;
   gesteGender: "m" | "f" | "n";
+  finalite: "med" | "chir" | "fonc" | "n";
   anesth: string;
   radios: string;
   consignes: string[];
@@ -30,6 +31,7 @@ const PRESETS = {
     motifGender: "f",
     geste: "arthroplastie totale du genou",
     gesteGender: "m",
+    finalite: "med",
     anesth: "anesthésie générale",
     radios: "genou face + profil + défilé fémoro-patellaire + pangonogramme",
     consignes: [
@@ -48,6 +50,7 @@ const PRESETS = {
     motifGender: "f",
     geste: "arthroplastie totale de hanche",
     gesteGender: "f",
+    finalite: "med",
     anesth: "anesthésie générale",
     radios: "bassin de face + hanche profil (Dunn / Lequesne)",
     consignes: [
@@ -67,6 +70,7 @@ const PRESETS = {
     motifGender: "f",
     geste: "ostéosynthèse par clou gamma",
     gesteGender: "m",
+    finalite: "chir",
     anesth: "rachianesthésie",
     radios: "bassin de face + hanche profil",
     consignes: [
@@ -84,6 +88,7 @@ const PRESETS = {
     motifGender: "f",
     geste: "arthroplastie d'épaule (prothèse inversée)",
     gesteGender: "f",
+    finalite: "med",
     anesth: "anesthésie générale",
     radios: "épaule de face + profil (contrôle)",
     consignes: [
@@ -99,6 +104,7 @@ const PRESETS = {
     motifGender: "f",
     geste: "ostéosynthèse par plaque antérieure",
     gesteGender: "f",
+    finalite: "chir",
     anesth: "anesthésie loco-régionale",
     radios: "poignet face + profil",
     consignes: [
@@ -115,6 +121,7 @@ const PRESETS = {
     motifGender: "f",
     geste: "embrochage-haubanage",
     gesteGender: "m",
+    finalite: "chir",
     anesth: "anesthésie générale",
     radios: "coude face + profil",
     consignes: [
@@ -130,6 +137,7 @@ const PRESETS = {
     motifGender: "f",
     geste: "arthrodèse lombaire",
     gesteGender: "f",
+    finalite: "chir",
     anesth: "anesthésie générale",
     radios: "rachis lombaire face + profil",
     consignes: [
@@ -147,6 +155,7 @@ const PRESETS = {
     motifGender: "f",
     geste: "ligamentoplastie du LCA",
     gesteGender: "m",
+    finalite: "med",
     anesth: "anesthésie générale",
     radios: "genou face + profil",
     consignes: [
@@ -162,6 +171,7 @@ const PRESETS = {
     motifGender: "f",
     geste: "ostéosynthèse",
     gesteGender: "f",
+    finalite: "chir",
     anesth: "rachianesthésie",
     radios: "cheville face + profil",
     consignes: [
@@ -178,6 +188,7 @@ const PRESETS = {
     motifGender: "m",
     geste: "chirurgie de l'avant-pied (ostéotomie)",
     gesteGender: "m",
+    finalite: "chir",
     anesth: "anesthésie loco-régionale",
     radios: "pied face + profil en charge",
     consignes: [
@@ -193,6 +204,7 @@ const PRESETS = {
     motifGender: "f",
     geste: "traitement fonctionnel (abstention chirurgicale)",
     gesteGender: "n",
+    finalite: "fonc",
     anesth: "[sans objet]",
     radios: "bassin de face + hanches",
     consignes: [
@@ -206,6 +218,7 @@ const PRESETS = {
     motifGender: "f",
     geste: "",
     gesteGender: "m",
+    finalite: "chir",
     anesth: "anesthésie générale",
     radios: "",
     consignes: [
@@ -234,15 +247,18 @@ function formatDate(value: string) {
   return `${day}/${month}/${year}`;
 }
 
-const ORTHO_DIRECTIVE = `# CONSIGNE — Aide RÉDACTIONNELLE. Mets en forme le courrier de sortie à partir du bloc ci-dessous.
-Respecte la trame du prompt "Prompt_Courrier_Sortie_Chirurgie_Ortho.md" :
+const ORTHO_DIRECTIVE = `# CONSIGNE — Aide RÉDACTIONNELLE. Mets en forme le courrier de sortie à partir du bloc §2 ci-dessous (toutes les données saisies par le médecin dans le formulaire).
+Respecte STRICTEMENT la trame du prompt "Prompt_Courrier_Sortie_Chirurgie_Ortho.md" (structure §5, moteur d'expansion §3, trames §4, style §6) :
+- Le bloc §2 ci-dessous contient TOUT ce qui a été saisi dans le formulaire (motif, âge, dates, type de chirurgie, déroulement per-op, antécédents, suites, consignes, RDV, radios). Utilise-le intégralement : ne rédige jamais un courrier "vide" si le bloc contient des données.
 - MOTIF = pathologie causale ayant conduit au geste (jamais le geste seul).
 - DATES : les dates du champ 3 (Entrée / Intervention / Sortie ou Transfert) sont RÉELLES et VALIDÉES par le médecin. Recopie-les TELLES QUELLES dans « SÉJOUR HOSPITALIER » et dans la phrase d'introduction. N'écris JAMAIS "${MISS}" à la place d'une date fournie ; seule une date réellement vide reste un espace à compléter.
 - ÂGE : reprends l'âge du champ 2 dans la phrase d'introduction (« … ans »).
 - Reformule et structure UNIQUEMENT ce qui est saisi. N'ajoute AUCUNE valeur clinique (durée, délai, rythme, molécule, modalité d'appui/immobilisation) : laisse les [ ] tels quels ou "${MISS}".
-- SUITES POST-OP : si « simples », bloc stéréotypé ; sinon intègre le texte du champ 7 sous forme « À noter : … ».
+- SUITES POST-OP : si « simples », bloc stéréotypé (§3-c). Sinon, intègre le texte du champ 7 EN PROSE FLUIDE ET LITTÉRAIRE, rattaché au récit de l'évolution — n'utilise JAMAIS « À noter : … » ni aucune formule de liste sèche (voir §6 du prompt).
+- CONSIGNES DE SORTIE : reconstruis la liste UNIQUEMENT à partir du champ 8, dans l'ordre des rubriques habituelles du §4 pour ce geste ; ne remplace ni n'invente aucune valeur.
 - N'inclus AUCUNE section traitement ni tableau de médicaments (transmis séparément).
 - Aucun nom de professionnel ni donnée d'identité (cryptés en entrée). Conserve dates, âge, latéralité, matériel, antécédents complets, noms des structures.
+- Sortie en TEXTE BRUT (pas de markdown : pas de **gras**, pas de #titres). Titres de rubriques en MAJUSCULES suivis de « : », comme dans la structure §5.
 - Ton confraternel, 3e personne, synthétique. L'outil met en forme, il ne décide pas.`;
 
 function sideWord(gender: Preset["motifGender"] | Preset["gesteGender"], side: Side) {
@@ -254,6 +270,14 @@ function sideWord(gender: Preset["motifGender"] | Preset["gesteGender"], side: S
 
 function bulletList(lines: string[]) {
   return lines.map((line) => `• ${line}`).join("\n");
+}
+
+function numberedConsignes(value: string) {
+  const lines = value
+    .split("\n")
+    .map((line) => line.replace(/^•\s*/, "").trim())
+    .filter(Boolean);
+  return lines.length ? lines.map((line, index) => `${index + 1}. ${line}`).join("\n") : MISS;
 }
 
 export default function RedactionChirurgieOrthopedique() {
@@ -405,6 +429,78 @@ ${consignes.replace(/^/gm, "   ")}
 
   const missingCount = (blocText.match(/\[/g) ?? []).length;
 
+  const buildLocalCourrier = useCallback(() => {
+    const finaliteMap: Record<Preset["finalite"], string> = {
+      med: "prise en charge médico-rééducative post-opératoire",
+      chir: "prise en charge chirurgicale",
+      fonc: "prise en charge fonctionnelle (traitement non chirurgical)",
+      n: "prise en charge",
+    };
+    const finalite = finaliteMap[preset.finalite] || "prise en charge";
+    const sortieVerbe = isTransfert ? "transféré(e)" : "sorti(e)";
+    const avalPhrase = isTransfert && structureAval.trim() ? ` vers ${structureAval.trim()}` : "";
+    const motifValue = motifSided || MISS;
+    const gesteValue = gesteSided || MISS;
+
+    const evolution = suites === "simples"
+      ? `Les suites opératoires ont été simples. La plaie est belle, de bonne allure. Le contrôle radiographique est satisfaisant.${/genou|hanche|fémur|cheville|clou/i.test(gesteValue) ? " Rééducation à la marche entreprise dans le service." : ""}`
+      : suitesText.trim()
+        ? `Les suites opératoires ont été marquées par ${suitesText.trim()}.`
+        : `Les suites opératoires ont été compliquées : ${MISS}.`;
+
+    const orthoPhrase = orthoGeriatrie
+      ? "\n\nPrise en charge ortho-gériatrique conjointe pendant le séjour ; les consignes et prescriptions thérapeutiques de l'orthogériatre seront transmises séparément."
+      : "";
+
+    return `Cher Confrère,
+
+Votre patient(e) ([sexe à préciser] ; ${ageValue}) a été hospitalisé(e) du ${formatDate(dateEntree)} au ${formatDate(dateSortie)} dans le service de [service / centre hospitalier à préciser], pour ${motifValue}.
+
+MOTIF D'HOSPITALISATION :
+${motifValue} ayant conduit à ${gesteValue}, pour ${finalite}.
+
+SÉJOUR HOSPITALIER :
+Le/la patient(e) a été admis(e) le ${formatDate(dateEntree)}. L'intervention, réalisée le ${formatDate(dateChirurgie)} sous ${anesth}, a consisté en une ${gesteValue} ; elle s'est déroulée ${peropValue}. Le/la patient(e) a ensuite été ${sortieVerbe} le ${formatDate(dateSortie)}${avalPhrase}.
+
+ANTÉCÉDENTS :
+${antecedents.trim() || "sans particularité"}
+Allergies : ${MISS}.
+
+ÉVOLUTION POST-OPÉRATOIRE :
+${evolution}
+
+CONSIGNES DE SORTIE :
+${numberedConsignes(consignes)}${orthoPhrase}
+
+SUIVI :
+Consultation de contrôle radio-clinique le ${formatDate(dateRdv)} à ${heureRdv || MISS}.
+Radiographies : ${radios.trim() || MISS}.
+
+Bien confraternellement,
+
+[Signataire — chirurgien, RPPS]`;
+  }, [
+    ageValue,
+    anesth,
+    antecedents,
+    consignes,
+    dateChirurgie,
+    dateEntree,
+    dateRdv,
+    dateSortie,
+    gesteSided,
+    heureRdv,
+    isTransfert,
+    motifSided,
+    orthoGeriatrie,
+    peropValue,
+    preset.finalite,
+    radios,
+    structureAval,
+    suites,
+    suitesText,
+  ]);
+
   const handleGenerate = useCallback(async () => {
     if (blocText.trim().length < 10) return;
     setGeneratedText("");
@@ -464,11 +560,17 @@ ${consignes.replace(/^/gm, "   ")}
         }
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erreur lors de la génération.");
+      const fallback = buildLocalCourrier();
+      setGeneratedText(fallback);
+      toast.warning(
+        error instanceof Error
+          ? `Backend indisponible : génération locale utilisée. ${error.message}`
+          : "Backend indisponible : génération locale utilisée."
+      );
     } finally {
       setIsGenerating(false);
     }
-  }, [blocText]);
+  }, [blocText, buildLocalCourrier]);
 
   const handleCopy = useCallback(async () => {
     const text = generatedText || streamingText || blocText;
@@ -514,8 +616,19 @@ ${consignes.replace(/^/gm, "   ")}
           </div>
           <p className="ortho-hint">Un clic pré-remplit le motif probable, le geste et les rubriques de consignes. La radio reste libre : le preset propose seulement une suggestion.</p>
 
+          {presetKey === "AUTRE" && (
+            <div className="ortho-encadre">
+              <b>Mode « Autre / libre »</b>
+              <p>
+                Aucun geste n'est prérempli. Saisissez vous-même ci-dessous le motif d'entrée
+                (pathologie causale) et le type de chirurgie (geste + matériel). L'outil ne
+                suggère aucune valeur clinique dans ce mode.
+              </p>
+            </div>
+          )}
+
           <h2>2 · Contexte</h2>
-          <label>Motif d'entrée — pathologie causale</label>
+          <label>Motif d'entrée — pathologie causale <span className="ortho-badge">≠ le geste</span></label>
           <textarea value={motif} onChange={(event) => setMotif(event.target.value)} placeholder="Saisie libre. Ex. Gonarthrose invalidante ; fracture pertrochantérienne de la hanche ; rupture du ligament croisé antérieur..." />
           <p className="ortho-hint">Zone de texte libre : décrivez la pathologie causale, jamais le geste.</p>
 
@@ -598,9 +711,11 @@ ${consignes.replace(/^/gm, "   ")}
             <div><label>RDV de contrôle</label><input type="date" value={dateRdv} onChange={(event) => setDateRdv(event.target.value)} /></div>
             <div><label>Heure</label><input type="time" value={heureRdv} onChange={(event) => setHeureRdv(event.target.value)} /></div>
           </div>
-          <label>Radiographies de contrôle <span className="ortho-badge">saisie libre</span></label>
-          <input value={radios} onChange={(event) => setRadios(event.target.value)} placeholder={preset.radios ? `Suggestion : ${preset.radios} — à valider / compléter` : "À remplir par le médecin"} />
-          <p className="ortho-hint">Champ libre : non rempli automatiquement. Le preset propose seulement une suggestion en placeholder.</p>
+          <div className="ortho-encadre">
+            <label>Radiographies de contrôle <span className="ortho-badge">saisie libre</span></label>
+            <input value={radios} onChange={(event) => setRadios(event.target.value)} placeholder={preset.radios ? `Suggestion : ${preset.radios} — à valider / compléter` : "À remplir par le médecin"} />
+            <p className="ortho-hint">Champ libre : non rempli automatiquement. Le preset propose seulement une suggestion en placeholder — c'est à vous de saisir la valeur retenue.</p>
+          </div>
         </section>
 
         <section className="ortho-card">
@@ -610,6 +725,7 @@ ${consignes.replace(/^/gm, "   ")}
               <FileText size={17} /> {isGenerating ? "Génération..." : "Générer le courrier"}
             </Button>
             <Button type="button" variant="outline" onClick={handleCopy}><Copy size={16} /> Copier</Button>
+            <Button type="button" variant="outline" onClick={() => window.location.reload()}><RefreshCw size={16} /> Réinitialiser</Button>
           </div>
 
           {missingCount > 0 && (
@@ -674,6 +790,8 @@ const orthoStyles = `
 .ortho-presets{display:flex;flex-wrap:wrap;gap:8px}.ortho-preset{border:1px solid var(--line);background:#EEF3F5;border-radius:999px;padding:7px 13px;font-size:.82rem;font-weight:700;cursor:pointer;color:var(--brand-d);transition:.15s}.ortho-preset:hover{background:var(--accent);border-color:var(--brand)}.ortho-preset.active{background:var(--brand);color:#fff;border-color:var(--brand)}
 .ortho-hint{font-size:.78rem;color:var(--muted);margin:10px 0 0}
 .ortho-badge{display:inline-block;background:var(--accent);color:var(--brand-d);border-radius:6px;padding:2px 8px;font-size:.72rem;font-weight:800;margin-left:6px}
+.ortho-encadre{border:1.5px dashed var(--brand);background:var(--accent);border-radius:12px;padding:12px 14px;margin-top:12px}
+.ortho-encadre b{display:block;color:var(--brand-d);margin-bottom:4px}.ortho-encadre p{margin:0;color:var(--muted);font-size:.84rem;line-height:1.45}.ortho-encadre label{margin-top:0!important}
 .ortho-card label{display:block;font-weight:700;font-size:.82rem;color:var(--muted);margin:12px 0 5px}
 .ortho-card input[type=text],.ortho-card input[type=number],.ortho-card input[type=date],.ortho-card input[type=time],.ortho-card select,.ortho-card textarea{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:10px;font-size:.92rem;font-family:inherit;background:#fff;color:var(--ink)}
 .ortho-card textarea{resize:vertical;min-height:72px}.ortho-consignes{min-height:170px!important}
