@@ -3,7 +3,6 @@ import RedactioLayout from "@/components/RedactioLayout";
 import {
   AlertTriangle,
   Check,
-  CircleX,
   Clock,
   CreditCard,
   RotateCw,
@@ -31,12 +30,26 @@ function formatDate(date: Date) {
   });
 }
 
+function formatStripeAmount(amount: number | undefined, currency: string | undefined) {
+  if (amount === undefined || !currency) return "Chargement...";
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency,
+  }).format(amount / 100);
+}
+
+function formatNullableDate(value: unknown) {
+  if (!value) return "—";
+  const date = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(date.getTime())) return "—";
+  return formatDate(date);
+}
+
 export default function Profil() {
   const { user } = useAuth();
   const [name, setName] = useState(user?.name ?? "");
   const [specialite, setSpecialite] = useState((user as { specialite?: string })?.specialite ?? "");
   const [rpps, setRpps] = useState((user as { rpps?: string })?.rpps ?? "");
-  const [subscriptionState, setSubscriptionState] = useState<"active" | "confirm" | "cancelled">("active");
 
   useEffect(() => {
     setName(user?.name ?? "");
@@ -44,26 +57,30 @@ export default function Profil() {
     setRpps((user as { rpps?: string })?.rpps ?? "");
   }, [user]);
 
-  const accessDate = useMemo(() => {
-    const date = new Date();
-    date.setDate(date.getDate() + 21);
-    return formatDate(date);
-  }, []);
-
   const role = (user as { role?: string })?.role ?? "praticien";
   const stripeStatus = (user as { stripeSubscriptionStatus?: string | null })?.stripeSubscriptionStatus ?? null;
   const hasStripeCustomer = Boolean((user as { stripeCustomerId?: string | null })?.stripeCustomerId);
+  const stripeCurrentPeriodEnd = (user as { stripeCurrentPeriodEnd?: unknown })?.stripeCurrentPeriodEnd;
+  const stripeTrialEnd = (user as { stripeTrialEnd?: unknown })?.stripeTrialEnd;
+  const stripeCancelAtPeriodEnd = Boolean((user as { stripeCancelAtPeriodEnd?: boolean })?.stripeCancelAtPeriodEnd);
+  const renewalDate = stripeStatus === "trialing" ? formatNullableDate(stripeTrialEnd) : formatNullableDate(stripeCurrentPeriodEnd);
+  const planQuery = trpc.billing.getPlan.useQuery(undefined, {
+    enabled: Boolean(user),
+    staleTime: 5 * 60 * 1000,
+  });
+  const plan = planQuery.data;
+  const amountLabel = formatStripeAmount(plan?.amount, plan?.currency);
+  const intervalLabel = plan?.interval ?? "mois";
   const statusLabel = stripeStatus === "trialing"
     ? "Essai actif"
     : stripeStatus === "active"
-      ? "Actif"
-      : stripeStatus === "canceled"
-        ? "Résilié"
-        : stripeStatus === "past_due"
-          ? "Paiement requis"
-          : subscriptionState === "cancelled"
-            ? "Résilié"
-            : "Actif";
+      ? stripeCancelAtPeriodEnd ? "Résiliation programmée" : "Actif"
+    : stripeStatus === "canceled"
+      ? "Résilié"
+      : stripeStatus === "past_due"
+        ? "Paiement requis"
+        : "À activer";
+  const isProblemStatus = ["Résilié", "Paiement requis", "Résiliation programmée", "À activer"].includes(statusLabel);
 
   const updateProfile = trpc.user.updateProfile.useMutation({
     onSuccess: () => toast.success("Profil mis à jour."),
@@ -154,107 +171,54 @@ export default function Profil() {
           <div className="subscription-head">
             <div>
               <h2>Abonnement</h2>
-              <strong>Offre Praticien individuel</strong>
+              <strong>{plan?.planLabel ?? "Offre Praticien individuel"}</strong>
             </div>
-            <span className={`status ${statusLabel === "Résilié" || statusLabel === "Paiement requis" ? "cancelled" : "active"}`}>
+            <span className={`status ${isProblemStatus ? "cancelled" : "active"}`}>
               <Check aria-hidden="true" />
               {statusLabel}
             </span>
           </div>
 
           <div className="recap">
-            <div><span>Abonnement HT</span><b>32,00 €</b></div>
-            <div><span>TVA (20 %)</span><b>6,40 €</b></div>
-            <div className="total"><span>Total TTC / mois</span><b>38,40 €</b></div>
+            <div><span>Prix configuré dans Stripe</span><b>{amountLabel}</b></div>
+            <div className="total"><span>Total / {intervalLabel}</span><b>{amountLabel}</b></div>
           </div>
 
-          {subscriptionState === "active" && (
-            <div className="subscription-state">
-              <div className="notice info">
-                <Clock aria-hidden="true" />
-                <span>
-                  {stripeStatus === "trialing" ? "Fin de l'essai gratuit" : "Prochain prélèvement"} : <b>{accessDate}</b> · 38,40 € TTC.
-                  Renouvellement automatique mensuel.
-                </span>
-              </div>
-              {hasStripeCustomer ? (
-                <button
-                  type="button"
-                  className="profile-btn danger-outline"
-                  onClick={() => createPortalSession.mutate()}
-                  disabled={createPortalSession.isPending}
-                >
-                  <CreditCard aria-hidden="true" />
-                  {createPortalSession.isPending ? "Ouverture..." : "Gérer / résilier mon abonnement"}
-                </button>
-              ) : (
-                <button type="button" className="profile-btn danger-outline" onClick={() => setSubscriptionState("confirm")}>
-                  <CircleX aria-hidden="true" />
-                  Résilier mon abonnement
-                </button>
-              )}
+          <div className="subscription-state">
+            <div className={stripeStatus === "canceled" || stripeStatus === "past_due" ? "notice warn" : "notice info"}>
+              {stripeStatus === "canceled" || stripeStatus === "past_due" ? <AlertTriangle aria-hidden="true" /> : <Clock aria-hidden="true" />}
+              <span>
+                {stripeStatus === "trialing" && <>Fin de l&apos;essai gratuit : <b>{renewalDate}</b> · puis {amountLabel} / {intervalLabel}.</>}
+                {stripeStatus === "active" && !stripeCancelAtPeriodEnd && <>Prochain prélèvement : <b>{renewalDate}</b> · {amountLabel} / {intervalLabel}.</>}
+                {stripeStatus === "active" && stripeCancelAtPeriodEnd && <>Résiliation programmée : accès maintenu jusqu&apos;au <b>{renewalDate}</b>. Aucun renouvellement automatique ensuite.</>}
+                {stripeStatus === "past_due" && <>Paiement requis : ouvrez Stripe pour mettre à jour votre moyen de paiement.</>}
+                {stripeStatus === "canceled" && <>Abonnement résilié. Vous pouvez vous réabonner depuis Stripe ou relancer le paiement.</>}
+                {!stripeStatus && <>Aucun abonnement Stripe actif n&apos;est encore rattaché à ce compte.</>}
+              </span>
             </div>
-          )}
 
-          {subscriptionState === "confirm" && (
-            <div className="subscription-state">
-              <div className="confirm-box">
-                <h3>Confirmer la résiliation ?</h3>
-                <p>
-                  Votre abonnement s&apos;arrêtera. <b>Vous conservez l&apos;accès à
-                  REDACTIO jusqu&apos;au {accessDate}</b>, puis votre compte passera en
-                  accès restreint. Aucun nouveau prélèvement n&apos;aura lieu.
-                </p>
-                <p>
-                  Votre compte et vos paramètres sont conservés. Seul l&apos;abonnement est arrêté.
-                </p>
-              </div>
-              <div className="confirm-actions">
-                <button type="button" className="profile-btn danger" onClick={() => setSubscriptionState("cancelled")}>
-                  Oui, résilier mon abonnement
-                </button>
-                <button type="button" className="profile-btn ghost" onClick={() => setSubscriptionState("active")}>
-                  Ne pas résilier
-                </button>
-              </div>
-            </div>
-          )}
-
-          {subscriptionState === "cancelled" && (
-            <div className="subscription-state">
-              <div className="notice warn">
-                <AlertTriangle aria-hidden="true" />
-                <span>
-                  Abonnement résilié. Accès maintenu jusqu&apos;au <b>{accessDate}</b>.
-                  Aucun prélèvement ne sera effectué.
-                </span>
-              </div>
-              <div className="notice danger">
-                <AlertTriangle aria-hidden="true" />
-                <span>
-                  En cas de réabonnement, <b>vous ne bénéficierez plus de la semaine
-                  d&apos;essai gratuit</b> : le prélèvement de 38,40 € TTC démarrera immédiatement.
-                </span>
-              </div>
+            {hasStripeCustomer ? (
+              <button
+                type="button"
+                className="profile-btn danger-outline"
+                onClick={() => createPortalSession.mutate()}
+                disabled={createPortalSession.isPending}
+              >
+                <CreditCard aria-hidden="true" />
+                {createPortalSession.isPending ? "Ouverture..." : "Gérer mon abonnement Stripe"}
+              </button>
+            ) : (
               <button
                 type="button"
                 className="profile-btn primary"
-                onClick={() => {
-                  if (hasStripeCustomer) {
-                    createPortalSession.mutate();
-                  } else {
-                    createCheckoutSession.mutate();
-                  }
-                }}
-                disabled={createPortalSession.isPending || createCheckoutSession.isPending}
+                onClick={() => createCheckoutSession.mutate()}
+                disabled={createCheckoutSession.isPending}
               >
                 <RotateCw aria-hidden="true" />
-                {createPortalSession.isPending || createCheckoutSession.isPending
-                  ? "Ouverture..."
-                  : "Me réabonner maintenant"}
+                {createCheckoutSession.isPending ? "Ouverture..." : "Activer mon abonnement"}
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </section>
 
         <section className="danger-zone">
