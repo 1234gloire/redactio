@@ -53,6 +53,7 @@ import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { analyzeText, invalidateDictCache } from "./medicalAnalyzer";
 import { createAnthropicMessage } from "./_core/anthropic";
 import { notifySignupCreated } from "./makeWebhooks";
+import { createStripeBillingPortalSession, createStripeCheckoutSession } from "./stripeBilling";
 import {
   DEFAULT_PROMPT_BASE,
   DEFAULT_TEMPLATES,
@@ -246,6 +247,16 @@ export const appRouter = router({
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
+    }),
+  }),
+
+  // ─── Facturation Stripe ────────────────────────────────────────────────────
+  billing: router({
+    createCheckoutSession: protectedProcedure.mutation(async ({ ctx }) => {
+      return createStripeCheckoutSession(ctx.user, ctx.req);
+    }),
+    createPortalSession: protectedProcedure.mutation(async ({ ctx }) => {
+      return createStripeBillingPortalSession(ctx.user, ctx.req);
     }),
   }),
 

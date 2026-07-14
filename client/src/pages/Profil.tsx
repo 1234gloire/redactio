@@ -5,6 +5,7 @@ import {
   Check,
   CircleX,
   Clock,
+  CreditCard,
   RotateCw,
   Save,
   Trash2,
@@ -50,9 +51,34 @@ export default function Profil() {
   }, []);
 
   const role = (user as { role?: string })?.role ?? "praticien";
+  const stripeStatus = (user as { stripeSubscriptionStatus?: string | null })?.stripeSubscriptionStatus ?? null;
+  const hasStripeCustomer = Boolean((user as { stripeCustomerId?: string | null })?.stripeCustomerId);
+  const statusLabel = stripeStatus === "trialing"
+    ? "Essai actif"
+    : stripeStatus === "active"
+      ? "Actif"
+      : stripeStatus === "canceled"
+        ? "Résilié"
+        : stripeStatus === "past_due"
+          ? "Paiement requis"
+          : subscriptionState === "cancelled"
+            ? "Résilié"
+            : "Actif";
 
   const updateProfile = trpc.user.updateProfile.useMutation({
     onSuccess: () => toast.success("Profil mis à jour."),
+    onError: (e) => toast.error(e.message),
+  });
+  const createPortalSession = trpc.billing.createPortalSession.useMutation({
+    onSuccess: ({ url }) => {
+      window.location.href = url;
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const createCheckoutSession = trpc.billing.createCheckoutSession.useMutation({
+    onSuccess: ({ url }) => {
+      window.location.href = url;
+    },
     onError: (e) => toast.error(e.message),
   });
 
@@ -130,9 +156,9 @@ export default function Profil() {
               <h2>Abonnement</h2>
               <strong>Offre Praticien individuel</strong>
             </div>
-            <span className={`status ${subscriptionState === "cancelled" ? "cancelled" : "active"}`}>
+            <span className={`status ${statusLabel === "Résilié" || statusLabel === "Paiement requis" ? "cancelled" : "active"}`}>
               <Check aria-hidden="true" />
-              {subscriptionState === "cancelled" ? "Résilié" : "Actif"}
+              {statusLabel}
             </span>
           </div>
 
@@ -147,14 +173,26 @@ export default function Profil() {
               <div className="notice info">
                 <Clock aria-hidden="true" />
                 <span>
-                  Prochain prélèvement : <b>{accessDate}</b> · 38,40 € TTC.
+                  {stripeStatus === "trialing" ? "Fin de l'essai gratuit" : "Prochain prélèvement"} : <b>{accessDate}</b> · 38,40 € TTC.
                   Renouvellement automatique mensuel.
                 </span>
               </div>
-              <button type="button" className="profile-btn danger-outline" onClick={() => setSubscriptionState("confirm")}>
-                <CircleX aria-hidden="true" />
-                Résilier mon abonnement
-              </button>
+              {hasStripeCustomer ? (
+                <button
+                  type="button"
+                  className="profile-btn danger-outline"
+                  onClick={() => createPortalSession.mutate()}
+                  disabled={createPortalSession.isPending}
+                >
+                  <CreditCard aria-hidden="true" />
+                  {createPortalSession.isPending ? "Ouverture..." : "Gérer / résilier mon abonnement"}
+                </button>
+              ) : (
+                <button type="button" className="profile-btn danger-outline" onClick={() => setSubscriptionState("confirm")}>
+                  <CircleX aria-hidden="true" />
+                  Résilier mon abonnement
+                </button>
+              )}
             </div>
           )}
 
@@ -202,12 +240,18 @@ export default function Profil() {
                 type="button"
                 className="profile-btn primary"
                 onClick={() => {
-                  setSubscriptionState("active");
-                  toast.info("Réabonnement à brancher au prestataire de paiement.");
+                  if (hasStripeCustomer) {
+                    createPortalSession.mutate();
+                  } else {
+                    createCheckoutSession.mutate();
+                  }
                 }}
+                disabled={createPortalSession.isPending || createCheckoutSession.isPending}
               >
                 <RotateCw aria-hidden="true" />
-                Me réabonner maintenant
+                {createPortalSession.isPending || createCheckoutSession.isPending
+                  ? "Ouverture..."
+                  : "Me réabonner maintenant"}
               </button>
             </div>
           )}

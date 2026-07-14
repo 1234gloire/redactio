@@ -9,6 +9,7 @@ import { registerObservationExamExtraction } from "./observationExamExtraction";
 import { registerStreamGeneration } from "./streamGeneration";
 import { registerVoiceTranscription } from "./voiceTranscriptionRoute";
 import { registerMakeWebhookRoutes } from "./makeWebhooks";
+import { registerStripeWebhookRoutes } from "./stripeBilling";
 import { appRouter } from "./routers";
 import { createContext } from "./_core/context";
 import { ensureLocalAdmin } from "./db";
@@ -16,6 +17,7 @@ import { ensureLocalAdmin } from "./db";
 const PORT = process.env.PORT ?? 3001;
 const app = express();
 
+registerStripeWebhookRoutes(app);
 app.use(express.json());
 
 app.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext }));

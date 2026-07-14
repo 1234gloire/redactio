@@ -43,6 +43,13 @@
       "when": 1783424174098,
       "tag": "0005_massive_the_fallen",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1784011200000,
+      "tag": "0006_stripe_individual_billing",
+      "breakpoints": true
     }
   ]
 }

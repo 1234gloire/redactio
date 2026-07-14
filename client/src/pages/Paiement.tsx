@@ -1,17 +1,15 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import {
   Check,
   Clock3,
-  CreditCard,
   FileText,
   Lock,
   ShieldCheck,
 } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 
 const TRUST_CHIPS = ["Paiement chiffré", "RGPD", "Résiliable à tout moment"];
@@ -48,27 +46,18 @@ function formatTrialEndDate() {
   }).format(date);
 }
 
-function formatCardNumber(value: string) {
-  return value
-    .replace(/\D/g, "")
-    .slice(0, 16)
-    .replace(/(\d{4})(?=\d)/g, "$1 ")
-    .trim();
-}
-
-function formatExpiry(value: string) {
-  const digits = value.replace(/\D/g, "").slice(0, 4);
-  if (digits.length < 3) return digits;
-  return `${digits.slice(0, 2)} / ${digits.slice(2)}`;
-}
-
 export default function Paiement() {
   const { isAuthenticated, loading } = useAuth();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const trialEnd = useMemo(() => formatTrialEndDate(), []);
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvc, setCvc] = useState("");
+  const createCheckoutSession = trpc.billing.createCheckoutSession.useMutation({
+    onSuccess: ({ url }) => {
+      window.location.href = url;
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
 
   useEffect(() => {
     document.title = "REDACTIO — Activez votre essai gratuit";
@@ -80,14 +69,11 @@ export default function Paiement() {
     }
   }, [isAuthenticated, loading, setLocation]);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    toast.success("Essai gratuit activé. Connexion à votre espace REDACTIO.");
-    setLocation("/dashboard");
-  };
-
-  const inputClass =
-    "h-auto rounded-xl border-[1.5px] border-[#e4ebee] bg-[#f7fafa] px-3.5 py-3 text-[14.5px] text-[#0b1b29] placeholder:text-[#8a99a4] focus-visible:border-[#0e9c8e] focus-visible:bg-white focus-visible:ring-[4px] focus-visible:ring-[#0e9c8e]/15";
+  useEffect(() => {
+    if (location.includes("checkout=cancelled")) {
+      toast.info("Paiement annulé. Vous pouvez reprendre l'activation quand vous voulez.");
+    }
+  }, [location]);
 
   return (
     <div className="min-h-screen bg-white text-[#0b1b29]" style={{ fontFamily: '"Hanken Grotesk", system-ui, -apple-system, sans-serif' }}>
@@ -200,120 +186,43 @@ export default function Paiement() {
             </p>
           </div>
 
-          <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
+          <div className="mt-5 space-y-4">
             <div className="text-[12px] font-extrabold uppercase tracking-[.08em] text-[#8a99a4]">
-              Coordonnées bancaires
+              Paiement sécurisé Stripe
             </div>
 
-            <div>
-              <Label htmlFor="cardName" className="mb-2 block text-[13px] font-bold text-[#0b1b29]">
-                Nom sur la carte
-              </Label>
-              <Input id="cardName" type="text" placeholder="Jean Dupont" autoComplete="cc-name" required className={inputClass} />
-            </div>
-
-            <div>
-              <Label htmlFor="cardNumber" className="mb-2 block text-[13px] font-bold text-[#0b1b29]">
-                Numéro de carte
-              </Label>
-              <div className="relative">
-                <Input
-                  id="cardNumber"
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="1234 5678 9012 3456"
-                  autoComplete="cc-number"
-                  maxLength={19}
-                  value={cardNumber}
-                  onChange={(event) => setCardNumber(formatCardNumber(event.target.value))}
-                  required
-                  className={`${inputClass} pr-12`}
-                />
-                <CreditCard className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8a99a4]" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-[2fr_1fr_1fr]">
-              <div>
-                <Label htmlFor="expiry" className="mb-2 block text-[13px] font-bold text-[#0b1b29]">
-                  Expiration
-                </Label>
-                <Input
-                  id="expiry"
-                  type="text"
-                  placeholder="MM / AA"
-                  autoComplete="cc-exp"
-                  maxLength={7}
-                  value={expiry}
-                  onChange={(event) => setExpiry(formatExpiry(event.target.value))}
-                  required
-                  className={inputClass}
-                />
-              </div>
-              <div>
-                <Label htmlFor="cvc" className="mb-2 block text-[13px] font-bold text-[#0b1b29]">
-                  CVC
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="cvc"
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="123"
-                    autoComplete="cc-csc"
-                    maxLength={4}
-                    value={cvc}
-                    onChange={(event) => setCvc(event.target.value.replace(/\D/g, "").slice(0, 4))}
-                    required
-                    className={`${inputClass} pr-9`}
-                  />
-                  <Lock className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a99a4]" />
+            <div className="rounded-2xl border border-[#e4ebee] bg-[#f7fafa] p-5 text-[13.5px] leading-relaxed text-[#5a6b78]">
+              <div className="mb-3 flex items-start gap-3">
+                <Lock className="mt-0.5 h-5 w-5 shrink-0 text-[#0a7b70]" />
+                <div>
+                  <b className="text-[#0b1b29]">Vos coordonnées bancaires seront saisies sur Stripe Checkout.</b>
+                  <br />
+                  REDACTIO ne reçoit, ne stocke et ne traite aucun numéro de carte.
                 </div>
               </div>
-              <div>
-                <Label htmlFor="postalCode" className="mb-2 block text-[13px] font-bold text-[#0b1b29]">
-                  Code postal
-                </Label>
-                <Input id="postalCode" type="text" inputMode="numeric" placeholder="59000" maxLength={5} className={inputClass} />
-              </div>
+              <ul className="ml-8 list-disc space-y-1">
+                <li>0,00 € aujourd&apos;hui.</li>
+                <li>Essai gratuit de 7 jours.</li>
+                <li>Premier prélèvement de 38,40 € TTC le {trialEnd}, sauf résiliation.</li>
+              </ul>
             </div>
-
-            <div className="pt-1 text-[12px] font-extrabold uppercase tracking-[.08em] text-[#8a99a4]">
-              Facturation
-            </div>
-            <div>
-              <div className="mb-2 flex items-baseline justify-between">
-                <Label htmlFor="billingAddress" className="text-[13px] font-bold text-[#0b1b29]">
-                  Établissement / adresse de facturation
-                </Label>
-                <span className="text-[12px] font-semibold text-[#8a99a4]">(facultatif)</span>
-              </div>
-              <Input id="billingAddress" type="text" placeholder="Cabinet, service, ou adresse" className={inputClass} />
-            </div>
-
-            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#e4ebee] bg-[#f7fafa] px-4 py-3.5 text-[12.5px] leading-relaxed text-[#5a6b78]">
-              <input type="checkbox" required className="mt-0.5 h-5 w-5 shrink-0 accent-[#0e9c8e]" />
-              <span>
-                J'autorise REDACTIO à prélever <b className="text-[#0b1b29]">38,40 € TTC/mois</b> par carte bancaire à compter du{" "}
-                <b className="text-[#0b1b29]">{trialEnd}</b>, sauf résiliation avant cette date. J'ai lu et j'accepte les{" "}
-                <a href="#" className="font-bold text-[#0e9c8e] hover:underline">
-                  Conditions Générales de Vente
-                </a>.
-              </span>
-            </label>
 
             <Button
-              type="submit"
+              type="button"
+              disabled={createCheckoutSession.isPending}
+              onClick={() => createCheckoutSession.mutate()}
               className="h-auto w-full gap-2 rounded-full bg-[#0e9c8e] py-4 text-[15.5px] font-bold text-white shadow-[0_12px_26px_-12px_rgba(14,156,142,.9)] transition hover:-translate-y-px hover:bg-[#0c8a7d] hover:shadow-[0_16px_32px_-12px_rgba(14,156,142,.95)]"
             >
               <Lock className="h-4 w-4" />
-              Démarrer mon essai gratuit de 7 jours
+              {createCheckoutSession.isPending
+                ? "Ouverture de Stripe..."
+                : "Continuer vers Stripe et démarrer l'essai"}
             </Button>
 
             <p className="px-1 text-center text-[12px] leading-relaxed text-[#8a99a4]">
               Aucun débit aujourd'hui. Vous pouvez annuler à tout moment avant le {trialEnd} depuis votre espace, sans justification.
             </p>
-          </form>
+          </div>
 
           <div className="mt-6 flex flex-wrap justify-center gap-2 border-t border-[#e4ebee] pt-5">
             {TRUST_CHIPS.map((label) => (

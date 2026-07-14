@@ -12,6 +12,7 @@ import { registerObservationExamExtraction } from "../observationExamExtraction"
 import { registerStreamGeneration } from "../streamGeneration";
 import { registerVoiceTranscription } from "../voiceTranscriptionRoute";
 import { registerMakeWebhookRoutes } from "../makeWebhooks";
+import { registerStripeWebhookRoutes } from "../stripeBilling";
 import { createContext } from "./context";
 import { registerStorageProxy } from "./storageProxy";
 import { serveStatic, setupVite } from "./vite";
@@ -41,6 +42,7 @@ async function startServer() {
 
   const app = express();
   const server = createServer(app);
+  registerStripeWebhookRoutes(app);
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));

@@ -56,7 +56,15 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     const values: InsertUser = { openId: user.openId };
     const updateSet: Record<string, unknown> = {};
 
-    const textFields = ["name", "email", "loginMethod", "passwordHash"] as const;
+    const textFields = [
+      "name",
+      "email",
+      "loginMethod",
+      "passwordHash",
+      "stripeCustomerId",
+      "stripeSubscriptionId",
+      "stripeSubscriptionStatus",
+    ] as const;
     for (const field of textFields) {
       const value = user[field];
       if (value === undefined) continue;
@@ -84,6 +92,18 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     if (user.privacyAcceptedAt !== undefined) {
       values.privacyAcceptedAt = user.privacyAcceptedAt;
       updateSet.privacyAcceptedAt = user.privacyAcceptedAt;
+    }
+    if (user.stripeCurrentPeriodEnd !== undefined) {
+      values.stripeCurrentPeriodEnd = user.stripeCurrentPeriodEnd;
+      updateSet.stripeCurrentPeriodEnd = user.stripeCurrentPeriodEnd;
+    }
+    if (user.stripeTrialEnd !== undefined) {
+      values.stripeTrialEnd = user.stripeTrialEnd;
+      updateSet.stripeTrialEnd = user.stripeTrialEnd;
+    }
+    if (user.stripeCancelAtPeriodEnd !== undefined) {
+      values.stripeCancelAtPeriodEnd = user.stripeCancelAtPeriodEnd;
+      updateSet.stripeCancelAtPeriodEnd = user.stripeCancelAtPeriodEnd;
     }
     if (user.role !== undefined) {
       values.role = user.role;
@@ -129,6 +149,17 @@ export async function getUserById(id: number): Promise<User | undefined> {
   return result.length > 0 ? result[0] : undefined;
 }
 
+export async function getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.stripeCustomerId, stripeCustomerId))
+    .limit(1);
+  return result[0];
+}
+
 export async function listUsers(): Promise<User[]> {
   const db = await getDb();
   if (!db) return [];
@@ -139,6 +170,15 @@ export async function updateUser(id: number, data: Partial<InsertUser>): Promise
   const db = await getDb();
   if (!db) return;
   await db.update(users).set(data).where(eq(users.id, id));
+}
+
+export async function updateUserByStripeCustomerId(
+  stripeCustomerId: string,
+  data: Partial<InsertUser>
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set(data).where(eq(users.stripeCustomerId, stripeCustomerId));
 }
 
 export async function deleteUser(id: number): Promise<void> {
