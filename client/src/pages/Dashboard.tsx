@@ -1,91 +1,77 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import RedactioLayout from "@/components/RedactioLayout";
 import {
-  AlertTriangle,
   ArrowRight,
   Bone,
   BookOpen,
   Check,
-  ChevronRight,
   Clock3,
-  FileText,
-  Grid2X2,
   FilePenLine,
-  HelpCircle,
-  Info,
-  LayoutDashboard,
+  FileText,
   Mic,
-  PlayCircle,
   Shield,
   Stethoscope,
-  Users,
 } from "lucide-react";
+import type { CSSProperties } from "react";
 import { Link } from "wouter";
 
-const VOLETS = [
+const MODULES = [
   {
     id: "courrier_sortie",
-    label: "Courrier de sortie",
-    description: "Rédaction structurée du courrier de sortie d'hospitalisation.",
-    icon: FileText,
-    accent: "#0E9C8E",
-    accentDeep: "#0A7B70",
+    title: "Courrier de sortie",
+    desc: "Rédaction structurée du courrier de sortie d'hospitalisation.",
+    accent: "var(--teal)",
+    Icon: FileText,
+    href: "/redaction?volet=courrier_sortie",
   },
   {
     id: "conciliation",
-    label: "Conciliation médicamenteuse",
-    description: "Bilan de conciliation à l'admission, au transfert ou à la sortie.",
-    icon: Stethoscope,
-    accent: "#1E3A5F",
-    accentDeep: "#1E3A5F",
+    title: "Conciliation médicamenteuse",
+    desc: "Bilan de conciliation à l'admission, au transfert ou à la sortie.",
+    accent: "var(--navy)",
+    Icon: Stethoscope,
+    href: "/redaction?volet=conciliation",
   },
   {
     id: "correspondance",
-    label: "Correspondance médicale",
-    description: "Rédaction de courriers entre professionnels de santé.",
-    icon: BookOpen,
-    accent: "#C58A12",
-    accentDeep: "#A0700C",
+    title: "Correspondance médicale",
+    desc: "Rédaction de courriers entre professionnels de santé.",
+    accent: "var(--gold)",
+    Icon: BookOpen,
+    href: "/redaction?volet=correspondance",
   },
   {
     id: "observation",
-    label: "Observation médicale",
-    description: "Prise de notes, suivi journalier, transmissions ciblées.",
-    icon: FilePenLine,
-    accent: "#5B54CC",
-    accentDeep: "#4842A8",
+    title: "Observation médicale",
+    desc: "Prise de notes, suivi journalier, transmissions ciblées.",
+    accent: "var(--purple)",
+    Icon: FilePenLine,
+    href: "/redaction?volet=observation",
   },
   {
     id: "chirurgie_orthopedique",
-    label: "Chirurgie orthopédique",
-    description: "Compte rendu opératoire et courrier de sortie structurés.",
-    icon: Bone,
-    accent: "#0E6BA8",
-    accentDeep: "#0A4D78",
+    title: "Chirurgie orthopédique",
+    desc: "Compte rendu opératoire et courrier de sortie structurés.",
+    accent: "var(--blue)",
+    Icon: Bone,
     href: "/redaction/chirurgie-orthopedique",
   },
 ];
 
-const ROLE_LABELS: Record<string, string> = {
-  admin: "Administrateur",
-  praticien: "Praticien",
-  editeur_medical: "Éditeur médical",
-  relecteur_clinique: "Relecteur clinique",
-  responsable_conformite: "Responsable conformité",
-};
-
-function getInitials(name?: string | null) {
-  if (!name) return "??";
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+function firstName(name?: string | null) {
+  return name?.split(" ").filter(Boolean)[0] ?? "Docteur";
 }
 
-function getFirstName(name?: string | null) {
-  return name?.split(" ").filter(Boolean)[0] ?? "Docteur";
+function Step({ n, title, desc }: { n: string; title: string; desc: string }) {
+  return (
+    <div className="dashboard-step">
+      <span>{n}</span>
+      <div>
+        <strong>{title}</strong>
+        <p>{desc}</p>
+      </div>
+    </div>
+  );
 }
 
 export default function Dashboard() {
@@ -93,856 +79,163 @@ export default function Dashboard() {
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#EEF3F5]">
-        <div className="w-8 h-8 border-2 border-[#0E9C8E] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-[#f3f6f7]">
+        <div className="w-8 h-8 border-2 border-[#0e9c8e] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
-  const userRole = (user as { role?: string })?.role ?? "praticien";
-  const canManagePrompts = ["editeur_medical", "relecteur_clinique", "responsable_conformite", "admin"].includes(userRole);
-  const isAdmin = userRole === "admin";
-
   return (
-    <div className="redactio-dashboard">
+    <RedactioLayout>
       <style>{dashboardStyles}</style>
-      <div className="rd-app">
-        <aside className="rd-sidebar" aria-label="Navigation principale">
-          <Link href="/dashboard" className="rd-brand" aria-label="REDACTIO - Tableau de bord">
-            <span className="rd-mark">
-              <FileText size={20} strokeWidth={1.8} />
-            </span>
-            <span>
-              <span className="rd-name">REDACTIO</span>
-              <br />
-              <span className="rd-sub">Rédaction hospitalière</span>
-            </span>
-          </Link>
+      <main className="dashboard-main">
+        <h1 className="dashboard-title">
+          Bonjour, <em>{firstName(user.name)}</em>.
+        </h1>
+        <p className="dashboard-subtitle">
+          Choisissez un module pour démarrer. Vos saisies restent en mémoire de session et sont
+          effacées à la déconnexion.
+        </p>
 
-          <nav className="rd-nav" aria-label="Menu principal">
-            <Link href="/dashboard" className="rd-link active" aria-current="page">
-              <Grid2X2 size={18} strokeWidth={1.9} />
-              Tableau de bord
-            </Link>
-            <Link href="/redaction" className="rd-link">
-              <FileText size={18} strokeWidth={1.9} />
-              Nouvelle rédaction
-            </Link>
+        <div className="dashboard-pill">
+          <b>NOUVEAU</b>
+          <Mic aria-hidden="true" />
+          Dictée vocale disponible dans les outils compatibles
+        </div>
 
-            <Link href="/tutoriels" className="rd-link">
-              <PlayCircle size={18} strokeWidth={1.9} />
-              Tutoriel
-            </Link>
+        <p className="dashboard-section-label">Démarrer une rédaction</p>
 
-            <div className="rd-cap">Repères</div>
-            <a href="#confidentialite" className="rd-link">
-              <Shield size={18} strokeWidth={1.9} />
-              Sécurité & données
-            </a>
-            <a href="#workflow" className="rd-link">
-              <HelpCircle size={18} strokeWidth={1.9} />
-              Aide
-            </a>
-
-            {canManagePrompts && (
-              <Link href="/backoffice" className="rd-link">
-                <BookOpen size={18} strokeWidth={1.9} />
-                Back-office prompts
-              </Link>
-            )}
-            {isAdmin && (
-              <>
-                <Link href="/organisations" className="rd-link">
-                  <LayoutDashboard size={18} strokeWidth={1.9} />
-                  Organisations
-                </Link>
-                <Link href="/utilisateurs" className="rd-link">
-                  <Users size={18} strokeWidth={1.9} />
-                  Utilisateurs
-                </Link>
-              </>
-            )}
-          </nav>
-
-          <Link href="/profil" className="rd-user">
-            <span className="rd-avatar">{getInitials(user.name)}</span>
-            <span>
-              <span className="rd-uname">{user.name ?? "Utilisateur"}</span>
-              <br />
-              <span className="rd-urole">{ROLE_LABELS[userRole] ?? userRole}</span>
-            </span>
-            <ChevronRight className="rd-chev" size={16} strokeWidth={2} />
-          </Link>
-        </aside>
-
-        <main className="rd-main">
-          <div className="rd-cbar" aria-label="Conformité données de santé">
-            <div className="rd-cbar-inner">
-              <span className="rd-cbar-lead">
-                <Shield size={14} strokeWidth={2} />
-                <span>Conforme aux exigences de protection des données de santé</span>
+        <section className="dashboard-grid" aria-label="Modules de rédaction">
+          {MODULES.map(({ id, title, desc, accent, Icon, href }) => (
+            <Link
+              key={id}
+              href={href}
+              className="dashboard-tool"
+              style={{ "--accent": accent } as CSSProperties}
+              aria-label={`Démarrer ${title}`}
+            >
+              <span className="dashboard-tool-icon">
+                <Icon aria-hidden="true" />
               </span>
-              <span className="rd-cbar-items">
-                <span><Check size={12} strokeWidth={2} /> RGPD</span>
-                <span><Check size={12} strokeWidth={2} /> HDS</span>
-                <span><Check size={12} strokeWidth={2} /> Secret médical</span>
-                <span><Check size={12} strokeWidth={2} /> Pseudonymisation</span>
-              </span>
-            </div>
-          </div>
-          <div className="rd-warning" role="alert" aria-live="polite">
-            <AlertTriangle size={18} strokeWidth={2} />
-            <span>
-              <b>Consigne de saisie :</b> n'indiquez aucun identifiant direct du patient — ni nom,
-              prénom, n° de sécurité sociale, date de naissance ou adresse.
-            </span>
-          </div>
-
-          <div className="rd-content">
-            <h1 className="rd-greet">
-              Bonjour, {getFirstName(user.name)} <span className="rd-wave">👋</span>
-            </h1>
-            <p className="rd-greet-sub">
-              Choisissez un outil pour démarrer une nouvelle rédaction. Vos saisies restent en mémoire de session
-              et sont effacées à la déconnexion.
-            </p>
-            <span className="rd-dictee-pill">
-              <span className="rd-dictee-new">Nouveau</span>
-              <Mic size={14} strokeWidth={2} />
-              Dictée vocale disponible dans les outils compatibles
-            </span>
-
-            <div className="rd-block-cap">Démarrer une rédaction</div>
-            <div className="rd-cards">
-              {VOLETS.map((volet) => {
-                const Icon = volet.icon;
-                return (
-                  <Link
-                    key={volet.id}
-                    href={volet.href ?? `/redaction?volet=${volet.id}`}
-                    className="rd-card"
-                    style={{
-                      "--rd-ac": volet.accent,
-                      "--rd-ac-deep": volet.accentDeep,
-                    } as React.CSSProperties}
-                    aria-label={`Démarrer ${volet.label}`}
-                  >
-                    <span className="rd-card-icon">
-                      <Icon size={22} strokeWidth={1.7} />
-                    </span>
-                    <span className="rd-card-name">{volet.label}</span>
-                    <span className="rd-card-description">{volet.description}</span>
-                    <span className="rd-card-foot">
-                      <span className="rd-card-action">
-                        Démarrer <ArrowRight className="rd-card-arrow" size={15} strokeWidth={2} />
-                      </span>
-                      <span className="rd-mic">
-                        <Mic size={11} strokeWidth={2} />
-                        dictée
-                      </span>
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-
-            <div className="rd-row">
-              <section className="rd-panel" id="workflow" aria-labelledby="workflow-title">
-                <h2 className="rd-panel-title" id="workflow-title">
-                  <Clock3 size={18} strokeWidth={1.9} />
-                  En trois temps
-                </h2>
-                <div className="rd-flow">
-                  <div className="rd-step">
-                    <span className="rd-step-number">01</span>
-                    <div>
-                      <div className="rd-step-title">Dictez ou collez vos notes</div>
-                      <div className="rd-step-description">
-                        Forme libre, abréviations admises — sans identifiant direct du patient.
-                      </div>
-                    </div>
-                  </div>
-                  <div className="rd-step">
-                    <span className="rd-step-number">02</span>
-                    <div>
-                      <div className="rd-step-title">REDACTIO structure</div>
-                      <div className="rd-step-description">
-                        Pseudonymisation puis mise en sections du document choisi.
-                      </div>
-                    </div>
-                  </div>
-                  <div className="rd-step">
-                    <span className="rd-step-number">03</span>
-                    <div>
-                      <div className="rd-step-title">Vous relisez & validez</div>
-                      <div className="rd-step-description">
-                        Vous corrigez et signez : le document final reste le vôtre.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <section className="rd-panel" id="confidentialite" aria-labelledby="privacy-title">
-                <h2 className="rd-privacy-title" id="privacy-title">
-                  <Shield size={18} strokeWidth={1.9} />
-                  Conformité données de santé
-                </h2>
-                <p className="rd-privacy-sub">
-                  Les exigences RGPD et de protection des données de santé, intégrées au fonctionnement de la plateforme.
-                </p>
-                <div className="rd-badge-row">
-                  <span className="rd-cbadge">RGPD</span>
-                  <span className="rd-cbadge">HDS</span>
-                  <span className="rd-cbadge">Secret médical</span>
-                </div>
-                <ul className="rd-privacy-list">
-                  <li>
-                    <Check size={16} strokeWidth={2.2} />
-                    <span>
-                      <b>Aucune donnée patient stockée.</b> Tout vit en mémoire de session, purgé à la déconnexion.
-                    </span>
-                  </li>
-                  <li>
-                    <Check size={16} strokeWidth={2.2} />
-                    <span>
-                      <b>Pseudonymisation automatique</b> du texte comme de la dictée, avant tout envoi au moteur d'IA.
-                    </span>
-                  </li>
-                  <li>
-                    <Check size={16} strokeWidth={2.2} />
-                    <span>
-                      <b>Vous restez l'unique auteur</b> et responsable du document final.
-                    </span>
-                  </li>
-                </ul>
-                <div className="rd-privacy-note">session-only · pseudonymisation · aucune décision automatisée</div>
-              </section>
-            </div>
-
-            {canManagePrompts && (
-              <div className="rd-admin">
-                <Info size={16} />
-                <span>
-                  Accès administrateur disponible : <Link href="/backoffice">ouvrir le back-office</Link>
-                  {isAdmin ? <> · <Link href="/organisations">organisations</Link> · <Link href="/utilisateurs">utilisateurs</Link></> : null}
+              <h2>{title}</h2>
+              <p>{desc}</p>
+              <span className="dashboard-tool-foot">
+                <span className="dashboard-go">
+                  Démarrer <ArrowRight aria-hidden="true" />
                 </span>
-              </div>
-            )}
+                <span className="dashboard-dictee">
+                  <Mic aria-hidden="true" />
+                  dictée
+                </span>
+              </span>
+            </Link>
+          ))}
+        </section>
+
+        <section className="dashboard-panels">
+          <div className="dashboard-panel">
+            <h2>
+              <Clock3 aria-hidden="true" />
+              En trois temps
+            </h2>
+            <p className="dashboard-panel-intro">
+              Un flux simple, de la note brute au document prêt à signer.
+            </p>
+            <Step
+              n="01"
+              title="Dictez ou collez vos notes"
+              desc="Forme libre, abréviations admises — sans identifiant direct du patient."
+            />
+            <Step
+              n="02"
+              title="REDACTIO structure"
+              desc="Pseudonymisation puis mise en sections du document choisi."
+            />
+            <Step
+              n="03"
+              title="Vous relisez et validez"
+              desc="Chaque document reste sous votre contrôle avant signature."
+            />
           </div>
-        </main>
-      </div>
-    </div>
+
+          <div className="dashboard-panel">
+            <h2>
+              <Shield aria-hidden="true" />
+              Conformité données de santé
+            </h2>
+            <p className="dashboard-panel-intro">
+              Les exigences RGPD et de protection des données de santé, intégrées au fonctionnement
+              de la plateforme.
+            </p>
+            <div className="dashboard-chips">
+              <span>RGPD</span>
+              <span>HDS</span>
+              <span>Secret médical</span>
+              <span>Pseudonymisation</span>
+            </div>
+            <div className="dashboard-ok">
+              <Check aria-hidden="true" />
+              <p><b>Aucune donnée patient stockée.</b> Tout vit en mémoire de session et disparaît à la déconnexion.</p>
+            </div>
+            <div className="dashboard-ok">
+              <Check aria-hidden="true" />
+              <p><b>Vous validez chaque document</b> avant tout usage clinique.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </RedactioLayout>
   );
 }
 
 const dashboardStyles = `
-@import url('https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700&family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
-
-.redactio-dashboard {
-  --rd-ink:#0C1E2E;
-  --rd-slate:#1E3A5F;
-  --rd-soin:#0E9C8E;
-  --rd-soin-deep:#0A7B70;
-  --rd-paper:#FBFAF8;
-  --rd-bg:#FFFFFF;
-  --rd-mist:#EEF3F5;
-  --rd-mist-deep:#E6EDF1;
-  --rd-line:#D9E2E7;
-  --rd-line-soft:#E8EEF1;
-  --rd-seal:#C58A12;
-  --rd-seal-bg:#FBF3DE;
-  --rd-muted:#5A6B78;
-  --rd-muted-light:#8497A2;
-  --rd-serif:'Spectral',Georgia,serif;
-  --rd-sans:'Hanken Grotesk',system-ui,sans-serif;
-  --rd-mono:'JetBrains Mono',monospace;
-  min-height: 100vh;
-  background: var(--rd-mist);
-  color: var(--rd-ink);
-  font-family: var(--rd-sans);
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-}
-
-.redactio-dashboard * {
-  box-sizing: border-box;
-}
-
-.redactio-dashboard a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.rd-app {
-  display: grid;
-  grid-template-columns: 272px 1fr;
-  min-height: 100vh;
-}
-
-.rd-sidebar {
-  background: var(--rd-bg);
-  border-right: 1px solid var(--rd-line);
-  display: flex;
-  flex-direction: column;
-  padding: 22px 18px;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-}
-
-.rd-brand {
-  display: flex;
-  align-items: center;
-  gap: .7em;
-  padding: 6px 8px 22px;
-}
-
-.rd-mark {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: var(--rd-slate);
-  display: grid;
-  place-items: center;
-  color: #fff;
-  flex-shrink: 0;
-}
-
-.rd-name {
-  font-weight: 800;
-  letter-spacing: .04em;
-  font-size: 1.02rem;
-  line-height: 1;
-}
-
-.rd-sub {
-  font-family: var(--rd-mono);
-  font-size: .6rem;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--rd-muted);
-  margin-top: 4px;
-}
-
-.rd-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
-}
-
-.rd-cap {
-  font-family: var(--rd-mono);
-  font-size: .6rem;
-  letter-spacing: .13em;
-  text-transform: uppercase;
-  color: var(--rd-muted-light);
-  padding: 14px 12px 6px;
-}
-
-.rd-link {
-  display: flex;
-  align-items: center;
-  gap: .75em;
-  padding: .7em .85em;
-  border-radius: 10px;
-  font-size: .93rem;
-  font-weight: 500;
-  color: var(--rd-muted);
-  transition: background .15s,color .15s;
-}
-
-.rd-link svg {
-  color: var(--rd-muted-light);
-  transition: color .15s;
-}
-
-.rd-link:hover {
-  background: var(--rd-mist);
-  color: var(--rd-ink);
-}
-
-.rd-link.active {
-  background: var(--rd-soin);
-  color: #fff;
-  font-weight: 600;
-  box-shadow: 0 8px 18px -10px rgba(14,156,142,.8);
-}
-
-.rd-link.active svg {
-  color: #fff;
-}
-
-.rd-user {
-  border-top: 1px solid var(--rd-line-soft);
-  padding-top: 14px;
-  margin-top: 10px;
-  display: flex;
-  align-items: center;
-  gap: .7em;
-  padding: 14px 8px 4px;
-}
-
-.rd-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 9px;
-  background: var(--rd-mist-deep);
-  color: var(--rd-slate);
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  font-size: .8rem;
-  font-family: var(--rd-mono);
-}
-
-.rd-uname {
-  font-weight: 600;
-  font-size: .9rem;
-  line-height: 1.1;
-}
-
-.rd-urole {
-  font-size: .75rem;
-  color: var(--rd-muted);
-}
-
-.rd-chev {
-  margin-left: auto;
-  color: var(--rd-muted-light);
-}
-
-.rd-main {
-  display: flex;
-  flex-direction: column;
-}
-
-.rd-cbar {
-  background: var(--rd-ink);
-  color: #CFE0DA;
-}
-
-.rd-cbar-inner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1.2rem;
-  flex-wrap: wrap;
-  padding: .6em 40px;
-  text-align: center;
-}
-
-.rd-cbar-lead {
-  display: inline-flex;
-  align-items: center;
-  gap: .5em;
-  font-weight: 600;
-  color: #fff;
-  font-size: .8rem;
-}
-
-.rd-cbar-lead svg,
-.rd-cbar-items svg {
-  color: #8FD8CE;
-  flex-shrink: 0;
-}
-
-.rd-cbar-items {
-  display: inline-flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  font-family: var(--rd-mono);
-  font-size: .68rem;
-  letter-spacing: .03em;
-  color: #9FC0B9;
-}
-
-.rd-cbar-items span {
-  display: inline-flex;
-  align-items: center;
-  gap: .32em;
-}
-
-.rd-warning {
-  display: flex;
-  align-items: center;
-  gap: .7em;
-  background: var(--rd-seal-bg);
-  border-bottom: 1px solid #EBD9A8;
-  padding: .85em 36px;
-  font-size: .86rem;
-  color: #7A5A0E;
-}
-
-.rd-warning svg {
-  color: var(--rd-seal);
-  flex-shrink: 0;
-}
-
-.rd-warning b {
-  font-weight: 700;
-}
-
-.rd-content {
-  padding: 40px;
-  max-width: 1120px;
-  width: 100%;
-}
-
-.rd-greet {
-  font-family: var(--rd-serif);
-  font-weight: 600;
-  font-size: 2.1rem;
-  letter-spacing: 0;
-  display: flex;
-  align-items: center;
-  gap: .3em;
-}
-
-.rd-wave {
-  font-size: 1.6rem;
-}
-
-.rd-greet-sub {
-  color: var(--rd-muted);
-  font-size: 1.02rem;
-  margin-top: .35em;
-  max-width: 52ch;
-}
-
-.rd-dictee-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: .5em;
-  margin-top: 16px;
-  background: #E7F4F2;
-  color: var(--rd-soin-deep);
-  border: 1px solid #BFE6E0;
-  border-radius: 999px;
-  padding: .45em .95em;
-  font-size: .82rem;
-  font-weight: 600;
-}
-
-.rd-dictee-new {
-  font-family: var(--rd-mono);
-  font-size: .62rem;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  background: var(--rd-soin);
-  color: #fff;
-  border-radius: 5px;
-  padding: .15em .45em;
-}
-
-.rd-block-cap {
-  font-family: var(--rd-mono);
-  font-size: .68rem;
-  letter-spacing: .13em;
-  text-transform: uppercase;
-  color: var(--rd-muted);
-  display: flex;
-  align-items: center;
-  gap: .7em;
-  margin: 38px 0 18px;
-}
-
-.rd-block-cap::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: var(--rd-line-soft);
-}
-
-.rd-cards {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 16px;
-}
-
-.rd-card {
-  flex: 1 1 300px;
-  max-width: 340px;
-  min-width: 270px;
-  background: var(--rd-bg);
-  border: 1px solid var(--rd-line);
-  border-radius: 15px;
-  padding: 24px 22px 20px;
-  position: relative;
-  overflow: hidden;
-  cursor: pointer;
-  transition: transform .2s ease, box-shadow .22s ease, border-color .2s;
-  display: flex;
-  flex-direction: column;
-  min-height: 230px;
-}
-
-.rd-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--rd-ac);
-}
-
-.rd-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 20px 44px -26px rgba(12,30,46,.32);
-  border-color: var(--rd-line-soft);
-}
-
-.rd-card-icon {
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  background: var(--rd-ac);
-  margin-bottom: 16px;
-}
-
-.rd-card-name {
-  font-family: var(--rd-serif);
-  font-weight: 600;
-  font-size: 1.16rem;
-  margin-bottom: .3em;
-}
-
-.rd-card-description {
-  font-size: .86rem;
-  color: var(--rd-muted);
-  margin-bottom: 1.1em;
-  flex: 1;
-}
-
-.rd-card-action {
-  display: inline-flex;
-  align-items: center;
-  gap: .45em;
-  font-weight: 600;
-  font-size: .88rem;
-  color: var(--rd-ac-deep);
-}
-
-.rd-card-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.rd-mic {
-  display: inline-flex;
-  align-items: center;
-  gap: .3em;
-  font-family: var(--rd-mono);
-  font-size: .6rem;
-  letter-spacing: .04em;
-  color: var(--rd-muted);
-  background: var(--rd-mist);
-  border-radius: 6px;
-  padding: .3em .5em;
-}
-
-.rd-mic svg {
-  color: var(--rd-ac-deep);
-}
-
-.rd-card-arrow {
-  transition: transform .18s;
-}
-
-.rd-card:hover .rd-card-arrow {
-  transform: translateX(3px);
-}
-
-.rd-row {
-  display: grid;
-  grid-template-columns: 1.15fr 1fr;
-  gap: 18px;
-  margin-top: 18px;
-}
-
-.rd-panel {
-  background: var(--rd-bg);
-  border: 1px solid var(--rd-line);
-  border-radius: 14px;
-  padding: 24px 24px 22px;
-}
-
-.rd-panel-title,
-.rd-privacy-title {
-  font-weight: 700;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  gap: .55em;
-  margin-bottom: 18px;
-}
-
-.rd-panel-title svg,
-.rd-privacy-title svg {
-  color: var(--rd-soin-deep);
-}
-
-.rd-flow {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.rd-step {
-  display: flex;
-  gap: .85em;
-  align-items: flex-start;
-}
-
-.rd-step-number {
-  font-family: var(--rd-mono);
-  font-size: .7rem;
-  color: var(--rd-soin-deep);
-  font-weight: 500;
-  border: 1px solid var(--rd-line);
-  border-radius: 7px;
-  width: 26px;
-  height: 26px;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.rd-step-title {
-  font-weight: 600;
-  font-size: .9rem;
-}
-
-.rd-step-description {
-  font-size: .82rem;
-  color: var(--rd-muted);
-}
-
-.rd-privacy-title {
-  color: var(--rd-slate);
-  margin-bottom: 6px;
-}
-
-.rd-privacy-sub {
-  font-size: .8rem;
-  color: var(--rd-muted);
-  margin-bottom: 16px;
-}
-
-.rd-badge-row {
-  display: flex;
-  gap: .5rem;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-}
-
-.rd-cbadge {
-  display: inline-flex;
-  align-items: center;
-  gap: .38em;
-  font-size: .72rem;
-  font-weight: 600;
-  color: var(--rd-slate);
-  background: var(--rd-mist);
-  border: 1px solid var(--rd-line);
-  border-radius: 999px;
-  padding: .32em .7em;
-}
-
-.rd-privacy-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 0;
-  margin: 0;
-}
-
-.rd-privacy-list li {
-  display: flex;
-  gap: .7em;
-  align-items: flex-start;
-  font-size: .85rem;
-}
-
-.rd-privacy-list svg {
-  color: var(--rd-soin);
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.rd-privacy-list b {
-  font-weight: 700;
-}
-
-.rd-privacy-note {
-  font-family: var(--rd-mono);
-  font-size: .68rem;
-  color: var(--rd-muted-light);
-  letter-spacing: .04em;
-  margin-top: 16px;
-  padding-top: 14px;
-  border-top: 1px solid var(--rd-line-soft);
-}
-
-.rd-admin {
-  display: flex;
-  align-items: center;
-  gap: .55rem;
-  color: var(--rd-muted);
-  font-size: .82rem;
-  margin-top: 18px;
-}
-
-.rd-admin svg {
-  color: var(--rd-soin-deep);
-}
-
-.rd-admin a {
-  color: var(--rd-soin-deep);
-  font-weight: 700;
-}
-
-.redactio-dashboard :focus-visible {
-  outline: 2px solid var(--rd-soin);
-  outline-offset: 2px;
-  border-radius: 6px;
-}
-
-@media (max-width: 980px) {
-  .rd-app {
-    grid-template-columns: 1fr;
-  }
-
-  .rd-sidebar {
-    position: static;
-    height: auto;
-    border-right: 0;
-    border-bottom: 1px solid var(--rd-line);
-  }
-
-  .rd-nav {
-    flex: initial;
-  }
-
-  .rd-row {
-    grid-template-columns: 1fr;
-  }
-
-  .rd-content,
-  .rd-warning,
-  .rd-cbar-inner {
-    padding-left: 22px;
-    padding-right: 22px;
-  }
-}
+.dashboard-main{
+  --ink:#0b1b29; --ink-soft:#5a6b78; --ink-faint:#8a99a4;
+  --teal:#0e9c8e; --teal-deep:#0a7b70;
+  --line:#e6edf0; --field:#f6f9f9; --mint:#eef6f4;
+  --navy:#1e3a5f; --gold:#c58a17; --purple:#6d5bd0; --blue:#2f6fb0;
+  width:100%;
+  max-width:1180px;
+  padding:34px 40px 48px;
+  color:var(--ink);
+}
+.dashboard-main *{box-sizing:border-box}
+.dashboard-title{font-family:"Spectral",Georgia,serif;font-weight:600;font-size:29px;letter-spacing:-.2px;margin:0 0 6px}
+.dashboard-title em{font-style:italic;color:var(--teal-deep)}
+.dashboard-subtitle{color:var(--ink-soft);font-size:14.5px;margin:0 0 20px;max-width:640px;line-height:1.55}
+.dashboard-pill{display:inline-flex;align-items:center;gap:9px;background:var(--mint);border:1px solid rgba(14,156,142,.25);border-radius:999px;padding:8px 15px;font-size:13px;color:var(--ink);margin-bottom:30px}
+.dashboard-pill b{background:var(--teal);color:#fff;font-size:10.5px;letter-spacing:1px;padding:3px 8px;border-radius:6px;font-weight:800}
+.dashboard-pill svg{width:15px;height:15px;color:var(--teal-deep)}
+.dashboard-section-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-faint);font-weight:700;margin:0 0 16px}
+.dashboard-grid{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;margin-bottom:36px}
+.dashboard-tool{flex:1 1 300px;max-width:340px;min-width:270px;background:#fff;border:1px solid var(--line);border-radius:16px;border-top:3px solid var(--accent,var(--teal));padding:24px 24px 20px;display:flex;flex-direction:column;box-shadow:0 2px 6px rgba(11,27,41,.04);transition:.18s;text-decoration:none;color:var(--ink)}
+.dashboard-tool:hover{transform:translateY(-3px);box-shadow:0 20px 40px -22px rgba(11,27,41,.35)}
+.dashboard-tool-icon{width:52px;height:52px;border-radius:13px;background:var(--accent,var(--teal));color:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:18px}
+.dashboard-tool-icon svg{width:25px;height:25px}
+.dashboard-tool h2{font-family:"Spectral",Georgia,serif;font-weight:600;font-size:20px;line-height:1.2;margin:0 0 9px}
+.dashboard-tool p{color:var(--ink-soft);font-size:13.7px;line-height:1.5;margin:0 0 22px;flex:1}
+.dashboard-tool-foot{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.dashboard-go{display:inline-flex;align-items:center;gap:6px;color:var(--accent,var(--teal));font-weight:700;font-size:14px}
+.dashboard-go svg{width:16px;height:16px}
+.dashboard-dictee{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink-faint);background:var(--field);border:1px solid var(--line);border-radius:999px;padding:5px 10px;font-weight:600}
+.dashboard-dictee svg{width:12px;height:12px}
+.dashboard-panels{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.dashboard-panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:26px 28px;box-shadow:0 2px 6px rgba(11,27,41,.04)}
+.dashboard-panel h2{display:flex;align-items:center;gap:9px;font-family:"Spectral",Georgia,serif;font-weight:600;font-size:18px;margin:0 0 6px}
+.dashboard-panel h2 svg{width:19px;height:19px;color:var(--teal-deep)}
+.dashboard-panel-intro{color:var(--ink-soft);font-size:13.5px;margin:0 0 18px}
+.dashboard-step{display:flex;gap:14px;margin-bottom:16px}
+.dashboard-step:last-child{margin-bottom:0}
+.dashboard-step > span{flex:none;width:30px;height:30px;border:1.5px solid var(--line);border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--teal-deep);font-weight:600}
+.dashboard-step strong{display:block;font-weight:700;font-size:14px;margin-bottom:2px}
+.dashboard-step p{font-size:13px;color:var(--ink-soft);line-height:1.45;margin:0}
+.dashboard-chips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 18px}
+.dashboard-chips span{font-size:12px;font-weight:600;color:var(--ink-soft);background:var(--field);border:1px solid var(--line);border-radius:999px;padding:6px 12px}
+.dashboard-ok{display:flex;gap:9px;font-size:13.5px;color:var(--ink);line-height:1.45;margin-bottom:12px}
+.dashboard-ok:last-child{margin-bottom:0}
+.dashboard-ok svg{width:17px;height:17px;color:var(--teal);flex:none;margin-top:1px}
+.dashboard-ok p{margin:0}
+.dashboard-ok b{font-weight:700}
+@media(max-width:1080px){.dashboard-panels{grid-template-columns:1fr}}
+@media(max-width:860px){.dashboard-main{padding:26px 20px}.dashboard-tool{max-width:none}}
 `;
