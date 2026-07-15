@@ -1,7 +1,7 @@
 /**
  * FILTRE DE PSEUDONYMISATION — Composant critique REDACTIO
  *
- * EXG-PSE-01 [BLOQUANT] : Filtre synchrone et bloquant sur le chemin de génération.
+ * EXG-PSE-01 [BLOQUANT] : Filtre synchrone appliqué en sortie avant retour utilisateur.
  * EXG-PSE-02 [BLOQUANT] : Traitement en mémoire uniquement — aucune persistance.
  * EXG-PSE-04 [MAJEUR]   : Privilégie le rappel (ne rien laisser passer) sur la précision.
  *

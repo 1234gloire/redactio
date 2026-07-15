@@ -2,7 +2,7 @@
  * streamGeneration.ts
  * Endpoint Express SSE pour la génération IA en streaming.
  * EXG-API-02 : Aucun contenu médical n'est journalisé.
- * EXG-PSE-01 : La pseudonymisation est synchrone et bloquante.
+ * EXG-PSE-01 : Filtre appliqué uniquement en sortie avant retour utilisateur.
  */
 import type { Express, Request, Response } from "express";
 import {
@@ -121,10 +121,7 @@ export function registerStreamGeneration(app: Express) {
       return;
     }
 
-    // 4. Pseudonymisation synchrone et bloquante (EXG-PSE-01)
-    const pseudoResult = pseudonymise(rawData);
-
-    // 5. Résolution du prompt actif
+    // 4. Résolution du prompt actif
     const [base, template] = await Promise.all([
       getActivePromptBase(),
       getActiveTemplateByVolet(volet),
@@ -139,30 +136,27 @@ export function registerStreamGeneration(app: Express) {
       volet,
       subtype: selectedSubtype,
       baseTemplate,
-      data: pseudoResult.filteredText,
+      data: rawData,
     });
 
-    // 6. Configuration SSE
+    // 5. Configuration SSE
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
     res.setHeader("X-Accel-Buffering", "no");
     res.flushHeaders();
 
-    // 7. Envoi des méta-données de pseudonymisation
-    res.write(
-      `data: ${JSON.stringify({
-        type: "pseudonymisation",
-        maskCount: pseudoResult.maskCount,
-        detectedCategories: pseudoResult.detectedCategories,
-        hasPotentialOvermasking: pseudoResult.hasPotentialOvermasking,
-      })}\n\n`
-    );
-
-    // 8. Appel LLM en streaming
+    // 6. Appel LLM. Les tokens sont bufferisés afin d'appliquer EXG-PSE-01 en sortie.
     let finished = false;
     let tokenCount = 0;
     let generatedText = "";
+    let outputPseudo = {
+      filteredText: "",
+      maskCount: 0,
+      detectedCategories: [] as string[],
+      hasPotentialOvermasking: false,
+    };
+    let generationSucceeded = false;
 
     const handleClose = () => {
       finished = true;
@@ -210,7 +204,6 @@ export function registerStreamGeneration(app: Express) {
               if (delta) {
                 tokenCount++;
                 generatedText += delta;
-                res.write(`data: ${JSON.stringify({ type: "token", content: delta })}\n\n`);
               }
             } catch (error) {
               if (error instanceof SyntaxError) continue;
@@ -233,6 +226,7 @@ export function registerStreamGeneration(app: Express) {
           },
         ];
       }
+      generationSucceeded = true;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error("[Generation] Anthropic stream failed", {
@@ -252,7 +246,21 @@ export function registerStreamGeneration(app: Express) {
       }
     }
 
-    // 9. Journalisation technique SANS contenu médical (EXG-API-02)
+    if (!finished && generationSucceeded && generatedText.trim()) {
+      outputPseudo = pseudonymise(generatedText);
+      res.write(
+        `data: ${JSON.stringify({
+          type: "pseudonymisation",
+          maskCount: outputPseudo.maskCount,
+          detectedCategories: outputPseudo.detectedCategories,
+          hasPotentialOvermasking: outputPseudo.hasPotentialOvermasking,
+          filterScope: "output",
+        })}\n\n`
+      );
+      res.write(`data: ${JSON.stringify({ type: "token", content: outputPseudo.filteredText })}\n\n`);
+    }
+
+    // 7. Journalisation technique SANS contenu médical (EXG-API-02)
     try {
       await createAuditLog({
         userId,
@@ -261,9 +269,10 @@ export function registerStreamGeneration(app: Express) {
         metadata: {
           volet,
           subtype: selectedSubtype,
-          maskCount: pseudoResult.maskCount,
-          detectedCategories: pseudoResult.detectedCategories,
-          hasPotentialOvermasking: pseudoResult.hasPotentialOvermasking,
+          maskCount: outputPseudo.maskCount,
+          detectedCategories: outputPseudo.detectedCategories,
+          hasPotentialOvermasking: outputPseudo.hasPotentialOvermasking,
+          filterScope: "output",
           tokenCount,
           promptBaseVersion: base?.version ?? "default",
           promptTemplateVersion: template?.version ?? "default",
@@ -274,7 +283,7 @@ export function registerStreamGeneration(app: Express) {
       // Audit non bloquant
     }
 
-    // 10. Fin du stream
+    // 8. Fin du stream
     if (!res.writableEnded) {
       res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
       res.end();

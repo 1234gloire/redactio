@@ -474,9 +474,6 @@ export const appRouter = router({
             ? input.subtype
             : getDefaultSubtype(input.volet);
 
-        // EXG-PSE-01 [BLOQUANT] : Pseudonymisation synchrone et bloquante
-        const pseudoResult = pseudonymise(input.rawData);
-
         // Résolution du prompt actif (socle + template)
         const [base, template] = await Promise.all([
           getActivePromptBase(),
@@ -494,7 +491,7 @@ export const appRouter = router({
           volet: input.volet,
           subtype: selectedSubtype,
           baseTemplate,
-          data: pseudoResult.filteredText,
+          data: input.rawData,
         });
 
         // Assemblage du prompt final
@@ -518,6 +515,10 @@ export const appRouter = router({
           });
         }
 
+        // EXG-PSE-01 : filtre uniquement en sortie, après génération complète.
+        const outputPseudo = pseudonymise(generatedText);
+        const filteredDocument = outputPseudo.filteredText;
+
         // Journalisation technique SANS contenu médical
         await createAuditLog({
           userId: ctx.user.id,
@@ -526,9 +527,10 @@ export const appRouter = router({
           metadata: {
             volet: input.volet,
             subtype: selectedSubtype,
-            maskCount: pseudoResult.maskCount,
-            detectedCategories: pseudoResult.detectedCategories,
-            hasPotentialOvermasking: pseudoResult.hasPotentialOvermasking,
+            maskCount: outputPseudo.maskCount,
+            detectedCategories: outputPseudo.detectedCategories,
+            hasPotentialOvermasking: outputPseudo.hasPotentialOvermasking,
+            filterScope: "output",
             promptBaseVersion: base?.version ?? "default",
             promptTemplateVersion: template?.version ?? "default",
             // JAMAIS de contenu médical ici
@@ -536,11 +538,11 @@ export const appRouter = router({
         });
 
         return {
-          document: generatedText,
+          document: filteredDocument,
           pseudonymisationInfo: {
-            maskCount: pseudoResult.maskCount,
-            detectedCategories: pseudoResult.detectedCategories,
-            hasPotentialOvermasking: pseudoResult.hasPotentialOvermasking,
+            maskCount: outputPseudo.maskCount,
+            detectedCategories: outputPseudo.detectedCategories,
+            hasPotentialOvermasking: outputPseudo.hasPotentialOvermasking,
           },
         };
       }),
