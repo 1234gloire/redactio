@@ -27,11 +27,19 @@ function cleanString(value: unknown) {
 async function postToMake(webhookUrl: string, payload: Record<string, unknown>) {
   if (!webhookUrl) return { skipped: true as const };
 
-  const response = await fetch(webhookUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 4000);
+  let response: globalThis.Response;
+  try {
+    response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     throw new Error(`Make webhook failed with status ${response.status}`);
@@ -45,6 +53,9 @@ export async function notifySignupCreated(payload: SignupPayload) {
     await postToMake(ENV.makeSignupWebhookUrl, {
       event: "signup_created",
       source: "redactio",
+      signupType: "praticien_individuel",
+      paymentStatus: "pending",
+      nextStep: "stripe_checkout",
       submittedAt: new Date().toISOString(),
       ...payload,
     });

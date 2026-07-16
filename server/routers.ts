@@ -221,7 +221,7 @@ export const appRouter = router({
           metadata: { role: "praticien" },
         });
 
-        void notifySignupCreated({
+        await notifySignupCreated({
           userId: finalUser.id,
           name: finalUser.name,
           email: finalUser.email,
