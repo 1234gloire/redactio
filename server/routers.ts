@@ -221,7 +221,7 @@ export const appRouter = router({
           metadata: { role: "praticien" },
         });
 
-        await notifySignupCreated({
+        const makeSignupResult = await notifySignupCreated({
           userId: finalUser.id,
           name: finalUser.name,
           email: finalUser.email,
@@ -230,6 +230,23 @@ export const appRouter = router({
           rpps: input.rpps?.trim() || undefined,
           marketingOptIn: input.marketingOptIn,
         });
+        try {
+          await createAuditLog({
+            userId: finalUser.id,
+            action: "make.signup_webhook",
+            resource: "make.webhook",
+            resourceId: String(finalUser.id),
+            metadata: {
+              status: makeSignupResult.status,
+              httpStatus: makeSignupResult.status === "sent" ? makeSignupResult.httpStatus : undefined,
+              reason: makeSignupResult.status === "skipped" ? makeSignupResult.reason : undefined,
+              error: makeSignupResult.status === "failed" ? makeSignupResult.error : undefined,
+              nextStep: "stripe_checkout",
+            },
+          });
+        } catch {
+          // Audit non bloquant : l'inscription et l'appel Make restent prioritaires.
+        }
 
         const sessionToken = await sdk.createSessionToken(finalUser.openId, {
           name: finalUser.name ?? "",

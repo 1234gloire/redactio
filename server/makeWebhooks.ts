@@ -20,51 +20,70 @@ type SignupPayload = {
   marketingOptIn: boolean;
 };
 
+type MakePostResult =
+  | { status: "sent"; httpStatus: number; responseText?: string }
+  | { status: "skipped"; reason: "missing_webhook_url" }
+  | { status: "failed"; error: string };
+
 function cleanString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-async function postToMake(webhookUrl: string, payload: Record<string, unknown>) {
-  if (!webhookUrl) return { skipped: true as const };
+async function postToMake(webhookUrl: string, payload: Record<string, unknown>): Promise<MakePostResult> {
+  if (!webhookUrl) return { status: "skipped", reason: "missing_webhook_url" };
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 4000);
-  let response: globalThis.Response;
+  const timeout = setTimeout(() => controller.abort(), 8000);
   try {
-    response = await fetch(webhookUrl, {
+    const response = await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
+    const responseText = await response.text().catch(() => "");
+
+    if (!response.ok) {
+      return {
+        status: "failed",
+        error: `Make webhook failed with status ${response.status}${responseText ? `: ${responseText.slice(0, 300)}` : ""}`,
+      };
+    }
+
+    return {
+      status: "sent",
+      httpStatus: response.status,
+      responseText: responseText.slice(0, 300) || undefined,
+    };
+  } catch (error) {
+    return {
+      status: "failed",
+      error: error instanceof Error ? error.message : String(error),
+    };
   } finally {
     clearTimeout(timeout);
   }
-
-  if (!response.ok) {
-    throw new Error(`Make webhook failed with status ${response.status}`);
-  }
-
-  return { skipped: false as const };
 }
 
 export async function notifySignupCreated(payload: SignupPayload) {
-  try {
-    await postToMake(ENV.makeSignupWebhookUrl, {
-      event: "signup_created",
-      source: "redactio",
-      signupType: "praticien_individuel",
-      paymentStatus: "pending",
-      nextStep: "stripe_checkout",
-      submittedAt: new Date().toISOString(),
-      ...payload,
-    });
-  } catch (error) {
+  const result = await postToMake(ENV.makeSignupWebhookUrl, {
+    event: "signup_created",
+    source: "redactio",
+    signupType: "praticien_individuel",
+    paymentStatus: "pending",
+    nextStep: "stripe_checkout",
+    submittedAt: new Date().toISOString(),
+    ...payload,
+  });
+
+  if (result.status !== "sent") {
     console.error("[MakeWebhook] signup_created failed", {
-      message: error instanceof Error ? error.message : String(error),
+      message: result.status === "failed" ? result.error : result.reason,
       email: payload.email,
     });
   }
+
+  return result;
 }
 
 export function registerMakeWebhookRoutes(app: Express) {
@@ -89,12 +108,16 @@ export function registerMakeWebhookRoutes(app: Express) {
         return;
       }
 
-      await postToMake(ENV.makeDemoWebhookUrl, {
+      const result = await postToMake(ENV.makeDemoWebhookUrl, {
         event: "demo_request",
         source: "redactio_landing",
         submittedAt: new Date().toISOString(),
         ...payload,
       });
+      if (result.status !== "sent") {
+        res.status(502).json({ error: "Demande non envoyée pour le moment. Réessayez dans quelques instants." });
+        return;
+      }
 
       res.json({ success: true });
     } catch (error) {
