@@ -76,7 +76,12 @@ export async function notifySignupCreated(payload: SignupPayload) {
     ...payload,
   });
 
-  if (result.status !== "sent") {
+  if (result.status === "sent") {
+    console.info("[MakeWebhook] signup_created sent", {
+      httpStatus: result.httpStatus,
+      email: payload.email,
+    });
+  } else {
     console.error("[MakeWebhook] signup_created failed", {
       message: result.status === "failed" ? result.error : result.reason,
       email: payload.email,
