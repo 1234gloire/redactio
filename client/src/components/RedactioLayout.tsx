@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { requiresIndividualPaymentActivation } from "@/lib/billingAccess";
 import {
   AlertTriangle,
   BookOpen,
@@ -15,6 +16,7 @@ import {
   Users,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { useEffect } from "react";
 import { trpc } from "../lib/trpc";
 
 interface NavItem {
@@ -131,6 +133,13 @@ export default function RedactioLayout({ children }: RedactioLayoutProps) {
     },
   });
 
+  useEffect(() => {
+    if (loading || !isAuthenticated || !user) return;
+    if (location === "/paiement") return;
+    if (!requiresIndividualPaymentActivation(user)) return;
+    window.location.href = "/paiement";
+  }, [isAuthenticated, loading, location, user]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f3f6f7]">
@@ -161,6 +170,14 @@ export default function RedactioLayout({ children }: RedactioLayoutProps) {
             Se connecter
           </button>
         </div>
+      </div>
+    );
+  }
+
+  if (requiresIndividualPaymentActivation(user) && location !== "/paiement") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f3f6f7]">
+        <div className="w-8 h-8 border-2 border-[#0e9c8e] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }

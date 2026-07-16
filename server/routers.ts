@@ -273,6 +273,12 @@ export const appRouter = router({
       return getStripeBillingPlan();
     }),
     createCheckoutSession: protectedProcedure.mutation(async ({ ctx }) => {
+      if (ctx.user.role !== "praticien") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Le paiement Stripe individuel est réservé aux comptes praticiens.",
+        });
+      }
       return createStripeCheckoutSession(ctx.user, ctx.req);
     }),
     createPortalSession: protectedProcedure.mutation(async ({ ctx }) => {

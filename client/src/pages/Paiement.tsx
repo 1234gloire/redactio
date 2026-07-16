@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { requiresIndividualPaymentActivation } from "@/lib/billingAccess";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import {
@@ -55,7 +56,7 @@ function formatStripeAmount(amount: number | undefined, currency: string | undef
 }
 
 export default function Paiement() {
-  const { isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const [location, setLocation] = useLocation();
   const trialEnd = useMemo(() => formatTrialEndDate(), []);
   const planQuery = trpc.billing.getPlan.useQuery(undefined, {
@@ -83,6 +84,12 @@ export default function Paiement() {
       setLocation("/login");
     }
   }, [isAuthenticated, loading, setLocation]);
+
+  useEffect(() => {
+    if (loading || !isAuthenticated || !user) return;
+    if (requiresIndividualPaymentActivation(user)) return;
+    setLocation("/dashboard");
+  }, [isAuthenticated, loading, setLocation, user]);
 
   useEffect(() => {
     if (location.includes("checkout=cancelled")) {

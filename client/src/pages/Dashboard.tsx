@@ -1,5 +1,6 @@
-import { useAuth, type AuthUser } from "@/_core/hooks/useAuth";
+import { useAuth } from "@/_core/hooks/useAuth";
 import RedactioLayout from "@/components/RedactioLayout";
+import { requiresIndividualPaymentActivation } from "@/lib/billingAccess";
 import {
   ArrowRight,
   Bone,
@@ -75,11 +76,11 @@ function Step({ n, title, desc }: { n: string; title: string; desc: string }) {
 }
 
 export default function Dashboard() {
-  const { user, loading } = useAuth({ redirectOnUnauthenticated: true }) as { user: AuthUser | null, loading: boolean };
+  const { user, loading } = useAuth({ redirectOnUnauthenticated: true });
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    if (user && !user.stripeSubscriptionStatus) {
+    if (requiresIndividualPaymentActivation(user)) {
       setLocation("/paiement");
     }
   }, [user, setLocation]);
