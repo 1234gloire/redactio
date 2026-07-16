@@ -50,6 +50,13 @@
       "when": 1784011200000,
       "tag": "0006_stripe_individual_billing",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1784201560154,
+      "tag": "0007_boring_mindworm",
+      "breakpoints": true
     }
   ]
 }

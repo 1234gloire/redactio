@@ -1,4 +1,4 @@
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useAuth, type AuthUser } from "@/_core/hooks/useAuth";
 import RedactioLayout from "@/components/RedactioLayout";
 import {
   ArrowRight,
@@ -12,8 +12,8 @@ import {
   Shield,
   Stethoscope,
 } from "lucide-react";
-import type { CSSProperties } from "react";
-import { Link } from "wouter";
+import { type CSSProperties, useEffect } from "react";
+import { Link, useLocation } from "wouter";
 
 const MODULES = [
   {
@@ -75,7 +75,14 @@ function Step({ n, title, desc }: { n: string; title: string; desc: string }) {
 }
 
 export default function Dashboard() {
-  const { user, loading } = useAuth({ redirectOnUnauthenticated: true });
+  const { user, loading } = useAuth({ redirectOnUnauthenticated: true }) as { user: AuthUser | null, loading: boolean };
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (user && !user.stripeSubscriptionStatus) {
+      setLocation("/paiement");
+    }
+  }, [user, setLocation]);
 
   if (loading || !user) {
     return (
