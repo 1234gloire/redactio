@@ -13,6 +13,7 @@ export type RedactionSubtype =
   | "sortie"
   | "transfert"
   | "avis_specialise"
+  | "liaison_fin_suivi"
   | "suivi"
   | "autre";
 
@@ -29,9 +30,9 @@ export const REDACTION_SUBTYPES: Record<Volet, { id: RedactionSubtype; label: st
     { id: "transfert", label: "Transfert" },
   ],
   correspondance: [
-    { id: "avis_specialise", label: "Avis spécialisé" },
-    { id: "suivi", label: "Courrier de suivi" },
-    { id: "autre", label: "Autre" },
+    { id: "avis_specialise", label: "Demande d'avis spécialisé" },
+    { id: "transfert", label: "Courrier de transfert" },
+    { id: "liaison_fin_suivi", label: "Courrier de liaison / fin de suivi" },
   ],
   observation: [], // Pas de sous-type pour l'observation
 };

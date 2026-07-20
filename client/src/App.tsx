@@ -16,6 +16,7 @@ import Paiement from "./pages/Paiement";
 import Profil from "./pages/Profil";
 import Redaction from "./pages/Redaction";
 import RedactionChirurgieOrthopedique from "./pages/RedactionChirurgieOrthopedique";
+import RedactionCorrespondanceMedicale from "./pages/RedactionCorrespondanceMedicale";
 import Tutoriels from "./pages/Tutoriels";
 import Utilisateurs from "./pages/Utilisateurs";
 
@@ -28,6 +29,7 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/conformite" component={Conformite} />
       <Route path="/redaction/chirurgie-orthopedique" component={RedactionChirurgieOrthopedique} />
+      <Route path="/redaction/correspondance-medicale" component={RedactionCorrespondanceMedicale} />
       <Route path="/redaction" component={Redaction} />
       <Route path="/tutoriels" component={Tutoriels} />
       <Route path="/backoffice" component={Backoffice} />

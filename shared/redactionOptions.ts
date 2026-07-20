@@ -10,9 +10,9 @@ export const REDACTION_SUBTYPES = {
     { id: "traitement_sortie", label: "Traitement de sortie" },
   ],
   correspondance: [
-    { id: "transfert_urgence", label: "Transfert vers un service d'urgence" },
-    { id: "transfert_inter_service", label: "Transfert inter-service" },
-    { id: "consultation_specialisee", label: "Consultation spécialisée" },
+    { id: "consultation_specialisee", label: "Demande d'avis spécialisé" },
+    { id: "transfert_inter_service", label: "Courrier de transfert" },
+    { id: "liaison_fin_suivi", label: "Courrier de liaison / fin de suivi" },
   ],
   observation: [
     { id: "observation_libre", label: "Observation libre" },

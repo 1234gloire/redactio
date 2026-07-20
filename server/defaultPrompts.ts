@@ -1,5 +1,6 @@
 import { getSubtypeLabel, type RedactionSubtype, type Volet } from "@shared/redactionOptions";
 import { CHIRURGIE_ORTHOPEDIQUE_PROMPT } from "./prompts/chirurgieOrthopedique";
+import { CORRESPONDANCE_MEDICALE_PROMPT } from "./prompts/correspondanceMedicale";
 
 /**
  * Prompts par défaut pour REDACTIO.
@@ -197,25 +198,7 @@ Rédige le courrier en respectant strictement la structure ci-dessus. Pour toute
     name: "Correspondance médicale",
     description:
       "Template pour la rédaction d'une correspondance médicale entre praticiens.",
-    content: `Rédige une correspondance médicale professionnelle à partir des données suivantes.
-
-STRUCTURE OBLIGATOIRE :
-1. En-tête (établissement expéditeur, service, date)
-2. Destinataire : [À COMPLÉTER PAR LE MÉDECIN]
-3. Objet de la correspondance
-4. Identité du patient : [À COMPLÉTER PAR LE MÉDECIN]
-5. Contexte clinique (motif de la correspondance)
-6. Éléments cliniques pertinents
-7. Résultats d'examens complémentaires
-8. Conclusion et demande
-9. Traitement en cours
-10. Formule de politesse professionnelle
-11. Signature : [À COMPLÉTER PAR LE MÉDECIN]
-
-DONNÉES FOURNIES (pseudonymisées) :
-{{DONNEES_MEDICALES}}
-
-Rédige la correspondance en respectant la structure. Pour toute information manquante, utilise [À COMPLÉTER PAR LE MÉDECIN].`,
+    content: CORRESPONDANCE_MEDICALE_PROMPT,
     status: "publie" as const,
     validatedClinical: true,
     validatedConformite: true,
@@ -256,10 +239,6 @@ const SUBTYPE_PROMPT_INSTRUCTIONS: Record<PromptSubtype, string> = {
 - Applique strictement le template HAS 6 colonnes fourni ci-dessous.
 - Si le traitement d'entrée est absent ou vide, ne bloque pas : produis le tableau avec toutes les lignes de sortie en statut « Ajouté ».
 - Ne produis ni identité patient, ni sources d'information, ni divergences/actions correctrices ; uniquement le tableau 6 colonnes Markdown strict puis la synthèse.`,
-  transfert_urgence: `PROMPT SPÉCIFIQUE — TRANSFERT VERS UN SERVICE D'URGENCE :
-- Rédige une correspondance courte et opérationnelle pour transfert vers les urgences.
-- Priorise le motif de transfert, le contexte, les constantes ou signes de gravité fournis, les examens déjà réalisés, les traitements administrés et la demande explicite.
-- N'ajoute pas de triage ou de niveau d'urgence absent des données.`,
   transfert_inter_service: `PROMPT SPÉCIFIQUE — TRANSFERT INTER-SERVICE :
 - Rédige une correspondance structurée pour transfert entre services.
 - Mets en avant le motif du transfert, le résumé du séjour ou de la prise en charge, l'état clinique actuel, les traitements en cours, les surveillances et les points à reprendre.
@@ -268,6 +247,10 @@ const SUBTYPE_PROMPT_INSTRUCTIONS: Record<PromptSubtype, string> = {
 - Rédige une demande ou synthèse pour consultation spécialisée.
 - Mets en avant la question posée au spécialiste, le contexte clinique, les antécédents pertinents, les examens disponibles, le traitement en cours et les attentes du demandeur.
 - Si la spécialité exacte n'est pas fournie, insère [À COMPLÉTER PAR LE MÉDECIN].`,
+  liaison_fin_suivi: `PROMPT SPÉCIFIQUE — COURRIER DE LIAISON / FIN DE SUIVI :
+- Rédige un courrier de liaison ou de fin de suivi, conforme au prompt Correspondance médicale.
+- Mets en avant le motif initial du suivi, la période de prise en charge, l'évolution, la conclusion et les surveillances utiles explicitement fournies.
+- Ne programme aucun suivi ni examen absent des données.`,
   observation_libre: `PROMPT SPÉCIFIQUE — OBSERVATION LIBRE :
 - Ce volet est destiné à la prise de notes médicales libres.
 - Ne produis pas de décision médicale automatisée.
@@ -276,6 +259,9 @@ const SUBTYPE_PROMPT_INSTRUCTIONS: Record<PromptSubtype, string> = {
 
 const SUBTYPE_FULL_TEMPLATES: Partial<Record<PromptSubtype, string>> = {
   chirurgie_orthopedique: CHIRURGIE_ORTHOPEDIQUE_PROMPT,
+  consultation_specialisee: CORRESPONDANCE_MEDICALE_PROMPT,
+  transfert_inter_service: CORRESPONDANCE_MEDICALE_PROMPT,
+  liaison_fin_suivi: CORRESPONDANCE_MEDICALE_PROMPT,
   medecine_aigue: `# PROMPT — COURRIER DE SORTIE DE MÉDECINE POLYVALENTE
 
 > Modèle de prompt calqué **exactement** sur la structure du courrier de sortie du Service de Médecine Interne et Polyvalente. À copier-coller, puis injecter le contenu clinique du patient.

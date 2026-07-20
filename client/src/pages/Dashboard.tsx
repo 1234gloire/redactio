@@ -39,7 +39,7 @@ const MODULES = [
     desc: "Rédaction de courriers entre professionnels de santé.",
     accent: "var(--gold)",
     Icon: BookOpen,
-    href: "/redaction?volet=correspondance",
+    href: "/redaction/correspondance-medicale",
   },
   {
     id: "observation",

@@ -266,6 +266,12 @@ export default function Redaction() {
   const [renderedDocumentHtml, setRenderedDocumentHtml] = useState("");
   const [editedDocumentHtml, setEditedDocumentHtml] = useState("");
 
+  useEffect(() => {
+    if (initialVolet === "correspondance") {
+      setLocation("/redaction/correspondance-medicale");
+    }
+  }, [initialVolet, setLocation]);
+
   // Génération via streaming SSE
   const handleStreamGenerate = useCallback(async (
     volet: Volet,
@@ -707,7 +713,14 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                   type="button"
                   className={cn("volet", { sel: selectedVolet === id })}
                   style={{ "--accent": VOLET_ICON_CLASSES[`${volet.color}_accent`] } as CSSProperties}
-                  onClick={() => { setSelectedVolet(id); setSelectedSubtype(getDefaultSubtype(id)); }}>
+                  onClick={() => {
+                    if (id === "correspondance") {
+                      setLocation("/redaction/correspondance-medicale");
+                      return;
+                    }
+                    setSelectedVolet(id);
+                    setSelectedSubtype(getDefaultSubtype(id));
+                  }}>
                   <span className="check"><Check /></span>
                   <div className="ic">
                     {volet.icon}
