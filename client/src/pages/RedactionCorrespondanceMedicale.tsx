@@ -1,8 +1,9 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import VoiceRecorderWithPreview from "@/components/VoiceRecorderWithPreview";
 import { Button } from "@/components/ui/button";
 import { getLoginUrl } from "@/const";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, ArrowLeft, BookOpen, Check, Copy, FileUp, RefreshCw, Shield } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, Check, Copy, FileUp, Mic, RefreshCw, Shield } from "lucide-react";
 import { useCallback, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { toast } from "sonner";
 import { Link } from "wouter";
@@ -12,8 +13,8 @@ const MISS = "[à préciser par le médecin]";
 type CorrespondanceType = "consultation_specialisee" | "transfert_inter_service" | "liaison_fin_suivi";
 
 const TYPES: Record<CorrespondanceType, { label: string; short: string }> = {
-  consultation_specialisee: { label: "Demande d'avis spécialisé", short: "Avis spécialisé" },
-  transfert_inter_service: { label: "Courrier de transfert", short: "Transfert" },
+  consultation_specialisee: { label: "Demande d'avis spécialisé", short: "Demande d'avis spécialisé" },
+  transfert_inter_service: { label: "Courrier de transfert", short: "Courrier de transfert" },
   liaison_fin_suivi: { label: "Courrier de liaison / fin de suivi", short: "Liaison / fin de suivi" },
 };
 
@@ -42,22 +43,20 @@ export default function RedactionCorrespondanceMedicale() {
 
   const [type, setType] = useState<CorrespondanceType>("consultation_specialisee");
   const [age, setAge] = useState("");
-  const [antecedents, setAntecedents] = useState("");
+  const [antecedents, setAntecedents] = useState("sans particularité");
   const [examenClinique, setExamenClinique] = useState("");
   const [traitement, setTraitement] = useState("");
   const [a1, setA1] = useState("");
   const [a2, setA2] = useState("");
   const [a3, setA3] = useState("");
   const [a5, setA5] = useState("");
-  const [a6, setA6] = useState("standard");
+  const [a6, setA6] = useState("non urgent");
   const [a6Text, setA6Text] = useState("");
   const [b1, setB1] = useState("");
   const [b2, setB2] = useState("");
   const [b3a, setB3a] = useState("");
   const [b3b, setB3b] = useState("");
   const [b4, setB4] = useState("");
-  const [b5, setB5] = useState("");
-  const [b6, setB6] = useState("");
   const [c1, setC1] = useState("");
   const [c2, setC2] = useState("");
   const [c3a, setC3a] = useState("");
@@ -98,10 +97,8 @@ export default function RedactionCorrespondanceMedicale() {
         addSection("B. COURRIER DE TRANSFERT", [
           `B1. Service / structure destinataire : ${valueOrMiss(b1)}`,
           `B2. Motif du transfert : ${valueOrMiss(b2)}`,
-          `B3. Dates de prise en charge : du ${formatDate(b3a)} au ${formatDate(b3b)}`,
+          `B3. Dates de prise en charge : admission ${formatDate(b3a)} — transfert ${formatDate(b3b)}`,
           `B4. Résumé de la prise en charge : ${valueOrMiss(b4)}`,
-          `B5. Éléments à poursuivre / surveiller : ${valueOrMiss(b5)}`,
-          `B6. Conditions de transfert : ${valueOrMiss(b6)}`,
         ]),
       ].join("\n");
     }
@@ -117,7 +114,7 @@ export default function RedactionCorrespondanceMedicale() {
         `C6. Surveillance proposée / points à reprendre : ${valueOrMiss(c6)}`,
       ]),
     ].join("\n");
-  }, [a1, a2, a3, a5, a6, a6Text, age, antecedents, b1, b2, b3a, b3b, b4, b5, b6, c1, c2, c3a, c3b, c4, c5, c6, examenClinique, traitement, type]);
+  }, [a1, a2, a3, a5, a6, a6Text, age, antecedents, b1, b2, b3a, b3b, b4, c1, c2, c3a, c3b, c4, c5, c6, examenClinique, traitement, type]);
 
   const missingCount = (blocText.match(/\[/g) ?? []).length;
 
@@ -179,12 +176,6 @@ Traitement en cours : ${valueOrMiss(traitement)}
 RÉSUMÉ DE LA PRISE EN CHARGE :
 ${valueOrMiss(b4)}
 
-ÉLÉMENTS À POURSUIVRE OU SURVEILLER :
-${valueOrMiss(b5)}
-
-CONDITIONS DE TRANSFERT :
-${valueOrMiss(b6)}
-
 Bien confraternellement,`;
     }
 
@@ -217,7 +208,7 @@ SURVEILLANCE / POINTS À REPRENDRE :
 ${valueOrMiss(c6)}
 
 Bien confraternellement,`;
-  }, [a1, a2, a3, a5, a6, a6Text, age, antecedents, b1, b2, b3a, b3b, b4, b5, b6, c1, c2, c3a, c3b, c4, c5, c6, examenClinique, traitement, type]);
+  }, [a1, a2, a3, a5, a6, a6Text, age, antecedents, b1, b2, b3a, b3b, b4, c1, c2, c3a, c3b, c4, c5, c6, examenClinique, traitement, type]);
 
   const handleGenerate = useCallback(async () => {
     setGeneratedText("");
@@ -320,11 +311,11 @@ Bien confraternellement,`;
 
   const reset = useCallback(() => {
     setAge("");
-    setAntecedents("");
+    setAntecedents("sans particularité");
     setExamenClinique("");
     setTraitement("");
-    setA1(""); setA2(""); setA3(""); setA5(""); setA6("standard"); setA6Text("");
-    setB1(""); setB2(""); setB3a(""); setB3b(""); setB4(""); setB5(""); setB6("");
+    setA1(""); setA2(""); setA3(""); setA5(""); setA6("non urgent"); setA6Text("");
+    setB1(""); setB2(""); setB3a(""); setB3b(""); setB4("");
     setC1(""); setC2(""); setC3a(""); setC3b(""); setC4(""); setC5(""); setC6("");
     setGeneratedText("");
     setStreamingText("");
@@ -343,7 +334,8 @@ Bien confraternellement,`;
       <header className="correspondance-top">
         <Link href="/dashboard" className="correspondance-back"><ArrowLeft size={16} /> Tableau de bord</Link>
         <h1><BookOpen size={24} /> Saisie rapide — Correspondance médicale</h1>
-        <p>Aide rédactionnelle stricte : l'outil met en forme uniquement les informations saisies, sans décision clinique ni recommandation nouvelle.</p>
+        <p>REDACTIO · Aide rédactionnelle : met en forme ce que vous saisissez. Le destinataire n'est jamais nommé, il est décrit par sa fonction, spécialité ou service.</p>
+        <p className="mic-note"><Mic size={13} /> La dictée vocale et l'import de fichier sont disponibles sur les champs de texte.</p>
       </header>
 
       <div className="correspondance-cbar">
@@ -369,8 +361,8 @@ Bien confraternellement,`;
             <Field label="Âge du patient" value={age} onChange={setAge} type="number" placeholder="ex. 74" />
             <div className="hint-box"><AlertTriangle size={16} /> Ne saisissez aucun nom, prénom, date de naissance, adresse, NIR ou téléphone du patient.</div>
           </div>
-          <TextField label="Antécédents et allergies" value={antecedents} onChange={setAntecedents} importKey="antecedents" onImport={(key) => { importTarget.current = key; document.getElementById("correspondance-file")?.click(); }} />
-          <TextField label="Examen clinique / éléments actuels" value={examenClinique} onChange={setExamenClinique} importKey="examenClinique" onImport={(key) => { importTarget.current = key; document.getElementById("correspondance-file")?.click(); }} />
+          <TextField label="Antécédents" value={antecedents} onChange={setAntecedents} importKey="antecedents" onImport={(key) => { importTarget.current = key; document.getElementById("correspondance-file")?.click(); }} />
+          <TextField label="Examen clinique" value={examenClinique} onChange={setExamenClinique} importKey="examenClinique" onImport={(key) => { importTarget.current = key; document.getElementById("correspondance-file")?.click(); }} />
           <TextField label="Traitement en cours" value={traitement} onChange={setTraitement} importKey="traitement" onImport={(key) => { importTarget.current = key; document.getElementById("correspondance-file")?.click(); }} />
           <input id="correspondance-file" type="file" accept=".pdf,.docx,.txt,.md" className="hidden-file" onChange={handleImport} />
 
@@ -383,9 +375,8 @@ Bien confraternellement,`;
               <TextField label="Examens déjà réalisés" value={a5} onChange={setA5} />
               <label className="correspondance-label">Degré d'urgence</label>
               <select value={a6} onChange={(event) => setA6(event.target.value)}>
-                <option value="standard">standard</option>
-                <option value="rapide">avis rapide souhaité</option>
-                <option value="programme">programmé</option>
+                <option value="non urgent">Non urgent</option>
+                <option value="urgent">Urgent</option>
                 <option value="autre">à préciser</option>
               </select>
               {a6 === "autre" && <TextField label="Précision urgence" value={a6Text} onChange={setA6Text} />}
@@ -395,15 +386,13 @@ Bien confraternellement,`;
           {type === "transfert_inter_service" && (
             <>
               <h2>3 · Courrier de transfert</h2>
-              <TextField label="Service / structure destinataire" value={b1} onChange={setB1} />
+              <TextField label="Structure / service de destination" value={b1} onChange={setB1} />
               <TextField label="Motif du transfert" value={b2} onChange={setB2} />
               <div className="grid2">
-                <Field label="Début de prise en charge" value={b3a} onChange={setB3a} type="date" />
+                <Field label="Date d'admission" value={b3a} onChange={setB3a} type="date" />
                 <Field label="Date de transfert" value={b3b} onChange={setB3b} type="date" />
               </div>
               <TextField label="Résumé de la prise en charge" value={b4} onChange={setB4} />
-              <TextField label="Éléments à poursuivre / surveiller" value={b5} onChange={setB5} />
-              <TextField label="Conditions de transfert" value={b6} onChange={setB6} />
             </>
           )}
 
@@ -468,13 +457,21 @@ function TextField({
   importKey?: "antecedents" | "examenClinique" | "traitement";
   onImport?: (target: "antecedents" | "examenClinique" | "traitement") => void;
 }) {
+  const insertDictation = useCallback((text: string) => {
+    const next = [value.trim(), text.trim()].filter(Boolean).join(value.trim() ? " " : "");
+    onChange(next);
+  }, [onChange, value]);
+
   return (
     <label className="correspondance-field">
       <span className="field-head">
         {label}
-        {importKey && onImport && (
-          <button type="button" onClick={() => onImport(importKey)}><FileUp size={14} /> Importer</button>
-        )}
+        <span className="field-tools">
+          {importKey && onImport && (
+            <button type="button" onClick={() => onImport(importKey)}><FileUp size={14} /> Importer</button>
+          )}
+          <VoiceRecorderWithPreview onInsert={insertDictation} fieldLabel={label} insertMode="append" />
+        </span>
       </span>
       <textarea value={value} placeholder={placeholder || "Saisie libre, sans identifiant direct du patient."} onChange={(event) => onChange(event.target.value)} />
     </label>
@@ -483,5 +480,36 @@ function TextField({
 
 const styles = `
 .correspondance-loading{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#eef3f5}.correspondance-loading>div{width:32px;height:32px;border:2px solid #0e9c8e;border-top-color:transparent;border-radius:999px;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
-.correspondance-page{min-height:100vh;background:#f4f6f9;color:#1c2733;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}.correspondance-top{background:linear-gradient(135deg,#c58a17,#8f6412);color:#fff;padding:18px 22px}.correspondance-back{display:inline-flex;align-items:center;gap:7px;color:#fff;text-decoration:none;font-size:.85rem;opacity:.9;margin-bottom:8px}.correspondance-top h1{display:flex;align-items:center;gap:10px;margin:0;font-size:1.25rem;font-weight:800}.correspondance-top p{margin:6px 0 0;opacity:.93;font-size:.88rem;max-width:1000px}.correspondance-cbar{background:#102233;color:#dbe6ec;display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;padding:10px 18px;font-size:.82rem}.correspondance-cbar span{display:inline-flex;align-items:center;gap:6px}.correspondance-wrap{max-width:1180px;margin:0 auto;padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:18px}.correspondance-card{background:#fff;border:1px solid #dde4ec;border-radius:12px;padding:18px;box-shadow:0 2px 8px rgba(11,27,41,.04)}.correspondance-card h2{margin:0 0 13px;font-size:.9rem;text-transform:uppercase;letter-spacing:.08em;color:#8f6412}.correspondance-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.correspondance-tabs button{border:1px solid #dde4ec;background:#eef3f8;border-radius:999px;padding:8px 14px;font-weight:800;color:#5b6b7b;cursor:pointer}.correspondance-tabs button.on{background:#c58a17;color:#fff;border-color:#c58a17}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.hint-box{border:1px solid #f0d9a8;background:#fff8e8;color:#7d560c;border-radius:10px;padding:12px;display:flex;gap:8px;align-items:flex-start;font-size:.84rem;font-weight:650}.correspondance-field{display:block;margin:12px 0}.correspondance-field span,.correspondance-label{display:block;font-size:.83rem;color:#5b6b7b;font-weight:800;margin-bottom:5px}.correspondance-field input,.correspondance-field textarea,select{width:100%;border:1px solid #dde4ec;border-radius:9px;background:#fff;color:#1c2733;font:inherit;font-size:.94rem;padding:10px 11px}.correspondance-field textarea{min-height:86px;resize:vertical}.correspondance-field input:focus,.correspondance-field textarea:focus,select:focus{outline:none;border-color:#c58a17;box-shadow:0 0 0 3px rgba(197,138,23,.12)}.field-head{display:flex!important;align-items:center;justify-content:space-between;gap:10px}.field-head button{display:inline-flex;align-items:center;gap:5px;border:1px solid #dde4ec;background:#fff;border-radius:999px;padding:5px 9px;color:#8f6412;font-size:.75rem;font-weight:800;cursor:pointer}.hidden-file{display:none}.correspondance-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}.correspondance-main-btn{background:#c58a17!important;color:#fff!important}.correspondance-warning{border:1px solid #f0d9a8;background:#fff8e8;color:#7d560c;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:.9rem}.correspondance-mask{border:1px solid #bfe6e0;background:#e7f4f2;color:#0a7b70;border-radius:999px;display:inline-flex;padding:6px 11px;font-size:.8rem;font-weight:800;margin:0 0 10px}.correspondance-letter{border:1px dashed #dde4ec;border-radius:12px;background:#fff;min-height:360px;padding:18px;white-space:pre-wrap;font-size:.98rem;line-height:1.55;color:#1c2733}.correspondance-note{border:1px solid #f0d9a8;background:#fff8e8;color:#7d560c;border-radius:10px;padding:10px 12px;margin-top:14px;font-size:.88rem;line-height:1.5}@media(max-width:900px){.correspondance-wrap,.grid2{grid-template-columns:1fr}.correspondance-actions .correspondance-main-btn{width:100%}}
+.correspondance-page{min-height:100vh;background:#f4f6f9;color:#1c2733;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.correspondance-top{background:linear-gradient(135deg,#0e9c8e,#0a7b70);color:#fff;padding:18px 22px}
+.correspondance-back{display:inline-flex;align-items:center;gap:7px;color:#fff;text-decoration:none;font-size:.85rem;opacity:.9;margin-bottom:8px}
+.correspondance-top h1{display:flex;align-items:center;gap:10px;margin:0;font-size:1.25rem;font-weight:800}
+.correspondance-top p{margin:6px 0 0;opacity:.93;font-size:.88rem;max-width:1000px}
+.correspondance-top .mic-note{display:flex;align-items:center;gap:6px;opacity:.86;font-size:.8rem}
+.correspondance-cbar{background:#102233;color:#dbe6ec;display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;padding:10px 18px;font-size:.82rem}
+.correspondance-cbar span{display:inline-flex;align-items:center;gap:6px}
+.correspondance-wrap{max-width:1180px;margin:0 auto;padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.correspondance-card{background:#fff;border:1px solid #dde4ec;border-radius:12px;padding:18px;box-shadow:0 2px 8px rgba(11,27,41,.04)}
+.correspondance-card h2{margin:0 0 13px;font-size:.9rem;text-transform:uppercase;letter-spacing:.08em;color:#0a7b70}
+.correspondance-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.correspondance-tabs button{flex:1;min-width:150px;border:1.5px solid #dde4ec;background:#fff;border-radius:10px;padding:11px 12px;font-weight:800;color:#1c2733;cursor:pointer;text-align:left}
+.correspondance-tabs button.on{background:#e8f6f4;color:#0a7b70;border-color:#0e9c8e;box-shadow:0 0 0 2px rgba(14,156,142,.14)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hint-box{border:1px solid #f0d9a8;background:#fff8e8;color:#7d560c;border-radius:10px;padding:12px;display:flex;gap:8px;align-items:flex-start;font-size:.84rem;font-weight:650}
+.correspondance-field{display:block;margin:12px 0}
+.correspondance-field span,.correspondance-label{display:block;font-size:.83rem;color:#5b6b7b;font-weight:800;margin-bottom:5px}
+.correspondance-field input,.correspondance-field textarea,select{width:100%;border:1px solid #dde4ec;border-radius:9px;background:#fff;color:#1c2733;font:inherit;font-size:.94rem;padding:10px 11px}
+.correspondance-field textarea{min-height:86px;resize:vertical}
+.correspondance-field input:focus,.correspondance-field textarea:focus,select:focus{outline:none;border-color:#0e9c8e;box-shadow:0 0 0 3px rgba(14,156,142,.12)}
+.field-head{display:flex!important;align-items:center;justify-content:space-between;gap:10px}
+.field-tools{display:flex!important;align-items:center;justify-content:flex-end;gap:6px;margin:0!important;flex-wrap:wrap}
+.field-tools button{display:inline-flex;align-items:center;gap:5px;border:1px solid #dde4ec;background:#fff;border-radius:999px;padding:5px 9px;color:#0a7b70;font-size:.75rem;font-weight:800;cursor:pointer}
+.hidden-file{display:none}
+.correspondance-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.correspondance-main-btn{background:#0e9c8e!important;color:#fff!important}
+.correspondance-warning{border:1px solid #f0d9a8;background:#fff8e8;color:#7d560c;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:.9rem}
+.correspondance-mask{border:1px solid #bfe6e0;background:#e7f4f2;color:#0a7b70;border-radius:999px;display:inline-flex;padding:6px 11px;font-size:.8rem;font-weight:800;margin:0 0 10px}
+.correspondance-letter{border:1px dashed #dde4ec;border-radius:12px;background:#fff;min-height:360px;padding:18px;white-space:pre-wrap;font-size:.98rem;line-height:1.55;color:#1c2733}
+.correspondance-note{border:1px solid #f0d9a8;background:#fff8e8;color:#7d560c;border-radius:10px;padding:10px 12px;margin-top:14px;font-size:.88rem;line-height:1.5}
+@media(max-width:900px){.correspondance-wrap,.grid2{grid-template-columns:1fr}.correspondance-actions .correspondance-main-btn{width:100%}}
 `;
