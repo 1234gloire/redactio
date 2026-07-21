@@ -7,6 +7,13 @@ import { Express, Request, Response } from "express";
 import multer from "multer";
 import { transcribeAudio } from "./_core/voiceTranscription";
 import { sdk } from "./_core/sdk";
+import { createAnthropicMessage } from "./_core/anthropic";
+import {
+  buildDictationCorrectionSystemPrompt,
+  buildWhisperMedicalPrompt,
+  normalizeDictationField,
+  type DictationCorrectionModification,
+} from "./dictationMedicalContext";
 
 // Stockage en mémoire uniquement — pas de fichier sur disque
 const upload = multer({
@@ -62,11 +69,11 @@ export function registerVoiceTranscription(app: Express): void {
         const base64 = req.file.buffer.toString("base64");
         const dataUrl = `data:${mimeType};base64,${base64}`;
 
+        const field = normalizeDictationField(req.body?.champ ?? req.body?.fieldLabel ?? req.body?.field ?? "");
         const result = await transcribeAudio({
           audioUrl: dataUrl,
-          language: "fr",
-          prompt:
-            "Transcription médicale en français. Vocabulaire médical hospitalier, noms de médicaments, pathologies, actes médicaux.",
+          language: String(req.body?.language ?? "fr") || "fr",
+          prompt: buildWhisperMedicalPrompt(field),
         });
 
         if ("error" in result) {
@@ -87,4 +94,85 @@ export function registerVoiceTranscription(app: Express): void {
       }
     }
   );
+
+  app.post("/api/dictation/correct", async (req: Request, res: Response) => {
+    try {
+      const user = await sdk.authenticateRequest(req);
+      if (!user) {
+        res.status(401).json({ error: "Non authentifié" });
+        return;
+      }
+    } catch {
+      res.status(401).json({ error: "Session invalide" });
+      return;
+    }
+
+    const rawText = typeof req.body?.texte_brut === "string" ? req.body.texte_brut.trim() : "";
+    if (!rawText) {
+      res.status(400).json({ error: "Texte à corriger manquant" });
+      return;
+    }
+    if (rawText.length > 20_000) {
+      res.status(413).json({ error: "Texte trop long pour la correction de dictée" });
+      return;
+    }
+
+    const field = normalizeDictationField(req.body?.champ ?? req.body?.fieldLabel ?? "");
+
+    try {
+      const content = await createAnthropicMessage({
+        system: buildDictationCorrectionSystemPrompt(field),
+        maxTokens: 2500,
+        temperature: 0,
+        messages: [
+          {
+            role: "user",
+            content: `Corrige cette transcription de dictée médicale et retourne ce JSON exact :
+{
+  "texte_corrige": "...",
+  "modifications": [
+    {"original":"...", "corrige":"...", "type":"orthographe|grammaire|ponctuation|terminologie|ambigu"}
+  ]
+}
+
+TRANSCRIPTION SOURCE :
+${rawText}`,
+          },
+        ],
+      });
+
+      const cleaned = content
+        .trim()
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/\s*```$/i, "");
+      const parsed = JSON.parse(cleaned) as {
+        texte_corrige?: unknown;
+        modifications?: unknown;
+      };
+      const corrected = typeof parsed.texte_corrige === "string" ? parsed.texte_corrige.trim() : rawText;
+      const modifications = Array.isArray(parsed.modifications)
+        ? parsed.modifications
+            .map((item) => {
+              if (!item || typeof item !== "object") return null;
+              const record = item as Record<string, unknown>;
+              const type = String(record.type ?? "");
+              if (!["orthographe", "grammaire", "ponctuation", "terminologie", "ambigu"].includes(type)) return null;
+              return {
+                original: String(record.original ?? ""),
+                corrige: String(record.corrige ?? ""),
+                type,
+              } satisfies DictationCorrectionModification;
+            })
+            .filter(Boolean)
+        : [];
+
+      res.json({
+        texte_corrige: corrected,
+        modifications,
+      });
+    } catch (error) {
+      console.error("[DictationCorrection] Erreur correction IA (sans contenu)");
+      res.status(502).json({ error: "Correction IA indisponible" });
+    }
+  });
 }

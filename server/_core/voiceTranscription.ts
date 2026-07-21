@@ -133,6 +133,9 @@ export async function transcribeAudio(
     
     formData.append("model", "whisper-1");
     formData.append("response_format", "verbose_json");
+    if (options.language) {
+      formData.append("language", options.language);
+    }
     
     // Add prompt - use custom prompt if provided, otherwise generate based on language
     const prompt = options.prompt || (

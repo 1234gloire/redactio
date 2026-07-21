@@ -26,7 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { applyVoicePunctuation } from "@/lib/voicePunctuation";
-import { Check, Eye, FlaskConical, Loader2, Mic, Pause, Play, RotateCcw, Square, X } from "lucide-react";
+import { Check, Eye, FlaskConical, Loader2, Mic, Pause, Play, RotateCcw, Sparkles, Square, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import MedicalTextHighlighter from "./MedicalTextHighlighter";
@@ -40,6 +40,8 @@ interface VoiceRecorderWithPreviewProps {
   fieldLabel?: string;
   /** Mode d'insertion : 'append' ajoute à la suite, 'replace' remplace */
   insertMode?: "append" | "replace";
+  /** Contexte métier envoyé au backend pour biaiser Whisper et corriger la dictée */
+  dictationContext?: string;
   /** Classe CSS supplémentaire */
   className?: string;
   /** Désactiver le composant */
@@ -52,6 +54,7 @@ export function VoiceRecorderWithPreview({
   onInsert,
   fieldLabel = "le champ",
   insertMode = "append",
+  dictationContext,
   className,
   disabled = false,
 }: VoiceRecorderWithPreviewProps) {
@@ -61,6 +64,9 @@ export function VoiceRecorderWithPreview({
   const [editedText, setEditedText] = useState("");
   const [analyzedText, setAnalyzedText] = useState(""); // texte après analyse/correction médicale
   const [activeTab, setActiveTab] = useState<"edit" | "analyze">("edit");
+  const [isCorrecting, setIsCorrecting] = useState(false);
+  const [correctionOriginal, setCorrectionOriginal] = useState("");
+  const [correctionChanges, setCorrectionChanges] = useState<Array<{ original: string; corrige: string; type: string }>>([]);
   const [bars, setBars] = useState([0.3, 0.6, 1.0, 0.6, 0.3]);
   const [mimeType, setMimeType] = useState("");
 
@@ -138,6 +144,7 @@ export function VoiceRecorderWithPreview({
       const ext = mime.includes("webm") ? "webm" : mime.includes("ogg") ? "ogg" : mime.includes("mp4") ? "mp4" : "audio";
       formData.append("audio", blob, `recording.${ext}`);
       formData.append("language", "fr");
+      formData.append("champ", dictationContext || fieldLabel);
 
       const res = await fetch("/api/voice/transcribe", { method: "POST", body: formData, credentials: "include" });
       if (!res.ok) {
@@ -156,13 +163,53 @@ export function VoiceRecorderWithPreview({
       setPreviewText(normalizedText);
       setEditedText(normalizedText);
       setAnalyzedText(normalizedText);
+      setCorrectionOriginal("");
+      setCorrectionChanges([]);
       setActiveTab("analyze"); // Ouvrir directement l'onglet analyse
       setState("preview");
     } catch (err: unknown) {
       toast.error(`Transcription échouée : ${err instanceof Error ? err.message : "Erreur inconnue"}`);
       setState("idle");
     }
-  }, []);
+  }, [dictationContext, fieldLabel]);
+
+  const handleAiCorrection = useCallback(async () => {
+    const source = editedText.trim();
+    if (!source) {
+      toast.warning("Le texte est vide.");
+      return;
+    }
+
+    setIsCorrecting(true);
+    try {
+      const res = await fetch("/api/dictation/correct", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          texte_brut: source,
+          champ: dictationContext || fieldLabel,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Erreur réseau" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      const payload = await res.json();
+      const corrected = String(payload.texte_corrige ?? "").trim();
+      if (!corrected) throw new Error("Correction vide");
+      setCorrectionOriginal(source);
+      setEditedText(corrected);
+      setAnalyzedText(corrected);
+      setCorrectionChanges(Array.isArray(payload.modifications) ? payload.modifications : []);
+      setActiveTab("edit");
+      toast.success("Correction IA appliquée.");
+    } catch (err) {
+      toast.error(err instanceof Error ? `Correction IA indisponible : ${err.message}` : "Correction IA indisponible.");
+    } finally {
+      setIsCorrecting(false);
+    }
+  }, [dictationContext, editedText, fieldLabel]);
 
   // ── Actions ────────────────────────────────────────────────────────────────
   const handleStart = useCallback(async () => {
@@ -258,6 +305,8 @@ export function VoiceRecorderWithPreview({
     setPreviewText("");
     setEditedText("");
     setAnalyzedText("");
+    setCorrectionOriginal("");
+    setCorrectionChanges([]);
     setElapsed(0);
     toast.success(insertMode === "append" ? "Transcription ajoutée." : "Champ remplacé.");
   }, [editedText, analyzedText, activeTab, onInsert, insertMode]);
@@ -267,6 +316,8 @@ export function VoiceRecorderWithPreview({
     setPreviewText("");
     setEditedText("");
     setAnalyzedText("");
+    setCorrectionOriginal("");
+    setCorrectionChanges([]);
     setElapsed(0);
   }, []);
 
@@ -421,11 +472,24 @@ export function VoiceRecorderWithPreview({
               {/* ── Onglet Édition ── */}
               <TabsContent value="edit" className="space-y-3 mt-0">
                 <div className="space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Texte transcrit (modifiable)
-                    </span>
-                    <Badge variant="secondary" className="text-xs">Whisper FR</Badge>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Texte transcrit (modifiable)
+                      </span>
+                      <Badge variant="secondary" className="text-xs">Whisper FR</Badge>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAiCorrection}
+                      disabled={isCorrecting || !editedText.trim()}
+                      className="h-8 gap-1.5 text-xs"
+                    >
+                      {isCorrecting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                      Corriger par IA
+                    </Button>
                   </div>
                   <Textarea
                     value={editedText}
@@ -446,6 +510,32 @@ export function VoiceRecorderWithPreview({
                       Le texte a été modifié par rapport à la transcription originale.
                     </p>
                   </div>
+                )}
+
+                {correctionOriginal && (
+                  <details className="rounded-md border border-primary/20 bg-primary/5 p-3 text-xs">
+                    <summary className="cursor-pointer font-medium text-primary">
+                      Voir les corrections IA{correctionChanges.length ? ` (${correctionChanges.length})` : ""}
+                    </summary>
+                    <div className="mt-3 space-y-3">
+                      <div>
+                        <div className="mb-1 font-medium text-muted-foreground">Transcription Whisper d'origine</div>
+                        <div className="whitespace-pre-wrap rounded border bg-background p-2 text-muted-foreground">{correctionOriginal}</div>
+                      </div>
+                      {correctionChanges.length > 0 && (
+                        <div className="space-y-1">
+                          {correctionChanges.map((change, index) => (
+                            <div key={`${change.original}-${index}`} className="rounded border bg-background p-2">
+                              <Badge variant="secondary" className="mr-2 text-[10px]">{change.type}</Badge>
+                              <span className="text-muted-foreground">{change.original || "—"}</span>
+                              <span className="mx-2">→</span>
+                              <span className="font-medium">{change.corrige || "—"}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </details>
                 )}
               </TabsContent>
 
