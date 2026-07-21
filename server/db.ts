@@ -1,4 +1,4 @@
-import { and, desc, eq, like, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { hashPassword } from "./_core/passwords";
 import {
@@ -218,7 +218,27 @@ export async function ensureLocalAdmin() {
 export async function listUsersByOrg(organisationId: number): Promise<User[]> {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(users).where(eq(users.organisationId, organisationId));
+  return db
+    .select()
+    .from(users)
+    .where(eq(users.organisationId, organisationId))
+    .orderBy(desc(users.createdAt));
+}
+
+export async function countActivePractitionersByOrg(organisationId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db
+    .select({ value: count() })
+    .from(users)
+    .where(
+      and(
+        eq(users.organisationId, organisationId),
+        eq(users.role, "praticien"),
+        eq(users.active, true)
+      )
+    );
+  return Number(result[0]?.value ?? 0);
 }
 
 // ─── Organisations ────────────────────────────────────────────────────────────

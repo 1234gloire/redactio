@@ -38,6 +38,7 @@ export const users = mysqlTable("users", {
   // RBAC : rôles métier REDACTIO
   role: mysqlEnum("role", [
     "praticien",
+    "org_admin",
     "editeur_medical",
     "relecteur_clinique",
     "responsable_conformite",

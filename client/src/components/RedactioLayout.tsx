@@ -38,7 +38,7 @@ const NAV_ITEMS: NavItem[] = [
     label: "Nouvelle rédaction",
     href: "/redaction",
     icon: <FileText />,
-    roles: ["praticien", "admin"],
+    roles: ["praticien", "org_admin", "admin"],
     section: "main",
   },
   {
@@ -77,7 +77,7 @@ const NAV_ITEMS: NavItem[] = [
     label: "Utilisateurs",
     href: "/utilisateurs",
     icon: <Users />,
-    roles: ["admin"],
+    roles: ["admin", "org_admin"],
     section: "admin",
   },
   {
@@ -98,6 +98,7 @@ const NAV_ITEMS: NavItem[] = [
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Admin",
+  org_admin: "Admin organisme",
   praticien: "Praticien",
   editeur_medical: "Éditeur médical",
   relecteur_clinique: "Relecteur clinique",

@@ -15,6 +15,22 @@ import {
   type DictationCorrectionModification,
 } from "./dictationMedicalContext";
 
+const DICTATION_CORRECTION_TYPES = [
+  "orthographe",
+  "grammaire",
+  "ponctuation",
+  "terminologie",
+  "ambigu",
+] as const;
+
+function isDictationCorrectionType(
+  value: string
+): value is DictationCorrectionModification["type"] {
+  return DICTATION_CORRECTION_TYPES.includes(
+    value as DictationCorrectionModification["type"]
+  );
+}
+
 // Stockage en mémoire uniquement — pas de fichier sur disque
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -156,7 +172,7 @@ ${rawText}`,
               if (!item || typeof item !== "object") return null;
               const record = item as Record<string, unknown>;
               const type = String(record.type ?? "");
-              if (!["orthographe", "grammaire", "ponctuation", "terminologie", "ambigu"].includes(type)) return null;
+              if (!isDictationCorrectionType(type)) return null;
               return {
                 original: String(record.original ?? ""),
                 corrige: String(record.corrige ?? ""),

@@ -16,6 +16,7 @@ import { trpc } from "../lib/trpc";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Admin",
+  org_admin: "Admin organisme",
   praticien: "Praticien",
   editeur_medical: "Éditeur médical",
   relecteur_clinique: "Relecteur clinique",
@@ -58,6 +59,8 @@ export default function Profil() {
   }, [user]);
 
   const role = (user as { role?: string })?.role ?? "praticien";
+  const organisationId = (user as { organisationId?: number | null })?.organisationId ?? null;
+  const isConventionAccount = role === "org_admin" || Boolean(organisationId);
   const stripeStatus = (user as { stripeSubscriptionStatus?: string | null })?.stripeSubscriptionStatus ?? null;
   const hasStripeCustomer = Boolean((user as { stripeCustomerId?: string | null })?.stripeCustomerId);
   const stripeCurrentPeriodEnd = (user as { stripeCurrentPeriodEnd?: unknown })?.stripeCurrentPeriodEnd;
@@ -65,7 +68,7 @@ export default function Profil() {
   const stripeCancelAtPeriodEnd = Boolean((user as { stripeCancelAtPeriodEnd?: boolean })?.stripeCancelAtPeriodEnd);
   const renewalDate = stripeStatus === "trialing" ? formatNullableDate(stripeTrialEnd) : formatNullableDate(stripeCurrentPeriodEnd);
   const planQuery = trpc.billing.getPlan.useQuery(undefined, {
-    enabled: Boolean(user),
+    enabled: Boolean(user) && !isConventionAccount,
     staleTime: 5 * 60 * 1000,
   });
   const plan = planQuery.data;
@@ -167,59 +170,81 @@ export default function Profil() {
           </div>
         </section>
 
-        <section className="profile-card">
-          <div className="subscription-head">
-            <div>
-              <h2>Abonnement</h2>
-              <strong>{plan?.planLabel ?? "Offre Praticien individuel"}</strong>
+        {isConventionAccount ? (
+          <section className="profile-card">
+            <div className="subscription-head">
+              <div>
+                <h2>Convention hospitalière</h2>
+                <strong>Accès géré par votre organisme</strong>
+              </div>
+              <span className="status active">
+                <Check aria-hidden="true" />
+                Conventionné
+              </span>
             </div>
-            <span className={`status ${isProblemStatus ? "cancelled" : "active"}`}>
-              <Check aria-hidden="true" />
-              {statusLabel}
-            </span>
-          </div>
-
-          <div className="recap">
-            <div><span>Prix configuré dans Stripe</span><b>{amountLabel}</b></div>
-            <div className="total"><span>Total / {intervalLabel}</span><b>{amountLabel}</b></div>
-          </div>
-
-          <div className="subscription-state">
-            <div className={stripeStatus === "canceled" || stripeStatus === "past_due" ? "notice warn" : "notice info"}>
-              {stripeStatus === "canceled" || stripeStatus === "past_due" ? <AlertTriangle aria-hidden="true" /> : <Clock aria-hidden="true" />}
+            <div className="notice info">
+              <Clock aria-hidden="true" />
               <span>
-                {stripeStatus === "trialing" && <>Fin de l&apos;essai gratuit : <b>{renewalDate}</b> · puis {amountLabel} / {intervalLabel}.</>}
-                {stripeStatus === "active" && !stripeCancelAtPeriodEnd && <>Prochain prélèvement : <b>{renewalDate}</b> · {amountLabel} / {intervalLabel}.</>}
-                {stripeStatus === "active" && stripeCancelAtPeriodEnd && <>Résiliation programmée : accès maintenu jusqu&apos;au <b>{renewalDate}</b>. Aucun renouvellement automatique ensuite.</>}
-                {stripeStatus === "past_due" && <>Paiement requis : ouvrez Stripe pour mettre à jour votre moyen de paiement.</>}
-                {stripeStatus === "canceled" && <>Abonnement résilié. Vous pouvez vous réabonner depuis Stripe ou relancer le paiement.</>}
-                {!stripeStatus && <>Aucun abonnement Stripe actif n&apos;est encore rattaché à ce compte.</>}
+                Votre accès dépend de la convention signée entre votre organisme et REDACTIO.
+                La facturation et le nombre de praticiens autorisés sont gérés côté back-office REDACTIO.
+              </span>
+            </div>
+          </section>
+        ) : (
+          <section className="profile-card">
+            <div className="subscription-head">
+              <div>
+                <h2>Abonnement</h2>
+                <strong>{plan?.planLabel ?? "Offre Praticien individuel"}</strong>
+              </div>
+              <span className={`status ${isProblemStatus ? "cancelled" : "active"}`}>
+                <Check aria-hidden="true" />
+                {statusLabel}
               </span>
             </div>
 
-            {hasStripeCustomer ? (
-              <button
-                type="button"
-                className="profile-btn danger-outline"
-                onClick={() => createPortalSession.mutate()}
-                disabled={createPortalSession.isPending}
-              >
-                <CreditCard aria-hidden="true" />
-                {createPortalSession.isPending ? "Ouverture..." : "Gérer mon abonnement Stripe"}
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="profile-btn primary"
-                onClick={() => createCheckoutSession.mutate()}
-                disabled={createCheckoutSession.isPending}
-              >
-                <RotateCw aria-hidden="true" />
-                {createCheckoutSession.isPending ? "Ouverture..." : "Activer mon abonnement"}
-              </button>
-            )}
-          </div>
-        </section>
+            <div className="recap">
+              <div><span>Prix configuré dans Stripe</span><b>{amountLabel}</b></div>
+              <div className="total"><span>Total / {intervalLabel}</span><b>{amountLabel}</b></div>
+            </div>
+
+            <div className="subscription-state">
+              <div className={stripeStatus === "canceled" || stripeStatus === "past_due" ? "notice warn" : "notice info"}>
+                {stripeStatus === "canceled" || stripeStatus === "past_due" ? <AlertTriangle aria-hidden="true" /> : <Clock aria-hidden="true" />}
+                <span>
+                  {stripeStatus === "trialing" && <>Fin de l&apos;essai gratuit : <b>{renewalDate}</b> · puis {amountLabel} / {intervalLabel}.</>}
+                  {stripeStatus === "active" && !stripeCancelAtPeriodEnd && <>Prochain prélèvement : <b>{renewalDate}</b> · {amountLabel} / {intervalLabel}.</>}
+                  {stripeStatus === "active" && stripeCancelAtPeriodEnd && <>Résiliation programmée : accès maintenu jusqu&apos;au <b>{renewalDate}</b>. Aucun renouvellement automatique ensuite.</>}
+                  {stripeStatus === "past_due" && <>Paiement requis : ouvrez Stripe pour mettre à jour votre moyen de paiement.</>}
+                  {stripeStatus === "canceled" && <>Abonnement résilié. Vous pouvez vous réabonner depuis Stripe ou relancer le paiement.</>}
+                  {!stripeStatus && <>Aucun abonnement Stripe actif n&apos;est encore rattaché à ce compte.</>}
+                </span>
+              </div>
+
+              {hasStripeCustomer ? (
+                <button
+                  type="button"
+                  className="profile-btn danger-outline"
+                  onClick={() => createPortalSession.mutate()}
+                  disabled={createPortalSession.isPending}
+                >
+                  <CreditCard aria-hidden="true" />
+                  {createPortalSession.isPending ? "Ouverture..." : "Gérer mon abonnement Stripe"}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="profile-btn primary"
+                  onClick={() => createCheckoutSession.mutate()}
+                  disabled={createCheckoutSession.isPending}
+                >
+                  <RotateCw aria-hidden="true" />
+                  {createCheckoutSession.isPending ? "Ouverture..." : "Activer mon abonnement"}
+                </button>
+              )}
+            </div>
+          </section>
+        )}
 
         <section className="danger-zone">
           <h2>Fermer mon compte</h2>

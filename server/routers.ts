@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import type { User } from "../drizzle/schema";
 import {
   getDefaultSubtype,
   isValidSubtypeForVolet,
@@ -9,6 +10,7 @@ import {
 import { getSessionCookieOptions } from "./_core/cookies";
 import {
   countMedicalTerms,
+  countActivePractitionersByOrg,
   createMedicalTerm,
   deactivateMedicalTerm,
   deleteUser,
@@ -67,6 +69,7 @@ const RAW_DATA_MAX_CHARS = 200_000;
 
 type UserRole =
   | "praticien"
+  | "org_admin"
   | "editeur_medical"
   | "relecteur_clinique"
   | "responsable_conformite"
@@ -94,6 +97,21 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   requireRole(ctx.user.role as UserRole, ["admin"]);
   return next({ ctx });
 });
+
+const adminOrOrgAdminProcedure = protectedProcedure.use(({ ctx, next }) => {
+  requireRole(ctx.user.role as UserRole, ["admin", "org_admin"]);
+  return next({ ctx });
+});
+
+function ensureOrgAdminScope(user: User, organisationId: number) {
+  if (user.role === "admin") return;
+  if (user.role !== "org_admin" || user.organisationId !== organisationId) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Accès refusé : organisation hors périmètre.",
+    });
+  }
+}
 
 // ─── Router principal ─────────────────────────────────────────────────────────
 
@@ -308,13 +326,23 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    list: adminProcedure.query(async () => {
+    list: adminOrOrgAdminProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role === "org_admin") {
+        if (!ctx.user.organisationId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Compte administrateur organisme non rattaché à une organisation.",
+          });
+        }
+        return listUsersByOrg(ctx.user.organisationId);
+      }
       return listUsers();
     }),
 
-    listByOrg: adminProcedure
+    listByOrg: adminOrOrgAdminProcedure
       .input(z.object({ organisationId: z.number() }))
-      .query(async ({ input }) => {
+      .query(async ({ ctx, input }) => {
+        ensureOrgAdminScope(ctx.user, input.organisationId);
         return listUsersByOrg(input.organisationId);
       }),
 
@@ -324,6 +352,7 @@ export const appRouter = router({
           userId: z.number(),
           role: z.enum([
             "praticien",
+            "org_admin",
             "editeur_medical",
             "relecteur_clinique",
             "responsable_conformite",
@@ -343,7 +372,182 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    delete: adminProcedure
+    createOrgAdmin: adminProcedure
+      .input(
+        z.object({
+          organisationId: z.number(),
+          name: z.string().trim().min(2).max(128),
+          email: z.string().email(),
+          password: z.string().min(8).max(128),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const org = await getOrganisationById(input.organisationId);
+        if (!org) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Organisation introuvable." });
+        }
+
+        const email = input.email.trim().toLowerCase();
+        const existingUser = await getUserByEmail(email);
+        if (existingUser) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Un compte existe déjà avec cette adresse email.",
+          });
+        }
+
+        const passwordHash = await hashPassword(input.password);
+        const openId = getLocalOpenId(email);
+        await upsertUser({
+          openId,
+          role: "org_admin",
+          name: input.name.trim(),
+          email,
+          passwordHash,
+          passwordUpdatedAt: new Date(),
+          loginMethod: "password",
+          termsAcceptedAt: new Date(),
+          privacyAcceptedAt: new Date(),
+        });
+
+        const finalUser = await getUserByEmail(email);
+        if (!finalUser) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Création de l'administrateur organisme impossible.",
+          });
+        }
+        await updateUser(finalUser.id, {
+          organisationId: input.organisationId,
+          stripeSubscriptionStatus: "active",
+        });
+
+        await createAuditLog({
+          userId: ctx.user.id,
+          action: "admin.create_org_admin",
+          resource: "user",
+          resourceId: String(finalUser.id),
+          metadata: {
+            organisationId: input.organisationId,
+            role: "org_admin",
+          },
+        });
+
+        return { id: finalUser.id };
+      }),
+
+    createPractitioner: adminOrOrgAdminProcedure
+      .input(
+        z.object({
+          organisationId: z.number().optional(),
+          name: z.string().trim().min(2).max(128),
+          email: z.string().email(),
+          password: z.string().min(8).max(128),
+          specialite: z.string().trim().max(128).optional().or(z.literal("")),
+          rpps: z
+            .string()
+            .trim()
+            .regex(/^\d{11}$/, "Le RPPS doit contenir 11 chiffres.")
+            .optional()
+            .or(z.literal("")),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const organisationId = ctx.user.role === "org_admin" ? ctx.user.organisationId : input.organisationId;
+        if (!organisationId) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Organisation requise pour créer un praticien conventionné.",
+          });
+        }
+        ensureOrgAdminScope(ctx.user, organisationId);
+
+        const [org, subscription, activePractitioners] = await Promise.all([
+          getOrganisationById(organisationId),
+          getSubscriptionByOrg(organisationId),
+          countActivePractitionersByOrg(organisationId),
+        ]);
+
+        if (!org || !org.active) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Organisation inactive ou introuvable.",
+          });
+        }
+        if (!subscription || subscription.status !== "actif") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Convention active requise avant d'ajouter un praticien.",
+          });
+        }
+        if (activePractitioners >= subscription.seats) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: `Limite contractuelle atteinte : ${activePractitioners}/${subscription.seats} praticiens actifs.`,
+          });
+        }
+
+        const email = input.email.trim().toLowerCase();
+        const existingUser = await getUserByEmail(email);
+        if (existingUser) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Un compte existe déjà avec cette adresse email.",
+          });
+        }
+
+        const passwordHash = await hashPassword(input.password);
+        const openId = getLocalOpenId(email);
+        await upsertUser({
+          openId,
+          role: "praticien",
+          name: input.name.trim(),
+          email,
+          passwordHash,
+          passwordUpdatedAt: new Date(),
+          loginMethod: "password",
+          termsAcceptedAt: new Date(),
+          privacyAcceptedAt: new Date(),
+          stripeSubscriptionStatus: "active",
+        });
+
+        const finalUser = await getUserByEmail(email);
+        if (!finalUser) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Création du praticien impossible.",
+          });
+        }
+
+        const profileUpdates: {
+          organisationId: number;
+          specialite?: string;
+          rpps?: string;
+          stripeSubscriptionStatus: string;
+        } = {
+          organisationId,
+          stripeSubscriptionStatus: "active",
+        };
+        if (input.specialite?.trim()) profileUpdates.specialite = input.specialite.trim();
+        if (input.rpps?.trim()) profileUpdates.rpps = input.rpps.trim();
+        await updateUser(finalUser.id, profileUpdates);
+
+        await createAuditLog({
+          userId: ctx.user.id,
+          action: "org.create_practitioner",
+          resource: "user",
+          resourceId: String(finalUser.id),
+          metadata: {
+            organisationId,
+            activePractitionersBefore: activePractitioners,
+            seats: subscription.seats,
+          },
+        });
+
+        return { id: finalUser.id };
+      }),
+
+    delete: adminOrOrgAdminProcedure
       .input(z.object({ userId: z.number() }))
       .mutation(async ({ ctx, input }) => {
         if (input.userId === ctx.user.id) {
@@ -356,6 +560,14 @@ export const appRouter = router({
         const target = await getUserById(input.userId);
         if (!target) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Utilisateur introuvable." });
+        }
+        if (ctx.user.role === "org_admin") {
+          if (!ctx.user.organisationId || target.organisationId !== ctx.user.organisationId || target.role !== "praticien") {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Un admin organisme peut supprimer uniquement les praticiens de son organisme.",
+            });
+          }
         }
 
         await createAuditLog({
@@ -387,6 +599,8 @@ export const appRouter = router({
             ...org,
             subscription: subscription ?? null,
             userCount: users.length,
+            practitionerCount: users.filter((user) => user.role === "praticien" && user.active).length,
+            orgAdminCount: users.filter((user) => user.role === "org_admin" && user.active).length,
           };
         })
       );

@@ -65,8 +65,10 @@ export default function Organisations() {
   const { data: orgs, refetch } = trpc.organisations.list.useQuery();
   const [open, setOpen] = useState(false);
   const [conventionOpen, setConventionOpen] = useState(false);
+  const [orgAdminOpen, setOrgAdminOpen] = useState(false);
   const [selectedOrg, setSelectedOrg] = useState<OrganisationItem | null>(null);
   const [form, setForm] = useState({ name: "", slug: "", type: "", contactEmail: "" });
+  const [orgAdminForm, setOrgAdminForm] = useState({ name: "", email: "", password: "" });
   const [conventionForm, setConventionForm] = useState({
     plan: "entreprise",
     status: "actif",
@@ -90,6 +92,17 @@ export default function Organisations() {
       refetch();
       setConventionOpen(false);
       setSelectedOrg(null);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const createOrgAdmin = trpc.user.createOrgAdmin.useMutation({
+    onSuccess: () => {
+      toast.success("Admin organisme créé.");
+      refetch();
+      setOrgAdminOpen(false);
+      setSelectedOrg(null);
+      setOrgAdminForm({ name: "", email: "", password: "" });
     },
     onError: (e) => toast.error(e.message),
   });
@@ -120,6 +133,26 @@ export default function Organisations() {
       status: conventionForm.status as "actif" | "suspendu" | "expire" | "annule",
       seats,
       endDate: conventionForm.endDate,
+    });
+  }
+
+  function openOrgAdmin(org: OrganisationItem) {
+    setSelectedOrg(org);
+    setOrgAdminForm({ name: "", email: org.contactEmail ?? "", password: "" });
+    setOrgAdminOpen(true);
+  }
+
+  function submitOrgAdmin() {
+    if (!selectedOrg) return;
+    if (!orgAdminForm.name.trim() || !orgAdminForm.email.trim() || orgAdminForm.password.length < 8) {
+      toast.error("Nom, email et mot de passe de 8 caractères minimum sont requis.");
+      return;
+    }
+    createOrgAdmin.mutate({
+      organisationId: selectedOrg.id,
+      name: orgAdminForm.name,
+      email: orgAdminForm.email,
+      password: orgAdminForm.password,
     });
   }
 
@@ -238,7 +271,10 @@ export default function Organisations() {
                       </div>
                       <div className="mt-1">
                         <span className="text-base font-bold text-foreground">{org.userCount}</span>
-                        <span> / {org.subscription?.seats ?? "non défini"} sièges</span>
+                        <span> compte(s)</span>
+                      </div>
+                      <div className="mt-1 text-[11px]">
+                        {org.practitionerCount} / {org.subscription?.seats ?? "non défini"} praticiens · {org.orgAdminCount} admin(s)
                       </div>
                     </div>
                     <div className="rounded-lg border bg-muted/20 p-3">
@@ -268,7 +304,17 @@ export default function Organisations() {
                     {org.contactEmail && <span className="ml-auto">Contact : {org.contactEmail}</span>}
                   </div>
 
-                  <div className="flex justify-end">
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => openOrgAdmin(org)}
+                    >
+                      <Users className="w-4 h-4" />
+                      Créer l'admin organisme
+                    </Button>
                     <Button
                       type="button"
                       variant="outline"
@@ -365,6 +411,57 @@ export default function Organisations() {
               <Button onClick={submitConvention} disabled={saveConvention.isPending}>
                 {saveConvention.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Enregistrer l'état
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={orgAdminOpen} onOpenChange={setOrgAdminOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Créer l'admin organisme</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+                <div className="font-semibold">{selectedOrg?.name}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Ce compte pourra ajouter les praticiens de son organisme, sans dépasser la limite contractuelle.
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="org-admin-name">Nom complet</Label>
+                <Input
+                  id="org-admin-name"
+                  value={orgAdminForm.name}
+                  onChange={(event) => setOrgAdminForm({ ...orgAdminForm, name: event.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="org-admin-email">Email professionnel</Label>
+                <Input
+                  id="org-admin-email"
+                  type="email"
+                  value={orgAdminForm.email}
+                  onChange={(event) => setOrgAdminForm({ ...orgAdminForm, email: event.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="org-admin-password">Mot de passe temporaire</Label>
+                <Input
+                  id="org-admin-password"
+                  type="password"
+                  value={orgAdminForm.password}
+                  onChange={(event) => setOrgAdminForm({ ...orgAdminForm, password: event.target.value })}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setOrgAdminOpen(false)}>
+                Annuler
+              </Button>
+              <Button onClick={submitOrgAdmin} disabled={createOrgAdmin.isPending}>
+                {createOrgAdmin.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Créer l'admin
               </Button>
             </DialogFooter>
           </DialogContent>
