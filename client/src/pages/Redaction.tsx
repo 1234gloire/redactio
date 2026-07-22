@@ -248,6 +248,7 @@ export default function Redaction() {
   const [treatmentExitData, setTreatmentExitData] = useState("");
   const [treatmentExitDate, setTreatmentExitDate] = useState("");
   const [noTreatmentEntry, setNoTreatmentEntry] = useState(false);
+  const [treatmentEntryBackup, setTreatmentEntryBackup] = useState("");
   const [conciliationImportTarget, setConciliationImportTarget] = useState<ConciliationImportTarget>("entry");
   const [observationText, setObservationText] = useState("");
   const [generatedDoc, setGeneratedDoc] = useState("");
@@ -636,6 +637,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     setSelectedSubtype(null);
     setRawData("");
     setTreatmentEntryData("");
+    setTreatmentEntryBackup("");
     setTreatmentExitData("");
     setTreatmentExitDate("");
     setObservationText("");
@@ -662,6 +664,17 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
   return (
     <RedactioLayout>
       <style>{newRedactionStyles}</style>
+
+      {selectedVolet === "conciliation" && (
+        <div className="redaction-warning-bar" role="alert">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>
+            Avertissement : ne saisissez aucun identifiant direct du patient
+            (nom, prénom, numéro de sécurité sociale, date de naissance ou adresse).
+          </span>
+        </div>
+      )}
+
       <div className="redaction-compliance-bar" aria-label="Conformité données de santé">
         <span className="redaction-compliance-lead">
           <Shield className="h-3.5 w-3.5" />
@@ -683,6 +696,9 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
               Recommencer
             </Button>
           </div>
+
+          
+
           <div className="redaction-stepper" role="list" aria-label="Étapes du parcours">
             {STEPS.map((s, index) => (
               <div key={s.id} className="step-wrap">
@@ -760,12 +776,33 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
         )}
         {/* ─── Étape 2 : Injection des données ─── */}
         {step === 2 && selectedVolet && selectedVolet !== "observation" && (
-          <div className="redaction-panel animate-fade-in">
-            <div className="redaction-back-heading">
-              <Button variant="ghost" size="icon" onClick={() => setStep(1)} aria-label="Retour">
+          <div
+            className={cn(
+              "redaction-panel animate-fade-in",
+              selectedVolet === "conciliation" && "conciliation-module"
+            )}
+          >
+            <div
+              className={cn(
+                "redaction-back-heading",
+                selectedVolet === "conciliation" && "conciliation-heading"
+              )}
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setStep(1)}
+                aria-label="Retour"
+                className={cn(selectedVolet === "conciliation" && "conciliation-back-button")}
+              >
                 <ArrowLeft className="w-4 h-4" />
               </Button>
               <div>
+                {selectedVolet === "conciliation" && (
+                  <span className="conciliation-back-label">
+                    Conciliation médicamenteuse
+                  </span>
+                )}
                 <h2 className="redaction-step-title">
                   {VOLETS[selectedVolet].label}
                 </h2>
@@ -792,56 +829,118 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
               </div>
             </div>
 
-            <div className="redaction-field-group">
+            <div
+              className={cn(
+                "redaction-field-group",
+                selectedVolet === "conciliation" &&
+                  "conciliation-card conciliation-type-card"
+              )}
+            >
               <fieldset className="space-y-2">
-                <legend className="redaction-field-label">
-                  {getSubtypeLabel(selectedVolet)}
-                  <span className="text-muted-foreground font-normal ml-1">
-                    ({getSubtypeHint(selectedVolet)})
-                  </span>
+                <legend
+                  className={cn(
+                    "redaction-field-label",
+                    selectedVolet === "conciliation" && "conciliation-card-title"
+                  )}
+                >
+                  {selectedVolet === "conciliation"
+                    ? "Type de conciliation"
+                    : getSubtypeLabel(selectedVolet)}
                 </legend>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+
+                {selectedVolet === "conciliation" && (
+                  <p className="conciliation-card-hint">
+                    Étape du parcours de soins concernée.
+                  </p>
+                )}
+
+                <div
+                  className={cn(
+                    "grid grid-cols-1 sm:grid-cols-2 gap-2",
+                    selectedVolet === "conciliation" && "conciliation-pill-grid"
+                  )}
+                >
                   {REDACTION_SUBTYPES[selectedVolet].map((option) => (
                     <button
                       key={option.id}
                       type="button"
                       onClick={() => setSelectedSubtype(option.id)}
-                      className={cn(
-                        "flex min-h-11 items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-colors",
-                        selectedSubtype === option.id
-                          ? "border-primary bg-primary/5 text-primary"
-                          : "border-border bg-background text-foreground hover:bg-muted/60"
-                      )}
+                      className={
+                        selectedVolet === "conciliation"
+                          ? cn(
+                              "conciliation-pill",
+                              selectedSubtype === option.id && "is-selected"
+                            )
+                          : cn(
+                              "flex min-h-11 items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-colors",
+                              selectedSubtype === option.id
+                                ? "border-primary bg-primary/5 text-primary"
+                                : "border-border bg-background text-foreground hover:bg-muted/60"
+                            )
+                      }
                       aria-pressed={selectedSubtype === option.id}
                     >
-                      <span className="font-medium leading-snug">{option.label}</span>
-                      {selectedSubtype === option.id && <CheckCircle className="h-4 w-4 shrink-0" />}
+                      {selectedVolet === "conciliation" && (
+                        <span className="conciliation-pill-check">
+                          {selectedSubtype === option.id && (
+                            <Check className="h-3 w-3" />
+                          )}
+                        </span>
+                      )}
+                      <span className="font-medium leading-snug">
+                        {option.label}
+                      </span>
+                      {selectedVolet !== "conciliation" &&
+                        selectedSubtype === option.id && (
+                          <CheckCircle className="h-4 w-4 shrink-0" />
+                        )}
                     </button>
                   ))}
                 </div>
+
+                {selectedVolet !== "conciliation" && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {getSubtypeHint(selectedVolet)}
+                  </p>
+                )}
               </fieldset>
             </div>
 
-            <div className="redaction-field-group">
+            <div
+              className={cn(
+                "redaction-field-group",
+                selectedVolet === "conciliation" &&
+                  "conciliation-card conciliation-data-card"
+              )}
+            >
               {selectedVolet === "conciliation" ? (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {/* Colonne Traitement d'entrée */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-3">
-                        <label htmlFor="treatmentEntryData" className="redaction-field-label">
-                          Traitement d'entrée
-                          <span className="text-muted-foreground font-normal ml-1">(bilan médicamenteux)</span>
+                <div className="conciliation-form">
+                  <div className="conciliation-row">
+                    <section className="conciliation-column">
+                      <div className="conciliation-label-row">
+                        <label
+                          htmlFor="treatmentEntryData"
+                          className="conciliation-field-label"
+                        >
+                          Traitement d&apos;entrée{" "}
+                          <span>(bilan médicamenteux)</span>
                         </label>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs text-muted-foreground hidden sm:inline">Dictée</span>
+
+                        <div className="conciliation-dictation">
+                          <span>Dictée</span>
                           <VoiceRecorderWithPreview
-                            onInsert={(text) => {
+                            onInsert={(dictatedText) => {
                               if (noTreatmentEntry) return;
                               setConciliationImportTarget("entry");
-                              setTreatmentEntryData((prev) => {
-                                if (!prev.trim()) return text;
-                                return `${prev}${prev.endsWith("\n") ? "" : "\n"}${text}`.slice(0, RAW_DATA_MAX_CHARS);
+                              setTreatmentEntryData((previous) => {
+                                if (!previous.trim()) return dictatedText;
+                                const separator = previous.endsWith("\n")
+                                  ? ""
+                                  : "\n";
+                                return `${previous}${separator}${dictatedText}`.slice(
+                                  0,
+                                  RAW_DATA_MAX_CHARS
+                                );
                               });
                             }}
                             fieldLabel="Traitement d'entrée"
@@ -850,26 +949,36 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                           />
                         </div>
                       </div>
-                      <Button
+
+                      <button
                         type="button"
-                        variant={noTreatmentEntry ? "default" : "outline"}
-                        size="sm"
-                        className="w-fit gap-2"
+                        className={cn(
+                          "conciliation-empty-toggle",
+                          noTreatmentEntry && "is-active"
+                        )}
                         aria-pressed={noTreatmentEntry}
                         onClick={() => {
-                          setNoTreatmentEntry((current) => {
-                            const next = !current;
-                            if (next) {
-                              setTreatmentEntryData("");
-                              setConciliationImportTarget("exit");
-                            }
-                            return next;
-                          });
+                          if (noTreatmentEntry) {
+                            setNoTreatmentEntry(false);
+                            setTreatmentEntryData(treatmentEntryBackup);
+                            setConciliationImportTarget("entry");
+                            return;
+                          }
+
+                          setTreatmentEntryBackup(treatmentEntryData);
+                          setTreatmentEntryData("");
+                          setNoTreatmentEntry(true);
+                          setConciliationImportTarget("exit");
                         }}
                       >
-                        {noTreatmentEntry && <Check className="h-4 w-4" />}
-                        Pas de traitement d'entrée
-                      </Button>
+                        <span className="conciliation-empty-check">
+                          {noTreatmentEntry && (
+                            <Check className="h-3 w-3" />
+                          )}
+                        </span>
+                        Pas de traitement d&apos;entrée
+                      </button>
+
                       <MedicalAutocomplete
                         id="treatmentEntryData"
                         value={treatmentEntryData}
@@ -878,35 +987,61 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                           if (value.trim()) setNoTreatmentEntry(false);
                         }}
                         onFocus={() => {
-                          if (!noTreatmentEntry) setConciliationImportTarget("entry");
+                          if (!noTreatmentEntry) {
+                            setConciliationImportTarget("entry");
+                          }
                         }}
-                        placeholder={noTreatmentEntry ? "Aucun traitement à l'entrée : le tableau HAS sera généré avec les traitements de sortie en statut Ajouté." : `Exemple :\nAMLODIPINE 5 mg gélule : 1 le matin\nZOPICLONE 7,5 mg cp : 1 au coucher\nKARDEGIC 75 mg : 1 sachet à midi`}
-                        className="min-h-[220px]"
-                        rows={10}
+                        placeholder={
+                          noTreatmentEntry
+                            ? "Aucun traitement à l'entrée (confirmé)."
+                            : `Exemple :
+AMLODIPINE 5 mg gélule : 1 le matin
+ZOPICLONE 7,5 mg cp : 1 au coucher
+KARDEGIC 75 mg : 1 sachet à midi`
+                        }
+                        className="conciliation-textarea min-h-[190px]"
+                        rows={9}
                         maxLength={RAW_DATA_MAX_CHARS}
                         disabled={noTreatmentEntry}
                       />
-                      {noTreatmentEntry && (
-                        <p className="text-xs text-muted-foreground">
-                          Cas activé : la génération utilisera « Aucun traitement à l'entrée » et classera les traitements de sortie en ajoutés.
-                        </p>
-                      )}
-                    </div>
-                    {/* Colonne Traitement de sortie */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <label htmlFor="treatmentExitData" className="redaction-field-label">
-                          Traitement de sortie
-                          <span className="text-muted-foreground font-normal ml-1">(ordonnance finale)</span>
+
+                      <div className="conciliation-charcount">
+                        {treatmentEntryData.length.toLocaleString("fr-FR")}/
+                        {RAW_DATA_MAX_CHARS.toLocaleString("fr-FR")} caractères
+                      </div>
+
+                      <p className="conciliation-hint">
+                        Cochez « Pas de traitement d&apos;entrée » si le patient
+                        était sans traitement à l&apos;admission. La conciliation
+                        reste due et chaque traitement de sortie sera indiqué
+                        comme « Ajouté ».
+                      </p>
+                    </section>
+
+                    <section className="conciliation-column">
+                      <div className="conciliation-label-row">
+                        <label
+                          htmlFor="treatmentExitData"
+                          className="conciliation-field-label"
+                        >
+                          Traitement de sortie{" "}
+                          <span>(ordonnance finale)</span>
                         </label>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs text-muted-foreground hidden sm:inline">Dictée</span>
+
+                        <div className="conciliation-dictation">
+                          <span>Dictée</span>
                           <VoiceRecorderWithPreview
-                            onInsert={(text) => {
+                            onInsert={(dictatedText) => {
                               setConciliationImportTarget("exit");
-                              setTreatmentExitData((prev) => {
-                                if (!prev.trim()) return text;
-                                return `${prev}${prev.endsWith("\n") ? "" : "\n"}${text}`.slice(0, RAW_DATA_MAX_CHARS);
+                              setTreatmentExitData((previous) => {
+                                if (!previous.trim()) return dictatedText;
+                                const separator = previous.endsWith("\n")
+                                  ? ""
+                                  : "\n";
+                                return `${previous}${separator}${dictatedText}`.slice(
+                                  0,
+                                  RAW_DATA_MAX_CHARS
+                                );
                               });
                             }}
                             fieldLabel="Traitement de sortie"
@@ -914,32 +1049,56 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                           />
                         </div>
                       </div>
+
                       <MedicalAutocomplete
                         id="treatmentExitData"
                         value={treatmentExitData}
                         onChange={setTreatmentExitData}
                         onFocus={() => setConciliationImportTarget("exit")}
-                        placeholder={`Exemple :\nAMLODIPINE 5 mg gélule : 1 le matin\nAPIXABAN 5 mg cp : 1 matin et 1 soir\nKARDEGIC 75 mg : arrêté`}
-                        className="min-h-[220px]"
-                        rows={10}
+                        placeholder={`Exemple :
+AMLODIPINE 5 mg gélule : 1 le matin
+APIXABAN 5 mg cp : 1 matin et 1 soir`}
+                        className="conciliation-textarea min-h-[190px]"
+                        rows={9}
                         maxLength={RAW_DATA_MAX_CHARS}
                       />
-                    </div>
+
+                      <div className="conciliation-charcount">
+                        {treatmentExitData.length.toLocaleString("fr-FR")}/
+                        {RAW_DATA_MAX_CHARS.toLocaleString("fr-FR")} caractères
+                      </div>
+
+                      <p className="conciliation-hint">
+                        Format libre : une ligne par molécule, avec le nom, le
+                        dosage et la posologie.
+                      </p>
+                    </section>
                   </div>
-                  <div className="space-y-2">
-                    <label htmlFor="treatmentExitDate" className="redaction-field-label">
-                      Date de rédaction de la sortie
-                      <span className="text-muted-foreground font-normal ml-1">(optionnel)</span>
+
+                  <div className="conciliation-date-block">
+                    <label
+                      htmlFor="treatmentExitDate"
+                      className="conciliation-field-label"
+                    >
+                      Date de rédaction de la sortie{" "}
+                      <span>(optionnel)</span>
                     </label>
+
                     <input
                       id="treatmentExitDate"
                       type="text"
                       value={treatmentExitDate}
-                      onChange={(e) => setTreatmentExitDate(e.target.value)}
+                      onChange={(event) =>
+                        setTreatmentExitDate(event.target.value)
+                      }
                       placeholder="JJ/MM/AAAA"
-                      className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      className="conciliation-date-input"
                       maxLength={32}
                     />
+
+                    <p className="conciliation-hint">
+                      Sert au calcul des durées de traitement.
+                    </p>
                   </div>
                 </div>
               ) : (
@@ -971,22 +1130,31 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                   />
                 </>
               )}
-              <div className="flex items-center justify-between">
-                <p id="rawData-help" className="text-xs text-muted-foreground">
-                  {currentInputLength}/{RAW_DATA_MAX_CHARS.toLocaleString("fr-FR")} caractères
-                </p>
-                {currentInputLength > 0 && (
-                  <Badge variant="secondary" className="text-xs">
-                    Pseudonymisation automatique activée
-                  </Badge>
-                )}
-              </div>
+              {selectedVolet !== "conciliation" && (
+                <div className="flex items-center justify-between">
+                  <p id="rawData-help" className="text-xs text-muted-foreground">
+                    {currentInputLength}/
+                    {RAW_DATA_MAX_CHARS.toLocaleString("fr-FR")} caractères
+                  </p>
+                  {currentInputLength > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      Pseudonymisation automatique activée
+                    </Badge>
+                  )}
+                </div>
+              )}
+
+              {selectedVolet === "conciliation" && currentInputLength > 0 && (
+                <div className="conciliation-security-status">
+                  <Shield className="h-3.5 w-3.5" />
+                  Pseudonymisation automatique activée
+                </div>
+              )}
               <div
                 className={cn(
                   "redaction-dropzone",
-                  isFileDragOver
-                    ? "is-over"
-                    : ""
+                  selectedVolet === "conciliation" && "conciliation-dropzone",
+                  isFileDragOver ? "is-over" : ""
                 )}
                 onDragEnter={handleFileDrag}
                 onDragOver={handleFileDrag}
@@ -1020,15 +1188,13 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                   </div>
                 </div>
                 {selectedVolet === "conciliation" && (
-                  <div className="flex rounded-md border bg-background p-0.5">
+                  <div className="conciliation-import-toggle">
                     <button
                       type="button"
                       onClick={() => setConciliationImportTarget("entry")}
                       className={cn(
-                        "h-8 rounded px-3 text-xs font-medium transition-colors",
-                        conciliationImportTarget === "entry"
-                          ? "bg-primary text-primary-foreground"
-                          : "text-muted-foreground hover:text-foreground"
+                        "conciliation-import-option",
+                        conciliationImportTarget === "entry" && "is-active"
                       )}
                       aria-pressed={conciliationImportTarget === "entry"}
                     >
@@ -1038,10 +1204,8 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                       type="button"
                       onClick={() => setConciliationImportTarget("exit")}
                       className={cn(
-                        "h-8 rounded px-3 text-xs font-medium transition-colors",
-                        conciliationImportTarget === "exit"
-                          ? "bg-primary text-primary-foreground"
-                          : "text-muted-foreground hover:text-foreground"
+                        "conciliation-import-option",
+                        conciliationImportTarget === "exit" && "is-active"
                       )}
                       aria-pressed={conciliationImportTarget === "exit"}
                     >
@@ -1063,17 +1227,30 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
             </div>
 
             <div className="step-foot">
-              <Button variant="outline" onClick={() => setStep(1)}>
+              <Button
+                variant="outline"
+                onClick={() => setStep(1)}
+                className={cn(
+                  selectedVolet === "conciliation" &&
+                    "conciliation-previous-button"
+                )}
+              >
                 <ArrowLeft className="w-4 h-4 mr-1.5" />
-                Retour
+                {selectedVolet === "conciliation" ? "Précédent" : "Retour"}
               </Button>
               <span className="spacer" />
               <Button
                 onClick={() => { setStep(3); handleGenerate(); }}
                 disabled={!canGenerate}
-                className="gap-2 redaction-primary-button"
+                className={cn(
+                  "gap-2 redaction-primary-button",
+                  selectedVolet === "conciliation" &&
+                    "conciliation-continue-button"
+                )}
               >
-                Générer le document
+                {selectedVolet === "conciliation"
+                  ? "Continuer"
+                  : "Générer le document"}
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </div>
@@ -2043,7 +2220,364 @@ const newRedactionStyles = `
   opacity:.85;
 }
 
+
+/* ============================================================
+   MODULE CONCILIATION MÉDICAMENTEUSE
+   ============================================================ */
+.redaction-warning-bar{
+  width:100%;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:9px 22px;
+  border-bottom:1px solid #f0dcae;
+  background:#fff6e6;
+  color:#8a5a00;
+  font-family:"Hanken Grotesk",system-ui,sans-serif;
+  font-size:13px;
+  font-weight:600;
+}
+
+
+.conciliation-module{
+  --conciliation-accent:var(--navy);
+  --conciliation-accent-deep:#14293f;
+  --conciliation-accent-tint:#eaeff5;
+}
+
+.conciliation-heading{
+  align-items:flex-start;
+  margin-bottom:20px;
+}
+
+.conciliation-back-button{
+  margin-top:1px;
+  border-radius:9px !important;
+}
+
+.conciliation-back-label{
+  display:block;
+  margin-bottom:8px;
+  color:var(--ink-soft);
+  font-size:13.5px;
+  font-weight:600;
+}
+
+.conciliation-module .redaction-step-title{
+  font-size:24px;
+}
+
+.conciliation-module .redaction-confidentiality{
+  margin-bottom:26px;
+  border-color:#f0dcae;
+  background:#fff9ec;
+}
+
+.conciliation-card{
+  padding:22px 24px;
+  margin-bottom:20px;
+  border-radius:16px;
+}
+
+.conciliation-card-title{
+  margin:0 0 4px;
+  color:var(--ink);
+  font-family:"Spectral",Georgia,serif;
+  font-size:17px;
+  font-weight:600;
+}
+
+.conciliation-card-hint{
+  margin:0 0 14px;
+  color:var(--ink-faint);
+  font-size:13px;
+}
+
+.conciliation-pill-grid{
+  display:flex !important;
+  flex-wrap:wrap;
+  gap:10px;
+}
+
+.conciliation-pill{
+  flex:1 1 auto;
+  min-width:170px;
+  min-height:44px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:11px 14px;
+  border:1.5px solid var(--line);
+  border-radius:11px;
+  background:#fff;
+  color:var(--ink-soft);
+  cursor:pointer;
+  font-family:inherit;
+  font-size:13.8px;
+  font-weight:600;
+  text-align:left;
+  transition:.15s ease;
+}
+
+.conciliation-pill:hover{
+  border-color:rgba(30,58,95,.48);
+}
+
+.conciliation-pill.is-selected{
+  border-color:var(--conciliation-accent);
+  background:var(--conciliation-accent-tint);
+  color:var(--conciliation-accent-deep);
+}
+
+.conciliation-pill-check{
+  width:18px;
+  height:18px;
+  flex:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1.5px solid var(--line);
+  border-radius:50%;
+  color:#fff;
+}
+
+.conciliation-pill.is-selected .conciliation-pill-check{
+  border-color:var(--conciliation-accent);
+  background:var(--conciliation-accent);
+}
+
+.conciliation-form{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+
+.conciliation-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:20px;
+}
+
+.conciliation-column{
+  min-width:0;
+}
+
+.conciliation-label-row{
+  min-height:34px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:8px;
+}
+
+.conciliation-field-label{
+  display:block;
+  margin:0;
+  color:var(--ink-soft);
+  font-size:12.8px;
+  font-weight:700;
+}
+
+.conciliation-field-label span{
+  color:var(--ink-faint);
+  font-weight:600;
+}
+
+.conciliation-dictation{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  color:var(--ink-faint);
+  font-size:12px;
+  font-weight:600;
+}
+
+.conciliation-empty-toggle{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  margin:0 0 10px;
+  padding:7px 14px;
+  border:1.5px solid var(--line);
+  border-radius:999px;
+  background:#fff;
+  color:var(--ink-soft);
+  cursor:pointer;
+  font-family:inherit;
+  font-size:12.8px;
+  font-weight:700;
+  transition:.15s ease;
+}
+
+.conciliation-empty-toggle:hover{
+  border-color:rgba(30,58,95,.48);
+}
+
+.conciliation-empty-toggle.is-active{
+  border-color:var(--conciliation-accent);
+  background:var(--conciliation-accent-tint);
+  color:var(--conciliation-accent-deep);
+}
+
+.conciliation-empty-check{
+  width:16px;
+  height:16px;
+  flex:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1.5px solid var(--line);
+  border-radius:50%;
+  color:#fff;
+}
+
+.conciliation-empty-toggle.is-active .conciliation-empty-check{
+  border-color:var(--conciliation-accent);
+  background:var(--conciliation-accent);
+}
+
+.conciliation-textarea{
+  min-height:190px !important;
+  border-color:var(--line) !important;
+  border-radius:10px !important;
+  background:var(--field) !important;
+  font-size:14.5px !important;
+  line-height:1.55 !important;
+}
+
+.conciliation-textarea:focus{
+  border-color:var(--conciliation-accent) !important;
+  background:#fff !important;
+  box-shadow:0 0 0 3px rgba(30,58,95,.14) !important;
+}
+
+.conciliation-charcount{
+  margin-top:6px;
+  color:var(--ink-faint);
+  font-size:11.5px;
+  text-align:right;
+}
+
+.conciliation-hint{
+  margin:6px 0 0;
+  color:var(--ink-faint);
+  font-size:12px;
+  line-height:1.5;
+}
+
+.conciliation-date-block{
+  margin-top:2px;
+}
+
+.conciliation-date-input{
+  width:220px;
+  max-width:100%;
+  height:42px;
+  padding:10px 13px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  outline:none;
+  background:var(--field);
+  color:var(--ink);
+  font-family:inherit;
+  font-size:14.5px;
+  transition:.15s ease;
+}
+
+.conciliation-date-input:focus{
+  border-color:var(--conciliation-accent);
+  background:#fff;
+  box-shadow:0 0 0 3px rgba(30,58,95,.14);
+}
+
+.conciliation-security-status{
+  display:inline-flex;
+  width:max-content;
+  max-width:100%;
+  align-items:center;
+  gap:7px;
+  color:var(--ink-faint);
+  font-size:12px;
+  font-weight:600;
+}
+
+.conciliation-dropzone{
+  margin-top:16px;
+  padding:14px 16px;
+  border-radius:12px;
+  background:var(--field);
+}
+
+.conciliation-dropzone .redaction-dropzone-icon{
+  background:var(--conciliation-accent-tint);
+  color:var(--conciliation-accent-deep);
+}
+
+.conciliation-import-toggle{
+  flex:none;
+  display:flex;
+  overflow:hidden;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:#fff;
+}
+
+.conciliation-import-option{
+  height:36px;
+  padding:0 13px;
+  border:0;
+  background:#fff;
+  color:var(--ink-soft);
+  cursor:pointer;
+  font-family:inherit;
+  font-size:12.5px;
+  font-weight:700;
+  transition:.15s ease;
+}
+
+.conciliation-import-option.is-active{
+  background:var(--conciliation-accent);
+  color:#fff;
+}
+
+.conciliation-module .step-foot{
+  margin-top:auto;
+  padding-top:26px;
+}
+
+.conciliation-previous-button{
+  min-height:46px !important;
+  border-radius:12px !important;
+  padding:12px 20px !important;
+  font-weight:700 !important;
+}
+
+.conciliation-continue-button{
+  background:var(--conciliation-accent) !important;
+  box-shadow:0 12px 24px -12px rgba(30,58,95,.85) !important;
+}
+
+.conciliation-continue-button:hover:not(:disabled){
+  background:var(--conciliation-accent-deep) !important;
+}
+
+.conciliation-continue-button:disabled{
+  background:#aab8c7 !important;
+}
+
+@media(max-width:880px){
+  .conciliation-row{
+    grid-template-columns:1fr;
+  }
+}
+
 @media(max-width:860px){
+  .redaction-warning-bar{
+    padding:10px 20px;
+    align-items:flex-start;
+  }
+
   .redaction-shell{
     padding:26px 20px 34px;
   }
@@ -2068,6 +2602,19 @@ const newRedactionStyles = `
 }
 
 @media(max-width:560px){
+  .conciliation-label-row{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .conciliation-import-toggle{
+    width:100%;
+  }
+
+  .conciliation-import-option{
+    flex:1;
+  }
+
   .redaction-title-row,
   .step-foot{
     align-items:stretch;

@@ -224,7 +224,7 @@ export default function RedactioLayout({ children }: RedactioLayoutProps) {
         <aside className="rl-side" aria-label="Navigation principale">
           <Link href="/dashboard" className="rl-brand" aria-label="REDACTIO">
             <span className="rl-logo">
-              <FileText />
+              <span className="rl-logo-mark">Rd</span>
             </span>
             <span>
               <span className="rl-name">REDACTIO</span>
@@ -309,7 +309,16 @@ const layoutStyles = `
 }
 .rl-brand{display:flex;align-items:center;gap:11px;padding:4px 8px 24px;text-decoration:none;color:var(--ink)}
 .rl-logo{width:42px;height:42px;border-radius:12px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px -8px rgba(30,58,95,.6);flex:none}
-.rl-logo svg{width:21px;height:21px}
+.rl-logo-mark{
+  font-family:"Spectral",Georgia,serif;
+  font-style:italic;
+  font-weight:600;
+  font-size:19px;
+  letter-spacing:-1.5px;
+  line-height:1;
+  color:#fff;
+  transform:translate(-1px,1px);
+}
 .rl-name{display:block;font-weight:800;font-size:17px;letter-spacing:.3px;line-height:1}
 .rl-sub{display:block;font-size:9px;letter-spacing:2px;color:var(--ink-faint);text-transform:uppercase;margin-top:4px;font-weight:600}
 .rl-nav{display:flex;flex-direction:column;gap:4px;overflow-y:auto;padding-right:2px}
