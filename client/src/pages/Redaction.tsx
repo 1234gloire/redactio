@@ -792,30 +792,48 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
               </div>
             </div>
 
-            <div className="redaction-field-group">
+            <div className={cn("redaction-field-group", selectedVolet === "courrier_sortie" && "redaction-module-card")}>
               <fieldset className="space-y-2">
-                <legend className="redaction-field-label">
-                  {getSubtypeLabel(selectedVolet)}
-                  <span className="text-muted-foreground font-normal ml-1">
-                    ({getSubtypeHint(selectedVolet)})
-                  </span>
-                </legend>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {selectedVolet === "courrier_sortie" ? (
+                  <>
+                    <legend className="redaction-module-card-title">Service / spécialité</legend>
+                    <p className="redaction-module-card-hint">
+                      Oriente la structure du courrier généré (ex. plan gériatrique ajouté en court séjour gériatrique).
+                    </p>
+                  </>
+                ) : (
+                  <legend className="redaction-field-label">
+                    {getSubtypeLabel(selectedVolet)}
+                    <span className="text-muted-foreground font-normal ml-1">
+                      ({getSubtypeHint(selectedVolet)})
+                    </span>
+                  </legend>
+                )}
+                <div className={selectedVolet === "courrier_sortie" ? "redaction-pillgrid" : "grid grid-cols-1 sm:grid-cols-2 gap-2"}>
                   {REDACTION_SUBTYPES[selectedVolet].map((option) => (
                     <button
                       key={option.id}
                       type="button"
                       onClick={() => setSelectedSubtype(option.id)}
-                      className={cn(
-                        "flex min-h-11 items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-colors",
-                        selectedSubtype === option.id
-                          ? "border-primary bg-primary/5 text-primary"
-                          : "border-border bg-background text-foreground hover:bg-muted/60"
-                      )}
+                      className={
+                        selectedVolet === "courrier_sortie"
+                          ? cn("redaction-pill", selectedSubtype === option.id && "on")
+                          : cn(
+                              "flex min-h-11 items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-colors",
+                              selectedSubtype === option.id
+                                ? "border-primary bg-primary/5 text-primary"
+                                : "border-border bg-background text-foreground hover:bg-muted/60"
+                            )
+                      }
                       aria-pressed={selectedSubtype === option.id}
                     >
+                      {selectedVolet === "courrier_sortie" && (
+                        <span className="redaction-pill-check">
+                          <Check className="h-3 w-3" />
+                        </span>
+                      )}
                       <span className="font-medium leading-snug">{option.label}</span>
-                      {selectedSubtype === option.id && <CheckCircle className="h-4 w-4 shrink-0" />}
+                      {selectedVolet !== "courrier_sortie" && selectedSubtype === option.id && <CheckCircle className="h-4 w-4 shrink-0" />}
                     </button>
                   ))}
                 </div>
@@ -944,10 +962,10 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center justify-between">
+                  <div className="redaction-label-row">
                     <label htmlFor="rawData" className="redaction-field-label">
-                      Données médicales brutes
-                      <span className="text-muted-foreground font-normal ml-1">(sans identifiant direct)</span>
+                      {selectedVolet === "courrier_sortie" ? "Données médicales brutes (sans identifiant direct)" : "Données médicales brutes"}
+                      {selectedVolet !== "courrier_sortie" && <span className="text-muted-foreground font-normal ml-1">(sans identifiant direct)</span>}
                     </label>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground hidden sm:inline">Dictée vocale</span>
@@ -963,16 +981,25 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                     id="rawData"
                     value={rawData}
                     onChange={setRawData}
-                    placeholder={`Exemple pour ${VOLETS[selectedVolet].label} :\n\nService : Cardiologie\nMotif d'hospitalisation : Décompensation cardiaque\nAntécédents : HTA, FA chronique, insuffisance cardiaque FE 35%\nTraitement habituel : Furosémide 40mg, Bisoprolol 5mg, Rivaroxaban 20mg\n...\n\nVous pouvez aussi utiliser le bouton microphone pour dicter directement.`}
-                    className="min-h-[280px]"
-                    rows={12}
+                    placeholder={
+                      selectedVolet === "courrier_sortie"
+                        ? "Exemple : entrée le [date], sortie le [date], motif d'hospitalisation : ... Antécédents : ... Traitement à domicile : ... Mode de vie : ... Histoire de la maladie : ... Examen clinique : ... Biologie (avec dates) : ... Examens paracliniques : ... Évolution : ... Traitement de sortie : ... Devenir : domicile / transfert vers ..."
+                        : `Exemple pour ${VOLETS[selectedVolet].label} :\n\nService : Cardiologie\nMotif d'hospitalisation : Décompensation cardiaque\nAntécédents : HTA, FA chronique, insuffisance cardiaque FE 35%\nTraitement habituel : Furosémide 40mg, Bisoprolol 5mg, Rivaroxaban 20mg\n...\n\nVous pouvez aussi utiliser le bouton microphone pour dicter directement.`
+                    }
+                    className={selectedVolet === "courrier_sortie" ? "redaction-module-textarea" : "min-h-[280px]"}
+                    rows={selectedVolet === "courrier_sortie" ? 11 : 12}
                     aria-describedby="rawData-help"
                     maxLength={RAW_DATA_MAX_CHARS}
                   />
+                  {selectedVolet === "courrier_sortie" && (
+                    <p className="redaction-hint">
+                      Saisie libre, abréviations admises — le contenu est mis en forme selon la trame du service sélectionné ci-dessus. Aucune donnée n'est inventée : tout élément manquant reste « [à compléter] ».
+                    </p>
+                  )}
                 </>
               )}
-              <div className="flex items-center justify-between">
-                <p id="rawData-help" className="text-xs text-muted-foreground">
+              <div className="flex items-center justify-between gap-3">
+                <p id="rawData-help" className={selectedVolet === "courrier_sortie" ? "redaction-charcount" : "text-xs text-muted-foreground"}>
                   {currentInputLength}/{RAW_DATA_MAX_CHARS.toLocaleString("fr-FR")} caractères
                 </p>
                 {currentInputLength > 0 && (
@@ -984,6 +1011,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
               <div
                 className={cn(
                   "redaction-dropzone",
+                  selectedVolet === "courrier_sortie" && "redaction-module-dropzone",
                   isFileDragOver
                     ? "is-over"
                     : ""
@@ -1107,8 +1135,8 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
               </div>
             </div>
 
-            <div className="redaction-field-group">
-              <div className="flex items-center justify-between">
+            <div className="redaction-field-group redaction-module-card observation-accent">
+              <div className="redaction-label-row">
                 <label htmlFor="observation-text" className="redaction-field-label">
                   Contenu de l'observation
                 </label>
@@ -1131,14 +1159,14 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                 value={observationText}
                 onChange={setObservationText}
                 placeholder="Saisissez ou dictez vos notes ici..."
-                className="min-h-[320px]"
+                className="redaction-module-textarea redaction-observation-textarea"
                 rows={14}
                 maxLength={RAW_DATA_MAX_CHARS}
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="redaction-charcount">
                 {observationText.length}/{RAW_DATA_MAX_CHARS.toLocaleString("fr-FR")} caractères
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="redaction-hint">
                 Les fichiers déposés sont analysés avant insertion : résultats d'examen uniquement, données administratives supprimées.
               </p>
               {observationText.length > 0 && (
@@ -1149,7 +1177,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
             </div>
 
             <div
-              className={cn("redaction-dropzone", isFileDragOver ? "is-over" : "")}
+              className={cn("redaction-dropzone redaction-module-dropzone observation-accent", isFileDragOver ? "is-over" : "")}
               onDragEnter={handleFileDrag}
               onDragOver={handleFileDrag}
               onDragLeave={handleFileDrag}
@@ -1859,12 +1887,165 @@ const newRedactionStyles = `
   margin-bottom:18px;
 }
 
+.redaction-module-card{
+  --accent:var(--teal);
+  --accent-deep:var(--teal-deep);
+  --accent-tint:var(--mint);
+  padding:24px;
+  border-radius:18px;
+}
+
+.redaction-module-card.observation-accent,
+.observation-accent{
+  --accent:var(--purple);
+  --accent-deep:#4c3aa0;
+  --accent-tint:#f2effc;
+}
+
+.redaction-module-card-title{
+  display:block;
+  margin:0 0 6px;
+  color:var(--ink);
+  font-family:"Spectral",Georgia,serif;
+  font-size:19px;
+  font-weight:600;
+  line-height:1.2;
+}
+
+.redaction-module-card-hint,
+.redaction-hint{
+  margin:0;
+  color:var(--ink-soft);
+  font-size:13.2px;
+  line-height:1.5;
+}
+
+.redaction-module-card-hint{
+  margin-bottom:16px;
+}
+
 .redaction-field-label{
   display:block;
   color:var(--ink);
   font-size:13.5px;
   font-weight:700;
   margin-bottom:8px;
+}
+
+.redaction-label-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:10px;
+}
+
+.redaction-label-row .redaction-field-label{
+  margin-bottom:0;
+}
+
+.redaction-pillgrid{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+
+.redaction-pill{
+  appearance:none;
+  -webkit-appearance:none;
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
+  min-height:46px;
+  border:1.5px solid var(--line);
+  border-radius:999px;
+  background:#fff;
+  color:var(--ink-soft);
+  padding:10px 16px 10px 14px;
+  font:inherit;
+  font-size:14px;
+  font-weight:700;
+  line-height:1.2;
+  cursor:pointer;
+  transition:background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+
+.redaction-pill:hover{
+  border-color:color-mix(in srgb,var(--accent) 45%,var(--line));
+  background:var(--accent-tint);
+  color:var(--ink);
+}
+
+.redaction-pill.on{
+  border-color:var(--accent);
+  background:var(--accent);
+  color:#fff;
+  box-shadow:0 10px 22px -12px color-mix(in srgb,var(--accent) 80%,#000);
+}
+
+.redaction-pill-check{
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:1.5px solid currentColor;
+  color:var(--ink-faint);
+  flex:none;
+}
+
+.redaction-pill-check svg{
+  opacity:0;
+  stroke-width:3px;
+}
+
+.redaction-pill.on .redaction-pill-check{
+  color:#fff;
+}
+
+.redaction-pill.on .redaction-pill-check svg{
+  opacity:1;
+}
+
+.redaction-module-textarea{
+  min-height:210px !important;
+  width:100%;
+  border:1.5px solid var(--line) !important;
+  border-radius:14px !important;
+  background:#fff !important;
+  color:var(--ink) !important;
+  padding:14px 16px !important;
+  font-size:15px !important;
+  line-height:1.55 !important;
+  box-shadow:none !important;
+  resize:vertical;
+}
+
+.redaction-module-textarea::placeholder{
+  color:var(--ink-faint) !important;
+}
+
+.redaction-module-textarea:focus{
+  outline:none !important;
+  border-color:var(--accent) !important;
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 14%,transparent) !important;
+}
+
+.redaction-observation-textarea{
+  min-height:320px !important;
+}
+
+.redaction-charcount{
+  margin:8px 0 0;
+  color:var(--ink-faint);
+  font-size:12.5px;
+  font-weight:600;
+}
+
+.redaction-module-card .redaction-hint{
+  margin-top:8px;
 }
 
 .redaction-dropzone{
@@ -1895,6 +2076,25 @@ const newRedactionStyles = `
   align-items:center;
   justify-content:center;
   border:1px solid var(--line);
+}
+
+.redaction-module-dropzone{
+  --accent:var(--teal);
+  --accent-deep:var(--teal-deep);
+  --accent-tint:var(--mint);
+  border-color:color-mix(in srgb,var(--accent) 30%,#cbd6dc);
+  background:#fff;
+}
+
+.redaction-module-dropzone.is-over{
+  border-color:var(--accent);
+  background:var(--accent-tint);
+}
+
+.redaction-module-dropzone .redaction-dropzone-icon{
+  background:var(--accent-tint);
+  color:var(--accent-deep);
+  border-color:color-mix(in srgb,var(--accent) 22%,var(--line));
 }
 
 .mask-badge,
