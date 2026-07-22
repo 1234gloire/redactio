@@ -148,3 +148,7 @@
 - [x] Appliquer le moteur sur chaque fragment final avant insertion dans le champ
 - [x] Afficher dans le tooltip du bouton Dicter la liste des commandes disponibles
 - [x] Tests et checkpoint final
+
+## Notes locales
+
+ubuntu@vps-cc025947:/var/www/redactio$ 
