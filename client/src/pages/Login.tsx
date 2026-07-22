@@ -199,7 +199,7 @@ export default function Login() {
           className="relative flex min-h-[290px] flex-none flex-col justify-end overflow-hidden bg-[#0b1b29] px-[26px] pb-[30px] pt-20 text-white min-[861px]:min-h-screen min-[861px]:min-w-0 min-[861px]:flex-[1_1_56%] min-[861px]:px-10 min-[861px]:py-12 min-[1081px]:px-[60px] min-[1081px]:py-14"
           style={{
             backgroundImage:
-              "linear-gradient(180deg, rgba(11,27,41,.15) 0%, rgba(11,27,41,.45) 55%, rgba(11,27,41,.88) 100%), url('/medecin-redactio.png')",
+              "linear-gradient(180deg, rgba(11,27,41,.15) 0%, rgba(11,27,41,.45) 55%, rgba(11,27,41,.88) 100%), url('/medecin-redactio.jpeg')",
             backgroundSize: "cover",
             backgroundPosition: "62% center",
           }}
