@@ -16,16 +16,18 @@ and Apache vhost changed:
 
 ## 1. DNS
 
-Create an `A` record:
+Create `A` records for both the bare domain and `www`:
 
 ```text
-medactio.fr -> VPS_PUBLIC_IPV4
+medactio.fr     -> VPS_PUBLIC_IPV4
+www.medactio.fr -> VPS_PUBLIC_IPV4
 ```
 
 Wait until:
 
 ```bash
 dig +short medactio.fr
+dig +short www.medactio.fr
 ```
 
 returns the VPS IP.
@@ -156,16 +158,17 @@ If Certbot is not installed:
 sudo apt install -y certbot python3-certbot-apache
 ```
 
-Issue the certificate:
+Issue the certificate (covers both the bare domain and `www`):
 
 ```bash
-sudo certbot --apache -d medactio.fr
+sudo certbot --apache -d medactio.fr -d www.medactio.fr
 ```
 
 Then verify:
 
 ```bash
 curl -I https://medactio.fr/
+curl -I https://www.medactio.fr/
 ```
 
 ## 10. Updates
