@@ -1,13 +1,16 @@
-# Deploy REDACTIO on OVH Ubuntu with Apache
+# Deploy MEDACTIO on OVH Ubuntu with Apache
 
-Target domain: `redactio.evc-pae.fr`
+Target domain: `medactio.fr`
 
-This deployment keeps REDACTIO isolated from other projects:
+This deployment keeps MEDACTIO isolated from other projects. Internal
+infrastructure (app directory, Linux user, database, systemd service) still
+uses the `redactio` name from the original setup — only the public domain
+and Apache vhost changed:
 
 - app directory: `/var/www/redactio`
 - Linux user: `redactio`
 - internal app port: `127.0.0.1:3121`
-- Apache vhost: `redactio.evc-pae.fr`
+- Apache vhost: `medactio.fr`
 - MySQL database/user: `redactio`
 - systemd service: `redactio.service`
 
@@ -16,13 +19,13 @@ This deployment keeps REDACTIO isolated from other projects:
 Create an `A` record:
 
 ```text
-redactio.evc-pae.fr -> VPS_PUBLIC_IPV4
+medactio.fr -> VPS_PUBLIC_IPV4
 ```
 
 Wait until:
 
 ```bash
-dig +short redactio.evc-pae.fr
+dig +short medactio.fr
 ```
 
 returns the VPS IP.
@@ -136,11 +139,11 @@ sudo a2enmod proxy proxy_http headers rewrite ssl
 sudo systemctl reload apache2
 ```
 
-Install the REDACTIO vhost only:
+Install the MEDACTIO vhost only:
 
 ```bash
-sudo cp /var/www/redactio/deploy/apache/redactio.evc-pae.fr.conf /etc/apache2/sites-available/redactio.evc-pae.fr.conf
-sudo a2ensite redactio.evc-pae.fr.conf
+sudo cp /var/www/redactio/deploy/apache/medactio.fr.conf /etc/apache2/sites-available/medactio.fr.conf
+sudo a2ensite medactio.fr.conf
 sudo apache2ctl configtest
 sudo systemctl reload apache2
 ```
@@ -156,13 +159,13 @@ sudo apt install -y certbot python3-certbot-apache
 Issue the certificate:
 
 ```bash
-sudo certbot --apache -d redactio.evc-pae.fr
+sudo certbot --apache -d medactio.fr
 ```
 
 Then verify:
 
 ```bash
-curl -I https://redactio.evc-pae.fr/
+curl -I https://medactio.fr/
 ```
 
 ## 10. Updates
@@ -178,7 +181,7 @@ sudo systemctl restart redactio
 
 ## Port collision policy
 
-REDACTIO uses only internal port `3121`. Before deploying, verify:
+MEDACTIO uses only internal port `3121`. Before deploying, verify:
 
 ```bash
 sudo ss -ltnp | grep ':3121'
@@ -187,4 +190,4 @@ sudo ss -ltnp | grep ':3121'
 If occupied, choose another internal port and update both:
 
 - `/var/www/redactio/.env` -> `PORT=...`
-- `/etc/apache2/sites-available/redactio.evc-pae.fr.conf` -> `ProxyPass` target
+- `/etc/apache2/sites-available/medactio.fr.conf` -> `ProxyPass` target

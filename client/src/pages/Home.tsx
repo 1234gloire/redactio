@@ -683,7 +683,7 @@ footer{background:var(--sand);padding:60px 0 0}
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Compte personnel immédiat</li>
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Confidentialité par conception</li>
         </ul>
-        <a class="btn teal" href="https://redactio.evc-pae.fr/dashboard">Essayer gratuitement</a>
+        <a class="btn teal" href="https://medactio.fr/dashboard">Essayer gratuitement</a>
       </div>
       <div class="offer-card reco reveal">
         <span class="reco-badge">RECOMMANDÉ</span>
@@ -742,7 +742,7 @@ footer{background:var(--sand);padding:60px 0 0}
       <h2>Votre prochain document hospitalier, structuré en quelques instants.</h2>
       <p>Que vous écriviez pour vous ou pour tout un service — sans jamais conserver vos patients.</p>
       <div class="ctas">
-        <a class="btn outline" href="https://redactio.evc-pae.fr/dashboard">Essayer gratuitement</a>
+        <a class="btn outline" href="https://medactio.fr/dashboard">Essayer gratuitement</a>
         <a class="btn teal" href="#contact">Demander une démo établissement</a>
       </div>
     </div>
@@ -773,7 +773,7 @@ footer{background:var(--sand);padding:60px 0 0}
   <div class="footer-col">
     <h5>Plateforme</h5>
     <a href="/conformite.html">Conformité &amp; sécurité</a>
-    <a href="https://redactio.evc-pae.fr/dashboard">Connexion</a>
+    <a href="https://medactio.fr/dashboard">Connexion</a>
     <a href="#">Mentions légales</a>
   </div>
 </div>
