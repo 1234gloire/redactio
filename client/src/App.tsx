@@ -14,6 +14,8 @@ import Login from "./pages/Login";
 import Organisations from "./pages/Organisations";
 import Paiement from "./pages/Paiement";
 import Profil from "./pages/Profil";
+import PasswordReset from "./pages/PasswordReset";
+import ResetPassword from "./pages/ResetPassword";
 import Redaction from "./pages/Redaction";
 import RedactionChirurgieOrthopedique from "./pages/RedactionChirurgieOrthopedique";
 import RedactionCorrespondanceMedicale from "./pages/RedactionCorrespondanceMedicale";
@@ -25,6 +27,8 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
+      <Route path="/mot-de-passe-oublie" component={PasswordReset} />
+      <Route path="/reinitialiser-mot-de-passe" component={ResetPassword} />
       <Route path="/paiement" component={Paiement} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/conformite" component={Conformite} />

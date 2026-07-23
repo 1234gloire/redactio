@@ -64,6 +64,13 @@
       "when": 1784592000000,
       "tag": "0008_org_admin_seats",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1784808000000,
+      "tag": "0009_password_reset_tokens",
+      "breakpoints": true
     }
   ]
 }

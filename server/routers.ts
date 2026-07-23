@@ -1,3 +1,4 @@
+import { createHash, randomBytes } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
@@ -19,6 +20,8 @@ import {
   searchMedicalTerms,
   updateMedicalTerm,
   createAuditLog,
+  consumePasswordResetToken,
+  createPasswordResetToken,
   createOrganisation,
   createPromptBase,
   createPromptTemplate,
@@ -31,6 +34,7 @@ import {
   getPromptTemplateById,
   getUserByEmail,
   getUserById,
+  getValidPasswordResetToken,
   listAuditLogs,
   listOrganisations,
   listPromptBases,
@@ -64,6 +68,23 @@ import {
 } from "./defaultPrompts";
 
 const RAW_DATA_MAX_CHARS = 200_000;
+const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000;
+
+function hashResetToken(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+async function sendPasswordResetLink(email: string, resetUrl: string) {
+  if (!ENV.makePasswordResetWebhookUrl) {
+    throw new Error("Password reset webhook is not configured");
+  }
+  const response = await fetch(ENV.makePasswordResetWebhookUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email, resetUrl, expiresInMinutes: 30 }),
+  });
+  if (!response.ok) throw new Error(`Password reset webhook failed: ${response.status}`);
+}
 
 // ─── Helpers RBAC ─────────────────────────────────────────────────────────────
 
@@ -170,6 +191,73 @@ export const appRouter = router({
         const cookieOptions = getSessionCookieOptions(ctx.req);
         ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
+        return { success: true };
+      }),
+    requestPasswordReset: publicProcedure
+      .input(z.object({ email: z.string().email() }))
+      .mutation(async ({ input }) => {
+        const genericResponse = {
+          success: true,
+          message: "Si un compte correspond à cette adresse, un lien de réinitialisation va être envoyé.",
+        };
+        const email = input.email.trim().toLowerCase();
+        const user = await getUserByEmail(email);
+        const isBootstrapAdmin =
+          Boolean(ENV.localAdminEmail) &&
+          email === ENV.localAdminEmail.trim().toLowerCase();
+        if (isBootstrapAdmin || !user || !user.active || !user.passwordHash) {
+          return genericResponse;
+        }
+
+        const token = randomBytes(32).toString("hex");
+        await createPasswordResetToken(user.id, hashResetToken(token), new Date(Date.now() + PASSWORD_RESET_TTL_MS));
+        const baseUrl = ENV.publicAppUrl.replace(/\/$/, "") || "http://localhost:5173";
+        try {
+          await sendPasswordResetLink(email, `${baseUrl}/reinitialiser-mot-de-passe?token=${token}`);
+        } catch (error) {
+          console.error("[Auth] Failed to send password reset link:", error);
+        }
+        return genericResponse;
+      }),
+    resetPassword: publicProcedure
+      .input(
+        z.object({
+          token: z.string().length(64),
+          password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères.").max(128),
+        }),
+      )
+      .mutation(async ({ input }) => {
+        const resetToken = await getValidPasswordResetToken(hashResetToken(input.token));
+        if (!resetToken) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Ce lien est invalide ou expiré." });
+        }
+        const passwordHash = await hashPassword(input.password);
+        await updateUser(resetToken.userId, { passwordHash, passwordUpdatedAt: new Date(), loginMethod: "password" });
+        await consumePasswordResetToken(resetToken.id);
+        return { success: true };
+      }),
+    resetPasswordSimple: publicProcedure
+      .input(
+        z.object({
+          email: z.string().email(),
+          password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères.").max(128),
+        }),
+      )
+      .mutation(async ({ input }) => {
+        const email = input.email.trim().toLowerCase();
+        const isBootstrapAdmin =
+          Boolean(ENV.localAdminEmail) &&
+          email === ENV.localAdminEmail.trim().toLowerCase();
+        const user = await getUserByEmail(email);
+        if (isBootstrapAdmin || !user || !user.active || !user.passwordHash) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Impossible de réinitialiser ce compte." });
+        }
+
+        await updateUser(user.id, {
+          passwordHash: await hashPassword(input.password),
+          passwordUpdatedAt: new Date(),
+          loginMethod: "password",
+        });
         return { success: true };
       }),
     register: publicProcedure

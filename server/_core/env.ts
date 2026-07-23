@@ -26,6 +26,7 @@ export const ENV = {
   localAdminName: process.env.LOCAL_ADMIN_NAME ?? "Administrateur REDACTIO",
   makeDemoWebhookUrl: process.env.MAKE_DEMO_WEBHOOK_URL ?? "",
   makeSignupWebhookUrl: process.env.MAKE_SIGNUP_WEBHOOK_URL ?? "",
+  makePasswordResetWebhookUrl: process.env.MAKE_PASSWORD_RESET_WEBHOOK_URL ?? "",
   publicAppUrl: process.env.PUBLIC_APP_URL ?? "",
   stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? "",
   stripePriceId: process.env.STRIPE_PRICE_ID ?? "",

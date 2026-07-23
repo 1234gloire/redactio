@@ -1,4 +1,4 @@
-import { and, count, desc, eq, like, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, gt, isNull, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { hashPassword } from "./_core/passwords";
 import {
@@ -26,6 +26,7 @@ import {
   subscriptions,
   testCases,
   users,
+  passwordResetTokens,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -140,6 +141,39 @@ export async function getUserByEmail(email: string): Promise<User | undefined> {
     console.error(`[Database] Failed to get user by email ${email}:`, error);
     return undefined;
   }
+}
+
+export async function createPasswordResetToken(
+  userId: number,
+  tokenHash: string,
+  expiresAt: Date,
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  await db.insert(passwordResetTokens).values({ userId, tokenHash, expiresAt });
+}
+
+export async function getValidPasswordResetToken(tokenHash: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(passwordResetTokens)
+    .where(
+      and(
+        eq(passwordResetTokens.tokenHash, tokenHash),
+        isNull(passwordResetTokens.usedAt),
+        gt(passwordResetTokens.expiresAt, new Date()),
+      ),
+    )
+    .limit(1);
+  return result[0];
+}
+
+export async function consumePasswordResetToken(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  await db.update(passwordResetTokens).set({ usedAt: new Date() }).where(eq(passwordResetTokens.id, id));
 }
 
 export async function getUserById(id: number): Promise<User | undefined> {

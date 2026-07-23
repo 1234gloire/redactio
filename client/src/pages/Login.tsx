@@ -15,7 +15,7 @@ import {
   ShieldCheck,
   UserRound,
 } from "lucide-react";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, MouseEvent, useEffect, useState } from "react";
 import { useLocation } from "wouter";
 
 const TRUST_CHIPS = [
@@ -147,6 +147,20 @@ export default function Login() {
       email: email.trim(),
       password,
     });
+  };
+
+  const handlePasswordResetNavigation = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail) {
+      setError("Veuillez renseigner votre adresse email avant de réinitialiser votre mot de passe.");
+      return;
+    }
+
+    const query = normalizedEmail
+      ? `?email=${encodeURIComponent(email.trim())}`
+      : "";
+    setLocation(`/reinitialiser-mot-de-passe${query}`);
   };
 
   const handleSignup = (event: FormEvent<HTMLFormElement>) => {
@@ -326,7 +340,8 @@ export default function Login() {
                     </Label>
 
                     <a
-                      href="#"
+                      href="/reinitialiser-mot-de-passe"
+                      onClick={handlePasswordResetNavigation}
                       className="text-[12.5px] font-bold text-[#0e9c8e] hover:underline"
                     >
                       Oublié ?
@@ -393,7 +408,8 @@ export default function Login() {
 
                 <nav className="mt-[26px] overflow-hidden rounded-2xl border border-[#e4ebee] bg-white">
                   <a
-                    href="#"
+                    href="/reinitialiser-mot-de-passe"
+                    onClick={handlePasswordResetNavigation}
                     className="flex items-center justify-between gap-2.5 border-b border-[#e4ebee] px-[18px] py-[15px] text-[14px] font-semibold text-[#0b1b29] transition hover:bg-[#eef6f4] hover:text-[#0a7b70]"
                   >
                     J&apos;ai oublié mon mot de passe
