@@ -153,12 +153,12 @@ export default function RedactioLayout({ children }: RedactioLayoutProps) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#f3f6f7] px-4">
         <div className="w-full max-w-sm text-center space-y-5">
-          <div className="mx-auto w-12 h-12 rounded-[13px] bg-[#1e3a5f] text-white flex items-center justify-center">
-            <FileText className="w-6 h-6" />
+          <div className="mx-auto w-12 h-12 rounded-[13px] overflow-hidden">
+            <img src="/logo-mark-navy.png" alt="" className="w-full h-full object-cover" />
           </div>
           <div>
             <h1 className="font-['Spectral',Georgia,serif] text-2xl font-semibold text-[#0b1b29]">
-              REDACTIO
+              MEDACTIO
             </h1>
             <p className="text-sm text-[#5a6b78] mt-1">
               Connectez-vous avec votre compte professionnel.
@@ -222,12 +222,12 @@ export default function RedactioLayout({ children }: RedactioLayoutProps) {
 
       <div className="rl-app">
         <aside className="rl-side" aria-label="Navigation principale">
-          <Link href="/dashboard" className="rl-brand" aria-label="REDACTIO">
+          <Link href="/dashboard" className="rl-brand" aria-label="MEDACTIO">
             <span className="rl-logo">
-              <FileText />
+              <img src="/logo-mark-navy.png" alt="" />
             </span>
             <span>
-              <span className="rl-name">REDACTIO</span>
+              <span className="rl-name">MEDACTIO</span>
               <span className="rl-sub">Rédaction hospitalière</span>
             </span>
           </Link>
@@ -261,7 +261,7 @@ export default function RedactioLayout({ children }: RedactioLayoutProps) {
             type="button"
             className="rl-logout"
             onClick={() => {
-              if (window.confirm("Se déconnecter de votre session REDACTIO ?")) {
+              if (window.confirm("Se déconnecter de votre session MEDACTIO ?")) {
                 logoutMutation.mutate();
               }
             }}
@@ -308,8 +308,8 @@ const layoutStyles = `
   display:flex;flex-direction:column;padding:22px 16px;position:sticky;top:0;height:calc(100vh - 45px);
 }
 .rl-brand{display:flex;align-items:center;gap:11px;padding:4px 8px 24px;text-decoration:none;color:var(--ink)}
-.rl-logo{width:42px;height:42px;border-radius:12px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px -8px rgba(30,58,95,.6);flex:none}
-.rl-logo svg{width:21px;height:21px}
+.rl-logo{width:42px;height:42px;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px -8px rgba(30,58,95,.6);flex:none}
+.rl-logo img{width:100%;height:100%;object-fit:cover;display:block}
 .rl-name{display:block;font-weight:800;font-size:17px;letter-spacing:.3px;line-height:1}
 .rl-sub{display:block;font-size:9px;letter-spacing:2px;color:var(--ink-faint);text-transform:uppercase;margin-top:4px;font-weight:600}
 .rl-nav{display:flex;flex-direction:column;gap:4px;overflow-y:auto;padding-right:2px}

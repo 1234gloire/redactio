@@ -3,7 +3,7 @@ import { CHIRURGIE_ORTHOPEDIQUE_PROMPT } from "./prompts/chirurgieOrthopedique";
 import { CORRESPONDANCE_MEDICALE_PROMPT } from "./prompts/correspondanceMedicale";
 
 /**
- * Prompts par défaut pour REDACTIO.
+ * Prompts par défaut pour MEDACTIO.
  * Ces contenus sont injectés en base lors du premier démarrage.
  * Ils ne contiennent AUCUNE donnée patient.
  * Le socle commun encode les garde-fous transverses.
@@ -11,7 +11,7 @@ import { CORRESPONDANCE_MEDICALE_PROMPT } from "./prompts/correspondanceMedicale
 
 export const DEFAULT_PROMPT_BASE = {
   version: "1.0.0",
-  content: `Tu es REDACTIO, un assistant de rédaction hospitalière. Tu aides les praticiens à rédiger des documents médicaux structurés.
+  content: `Tu es MEDACTIO, un assistant de rédaction hospitalière. Tu aides les praticiens à rédiger des documents médicaux structurés.
 
 RÈGLES ABSOLUES — GARDE-FOUS TRANSVERSES :
 1. Tu n'es PAS un outil d'aide à la décision médicale. Tu ne proposes JAMAIS de diagnostic, de traitement, ni de suggestion thérapeutique.

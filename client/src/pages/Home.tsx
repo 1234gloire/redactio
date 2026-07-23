@@ -4,7 +4,7 @@ export default function Home() {
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    document.title = "REDACTIO — La rédaction hospitalière assistée par IA";
+    document.title = "MEDACTIO — La rédaction hospitalière assistée par IA";
     let meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
     if (!meta) {
       meta = document.createElement("meta");
@@ -38,7 +38,7 @@ export default function Home() {
     const copy = {
       prat: {
         title: "Vos écrits hospitaliers, <em>structurés</em> par l'IA. La plume reste la vôtre.",
-        lead: "Courrier de sortie, conciliation médicamenteuse, correspondance, observation : collez ou dictez vos notes, REDACTIO les met en forme — pseudonymisées, conformes, prêtes à relire et signer.",
+        lead: "Courrier de sortie, conciliation médicamenteuse, correspondance, observation : collez ou dictez vos notes, MEDACTIO les met en forme — pseudonymisées, conformes, prêtes à relire et signer.",
         actions: '<a class="btn teal" href="#offres">Commencer une rédaction <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a><a class="btn outline" href="#outils">Voir les outils</a>',
         trust: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Pseudonymisation automatique<span class="sep"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Vous validez chaque document',
       },
@@ -409,9 +409,9 @@ footer{background:var(--sand);padding:60px 0 0}
 <!-- ================= HEADER ================= -->
 <header>
   <div class="wrap">
-    <a class="brand" href="#top" aria-label="REDACTIO accueil">
+    <a class="brand" href="#top" aria-label="MEDACTIO accueil">
       <img class="mark" src="/logo-mark-navy.png" alt="" />
-      <div><div class="name">REDACTIO</div><div class="sub">Rédaction hospitalière</div></div>
+      <div><div class="name">MEDACTIO</div><div class="sub">Rédaction hospitalière</div></div>
     </a>
     <nav class="mainnav">
       <a href="#outils">Les outils</a>
@@ -437,7 +437,7 @@ footer{background:var(--sand);padding:60px 0 0}
         <button role="tab" data-aud="etab" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-5h6v5"/></svg>Établissement</button>
       </div>
       <h1 id="heroTitle">Vos écrits hospitaliers, <em>structurés</em> par l'IA. La plume reste la vôtre.</h1>
-      <p class="claim" id="heroLead">Courrier de sortie, conciliation médicamenteuse, correspondance, observation : collez ou dictez vos notes, REDACTIO les met en forme — pseudonymisées, conformes, prêtes à relire et signer.</p>
+      <p class="claim" id="heroLead">Courrier de sortie, conciliation médicamenteuse, correspondance, observation : collez ou dictez vos notes, MEDACTIO les met en forme — pseudonymisées, conformes, prêtes à relire et signer.</p>
       <div class="hero-ctas" id="heroActions">
         <a class="btn teal" href="#offres">Commencer une rédaction <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
         <a class="btn outline" href="#outils">Voir les outils</a>
@@ -495,7 +495,7 @@ footer{background:var(--sand);padding:60px 0 0}
   <div class="wrap center">
     <div class="eyebrow" style="justify-content:center">Les outils</div>
     <h2 style="font-size:32px">Toute votre rédaction hospitalière, assistée.</h2>
-    <p class="lede">Quatre documents, une seule logique : collez ou dictez, REDACTIO structure, vous validez.</p>
+    <p class="lede">Quatre documents, une seule logique : collez ou dictez, MEDACTIO structure, vous validez.</p>
   </div>
   <div class="wrap">
     <div class="tools-grid">
@@ -527,7 +527,7 @@ footer{background:var(--sand);padding:60px 0 0}
     <p class="lede">Une séquence courte, pensée pour s'insérer dans le flux d'un service — pas pour le ralentir.</p>
     <div class="steps-grid">
       <div class="step-col reveal"><div class="step-num">TEMPS 01</div><h3>Vous saisissez</h3><hr><p>Collez vos notes ou dictez-les, en forme libre. Sans identifiant direct du patient.</p><span class="step-tag">clavier · dictée</span></div>
-      <div class="step-col reveal"><div class="step-num">TEMPS 02</div><h3>REDACTIO structure</h3><hr><p>Le contenu est pseudonymisé puis mis en sections, dans le format du document choisi.</p><span class="step-tag">Motif · Synthèse · Traitement…</span></div>
+      <div class="step-col reveal"><div class="step-num">TEMPS 02</div><h3>MEDACTIO structure</h3><hr><p>Le contenu est pseudonymisé puis mis en sections, dans le format du document choisi.</p><span class="step-tag">Motif · Synthèse · Traitement…</span></div>
       <div class="step-col reveal"><div class="step-num">TEMPS 03</div><h3>Vous relisez &amp; validez</h3><hr><p>Vous corrigez, complétez, signez. Le document final est le vôtre.</p><span class="step-tag">Exporter · Copier · Signer</span></div>
     </div>
   </div>
@@ -538,7 +538,7 @@ footer{background:var(--sand);padding:60px 0 0}
   <div class="wrap dictee-grid">
     <div>
       <h2>La dictée vocale, dans les quatre outils.</h2>
-      <p class="lede">Toute la rédaction fonctionne au clavier. Mais si vous préférez, énoncez simplement vos notes : REDACTIO les transcrit, les pseudonymise et les structure — dans les quatre outils.</p>
+      <p class="lede">Toute la rédaction fonctionne au clavier. Mais si vous préférez, énoncez simplement vos notes : MEDACTIO les transcrit, les pseudonymise et les structure — dans les quatre outils.</p>
       <ul class="checklist">
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Disponible sur les 4 documents</li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Pseudonymisation conservée sur la voix</li>
@@ -620,7 +620,7 @@ footer{background:var(--sand);padding:60px 0 0}
 <section class="section etab-section" id="etablissements"><div class="wrap">
   <div class="eyebrow">Pour les établissements</div>
   <h2>La lettre de liaison conforme, à l'échelle de vos services.</h2>
-  <p class="lede2">Un enjeu réglementaire, financier et de certification. REDACTIO aide vos équipes à produire des lettres complètes, dans le bon format, le jour de la sortie.</p>
+  <p class="lede2">Un enjeu réglementaire, financier et de certification. MEDACTIO aide vos équipes à produire des lettres complètes, dans le bon format, le jour de la sortie.</p>
 
   <div class="decree-box">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
@@ -656,7 +656,7 @@ footer{background:var(--sand);padding:60px 0 0}
 <section class="section secu-section" id="securite"><div class="wrap">
   <div class="eyebrow">Conformité &amp; sécurité des données de santé</div>
   <h2>Conforme aux exigences de protection des données de santé.</h2>
-  <p class="lede2">Ce n'est pas une option : c'est le socle de REDACTIO. Du praticien isolé à la DSI d'un CHU, chaque garantie est intégrée au fonctionnement même de la plateforme.</p>
+  <p class="lede2">Ce n'est pas une option : c'est le socle de MEDACTIO. Du praticien isolé à la DSI d'un CHU, chaque garantie est intégrée au fonctionnement même de la plateforme.</p>
   <div class="secu-grid">
     <div class="secu-card reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><h4>RGPD</h4><p>Traitement conforme au Règlement Général sur la Protection des Données.</p></div>
     <div class="secu-card reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><h4>Hébergement HDS</h4><p>Hébergement agréé Données de Santé pour les traitements concernés.</p></div>
@@ -729,7 +729,7 @@ footer{background:var(--sand);padding:60px 0 0}
         </div>
         <div class="form-field" style="margin-bottom:20px"><label for="f-msg">Votre besoin (facultatif)</label><textarea id="f-msg" name="besoin" rows="3" placeholder="Type de courriers, volumétrie, échéances…"></textarea></div>
         <button type="submit" class="btn dark" style="width:100%;justify-content:center">Demander une démonstration</button>
-        <p class="form-note" id="demoRequestStatus" aria-live="polite">Formulaire sécurisé REDACTIO. Aucune donnée patient ici.</p>
+        <p class="form-note" id="demoRequestStatus" aria-live="polite">Formulaire sécurisé MEDACTIO. Aucune donnée patient ici.</p>
       </form>
     </div>
   </div>
@@ -754,7 +754,7 @@ footer{background:var(--sand);padding:60px 0 0}
   <div>
     <a class="brand" href="#top">
       <img class="mark" src="/logo-mark-navy.png" alt="" />
-      <div><div class="name">REDACTIO</div><div class="sub">Rédaction hospitalière</div></div>
+      <div><div class="name">MEDACTIO</div><div class="sub">Rédaction hospitalière</div></div>
     </a>
     <p class="footer-tagline">La rédaction hospitalière assistée par IA — sans jamais conserver vos patients.</p>
   </div>
@@ -782,7 +782,7 @@ footer{background:var(--sand);padding:60px 0 0}
   <span>RGPD</span><span>Hébergement HDS</span><span>Secret médical</span><span>Pseudonymisation</span><span>Aucune donnée conservée</span>
 </div>
 <div class="footer-legal">
-  <span>© <span id="yr"></span> REDACTIO — Aide à la rédaction, jamais à la décision médicale.</span>
+  <span>© <span id="yr"></span> MEDACTIO — Aide à la rédaction, jamais à la décision médicale.</span>
   <span>un service de l'écosystème evc-pae.fr</span>
 </div>
 </div></footer>

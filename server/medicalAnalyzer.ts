@@ -1,5 +1,5 @@
 /**
- * REDACTIO — Analyseur de texte médical
+ * MEDACTIO — Analyseur de texte médical
  * Tokenise un texte transcrit, le compare au dictionnaire médical en BDD,
  * et retourne :
  *   - les termes reconnus (correspondance exacte ou synonyme)

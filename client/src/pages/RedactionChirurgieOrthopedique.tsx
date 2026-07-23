@@ -553,7 +553,7 @@ Bien confraternellement,
         <div>
           <Link href="/dashboard" className="ortho-back"><ArrowLeft size={16} /> Tableau de bord</Link>
           <h1><Bone size={24} /> Saisie rapide — Courrier de sortie de chirurgie orthopédique</h1>
-          <p>AGAPE / REDACTIO · Aide rédactionnelle : l'outil met en forme ce que vous saisissez. Les valeurs entre crochets restent à compléter par l'opérateur.</p>
+          <p>AGAPE / MEDACTIO · Aide rédactionnelle : l'outil met en forme ce que vous saisissez. Les valeurs entre crochets restent à compléter par l'opérateur.</p>
         </div>
       </header>
 

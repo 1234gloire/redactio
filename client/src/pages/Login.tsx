@@ -65,7 +65,7 @@ function BrandLockup({ inverted = false }: { inverted?: boolean }) {
             inverted ? "text-white" : "text-[#0b1b29]"
           }`}
         >
-          REDACTIO
+          MEDACTIO
         </div>
 
         <div
@@ -124,7 +124,7 @@ export default function Login() {
   });
 
   useEffect(() => {
-    document.title = "REDACTIO — Bienvenue dans votre espace praticien";
+    document.title = "MEDACTIO — Bienvenue dans votre espace praticien";
   }, []);
 
   useEffect(() => {
@@ -226,7 +226,7 @@ export default function Login() {
           <p className="mt-[18px] hidden max-w-[46ch] text-[16px] leading-[1.55] text-[#d6e3e9] min-[861px]:block">
             Courrier de sortie, conciliation médicamenteuse,
             correspondance, observation : collez ou dictez vos notes,
-            REDACTIO les met en forme — pseudonymisées, conformes, prêtes
+            MEDACTIO les met en forme — pseudonymisées, conformes, prêtes
             à relire et signer.
           </p>
 
@@ -252,7 +252,7 @@ export default function Login() {
                 </h1>
 
                 <p className="mb-6 mt-1.5 text-[14.5px] leading-[1.5] text-[#5a6b78]">
-                  Connectez-vous à votre espace REDACTIO.
+                  Connectez-vous à votre espace MEDACTIO.
                 </p>
               </>
             ) : (
@@ -460,7 +460,7 @@ export default function Login() {
                         Inscription praticien individuel.
                       </strong>{" "}
                       Ce compte est personnel et déclenche le suivi
-                      d&apos;inscription REDACTIO.
+                      d&apos;inscription MEDACTIO.
                     </>
                   ) : (
                     <>
@@ -650,7 +650,7 @@ export default function Login() {
 
                   <span>
                     J&apos;accepte de recevoir des emails d&apos;information,
-                    newsletters et actualités de REDACTIO.{" "}
+                    newsletters et actualités de MEDACTIO.{" "}
                     <em className="italic">(facultatif)</em>
                   </span>
                 </label>

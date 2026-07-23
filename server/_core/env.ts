@@ -23,7 +23,7 @@ export const ENV = {
     : ANTHROPIC_MIN_OUTPUT_TOKENS,
   localAdminEmail: process.env.LOCAL_ADMIN_EMAIL ?? "",
   localAdminPassword: process.env.LOCAL_ADMIN_PASSWORD ?? "",
-  localAdminName: process.env.LOCAL_ADMIN_NAME ?? "Administrateur REDACTIO",
+  localAdminName: process.env.LOCAL_ADMIN_NAME ?? "Administrateur MEDACTIO",
   makeDemoWebhookUrl: process.env.MAKE_DEMO_WEBHOOK_URL ?? "",
   makeSignupWebhookUrl: process.env.MAKE_SIGNUP_WEBHOOK_URL ?? "",
   publicAppUrl: process.env.PUBLIC_APP_URL ?? "",

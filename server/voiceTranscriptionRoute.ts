@@ -1,5 +1,5 @@
 /**
- * Endpoint de transcription vocale pour REDACTIO.
+ * Endpoint de transcription vocale pour MEDACTIO.
  * Reçoit un fichier audio en multipart/form-data, le transcrit via Whisper,
  * et retourne le texte transcrit. Aucun contenu médical n'est journalisé.
  */

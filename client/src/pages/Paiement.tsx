@@ -27,7 +27,7 @@ function BrandLockup({ inverted = false }: { inverted?: boolean }) {
       </div>
       <div>
         <div className={`text-[19px] font-extrabold leading-none tracking-[.03em] ${inverted ? "text-white" : "text-[#0b1b29]"}`}>
-          REDACTIO
+          MEDACTIO
         </div>
         <div className={`mt-1 text-[9.5px] font-semibold uppercase tracking-[2.4px] ${inverted ? "text-[#a9c0cb]" : "text-[#8a99a4]"}`}>
           Rédaction hospitalière
@@ -76,7 +76,7 @@ export default function Paiement() {
   });
 
   useEffect(() => {
-    document.title = "REDACTIO — Activez votre essai gratuit";
+    document.title = "MEDACTIO — Activez votre essai gratuit";
   }, []);
 
   useEffect(() => {
@@ -112,7 +112,7 @@ export default function Paiement() {
           <div className="absolute inset-x-0 top-0 flex flex-wrap items-center gap-4 bg-[#0b1b29]/55 px-6 py-3 text-[11.5px] text-[#dbe6ec] backdrop-blur-md lg:px-[60px] lg:text-[12.5px]">
             <span className="flex items-center gap-2 font-semibold text-white">
               <ShieldCheck className="h-[15px] w-[15px] text-[#5fd6c6]" />
-              Paiement sécurisé — aucune donnée bancaire stockée par REDACTIO
+              Paiement sécurisé — aucune donnée bancaire stockée par MEDACTIO
             </span>
             <span className="flex flex-wrap gap-x-4 gap-y-1">
               {["PCI-DSS", "RGPD", "Hébergement HDS"].map((label) => (
@@ -128,7 +128,7 @@ export default function Paiement() {
             Votre essai <em className="italic text-[#7fe3d3]">gratuit</em> commence aujourd'hui.
           </h2>
           <p className="mt-5 hidden max-w-[44ch] text-[16px] leading-relaxed text-[#d6e3e9] lg:block">
-            7 jours pour tester REDACTIO sans engagement. Aucun débit avant la fin de l'essai. Résiliable à tout moment depuis votre espace praticien.
+            7 jours pour tester MEDACTIO sans engagement. Aucun débit avant la fin de l'essai. Résiliable à tout moment depuis votre espace praticien.
           </p>
 
           <div className="my-8 hidden flex-col gap-3 lg:flex">
@@ -216,7 +216,7 @@ export default function Paiement() {
                 <div>
                   <b className="text-[#0b1b29]">Vos coordonnées bancaires seront saisies sur Stripe Checkout.</b>
                   <br />
-                  REDACTIO ne reçoit, ne stocke et ne traite aucun numéro de carte.
+                  MEDACTIO ne reçoit, ne stocke et ne traite aucun numéro de carte.
                 </div>
               </div>
               <ul className="ml-8 list-disc space-y-1">

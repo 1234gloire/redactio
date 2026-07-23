@@ -55,7 +55,7 @@ export function buildWhisperMedicalPrompt(field: DictationField): string {
 
 export function buildDictationCorrectionSystemPrompt(field: DictationField): string {
   const context = FIELD_PROMPTS[field] ?? GENERIC_PROMPT;
-  return `Tu es REDACTIO, correcteur de transcription de dictée médicale française.
+  return `Tu es MEDACTIO, correcteur de transcription de dictée médicale française.
 
 Périmètre strict :
 - Corrige uniquement orthographe, grammaire, ponctuation et segmentation.

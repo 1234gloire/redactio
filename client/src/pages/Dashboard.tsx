@@ -156,7 +156,7 @@ export default function Dashboard() {
             />
             <Step
               n="02"
-              title="REDACTIO structure"
+              title="MEDACTIO structure"
               desc="Pseudonymisation puis mise en sections du document choisi."
             />
             <Step

@@ -334,7 +334,7 @@ Bien confraternellement,`;
       <header className="correspondance-top">
         <Link href="/dashboard" className="correspondance-back"><ArrowLeft size={16} /> Tableau de bord</Link>
         <h1><BookOpen size={24} /> Saisie rapide — Correspondance médicale</h1>
-        <p>REDACTIO · Aide rédactionnelle : met en forme ce que vous saisissez. Le destinataire n'est jamais nommé, il est décrit par sa fonction, spécialité ou service.</p>
+        <p>MEDACTIO · Aide rédactionnelle : met en forme ce que vous saisissez. Le destinataire n'est jamais nommé, il est décrit par sa fonction, spécialité ou service.</p>
         <p className="mic-note"><Mic size={13} /> La dictée vocale et l'import de fichier sont disponibles sur les champs de texte.</p>
       </header>
 

@@ -42,9 +42,9 @@ export default function Conformite() {
 
       <header className="nav">
         <div className="wrap nav-inner">
-          <a className="brand" href="/" aria-label="REDACTIO accueil">
+          <a className="brand" href="/" aria-label="MEDACTIO accueil">
             <span className="brand-mark"><FileText size={19} /></span>
-            <span><strong>REDACTIO</strong><small>Rédaction hospitalière</small></span>
+            <span><strong>MEDACTIO</strong><small>Rédaction hospitalière</small></span>
           </a>
           <a className="back" href="/"><ArrowLeft size={15} /> Retour à l'accueil</a>
         </div>
@@ -54,7 +54,7 @@ export default function Conformite() {
         <div className="wrap">
           <span className="eyebrow">Trust center</span>
           <h1>Conformité & sécurité des données de santé</h1>
-          <p>Comment REDACTIO protège les données traitées sur la plateforme, et le cadre réglementaire dans lequel le service s'inscrit. Cette page s'adresse aux praticiens comme aux référents qualité, DSI et DPO des établissements.</p>
+          <p>Comment MEDACTIO protège les données traitées sur la plateforme, et le cadre réglementaire dans lequel le service s'inscrit. Cette page s'adresse aux praticiens comme aux référents qualité, DSI et DPO des établissements.</p>
           <div className="updated">Dernière mise à jour : <Tag>[À COMPLÉTER : date]</Tag> · Version <Tag>[v1.0]</Tag></div>
         </div>
       </section>
@@ -67,7 +67,7 @@ export default function Conformite() {
 
         <article className="doc">
           <DocSection id="engagements" n="01" title="Nos engagements">
-            <p className="lead">La protection des données de santé n'est pas une fonctionnalité de REDACTIO : c'est sa condition de fonctionnement.</p>
+            <p className="lead">La protection des données de santé n'est pas une fonctionnalité de MEDACTIO : c'est sa condition de fonctionnement.</p>
             <div className="commit">
               <Commit icon={Shield} title="Aucune donnée patient stockée" text="Les saisies et documents vivent en mémoire de session, puis sont purgés à la déconnexion." />
               <Commit icon={EyeOff} title="Pseudonymisation automatique" text="Appliquée au texte comme à la dictée, avant tout envoi au moteur d'IA." />
@@ -79,7 +79,7 @@ export default function Conformite() {
           </DocSection>
 
           <DocSection id="hebergement" n="02" title="Hébergement des données (HDS)">
-            <p>Les données traitées par REDACTIO susceptibles de relever des données de santé à caractère personnel sont hébergées auprès d'un hébergeur certifié <strong>Hébergeur de Données de Santé (HDS)</strong>, conformément à l'article L.1111-8 du Code de la santé publique.</p>
+            <p>Les données traitées par MEDACTIO susceptibles de relever des données de santé à caractère personnel sont hébergées auprès d'un hébergeur certifié <strong>Hébergeur de Données de Santé (HDS)</strong>, conformément à l'article L.1111-8 du Code de la santé publique.</p>
             <InfoTable rows={[
               ["Hébergeur", <Tag>[À COMPLÉTER : raison sociale de l'hébergeur]</Tag>],
               ["Certification HDS", <Tag>[À COMPLÉTER : périmètre & n° / organisme certificateur]</Tag>],
@@ -90,7 +90,7 @@ export default function Conformite() {
           </DocSection>
 
           <DocSection id="donnees" n="03" title="Données traitées & finalités">
-            <p>REDACTIO a une finalité unique : <strong>l'aide à la rédaction de documents hospitaliers</strong> : courrier de sortie, conciliation médicamenteuse, correspondance, observation médicale.</p>
+            <p>MEDACTIO a une finalité unique : <strong>l'aide à la rédaction de documents hospitaliers</strong> : courrier de sortie, conciliation médicamenteuse, correspondance, observation médicale.</p>
             <Checklist items={[
               <><strong>Données de compte :</strong> <Tag>[À COMPLÉTER : nom, e-mail, identifiant professionnel…]</Tag>.</>,
               <><strong>Contenus de rédaction :</strong> notes saisies ou dictées, traitées en session puis non conservées.</>,
@@ -109,8 +109,8 @@ export default function Conformite() {
           <DocSection id="roles" n="05" title="Rôles & base légale (RGPD)">
             <p>Le traitement est encadré par le RGPD et la loi Informatique et Libertés.</p>
             <Checklist items={[
-              <><strong>Praticien individuel :</strong> REDACTIO agit en qualité de <Tag>[À COMPLÉTER : responsable / sous-traitant]</Tag>, sur la base légale <Tag>[À COMPLÉTER]</Tag>.</>,
-              <><strong>Établissement :</strong> l'établissement demeure responsable de traitement ; REDACTIO agit comme sous-traitant, encadré par une convention de traitement (DPA).</>,
+              <><strong>Praticien individuel :</strong> MEDACTIO agit en qualité de <Tag>[À COMPLÉTER : responsable / sous-traitant]</Tag>, sur la base légale <Tag>[À COMPLÉTER]</Tag>.</>,
+              <><strong>Établissement :</strong> l'établissement demeure responsable de traitement ; MEDACTIO agit comme sous-traitant, encadré par une convention de traitement (DPA).</>,
             ]} />
           </DocSection>
 
@@ -133,14 +133,14 @@ export default function Conformite() {
 
           <DocSection id="droits" n="08" title="Droits des personnes">
             <p>Conformément au RGPD, toute personne dispose de droits d'accès, de rectification, d'effacement, de limitation, d'opposition et de portabilité sur ses données à caractère personnel.</p>
-            <p>REDACTIO ne conservant pas de données patient, ces droits concernent principalement les données de compte des praticiens. Une réclamation peut être adressée à la CNIL.</p>
+            <p>MEDACTIO ne conservant pas de données patient, ces droits concernent principalement les données de compte des praticiens. Une réclamation peut être adressée à la CNIL.</p>
           </DocSection>
 
           <DocSection id="responsabilites" n="09" title="Vos responsabilités en tant que praticien">
             <Checklist items={[
               <>Ne saisir <strong>aucun identifiant direct du patient</strong> : nom, prénom, numéro de sécurité sociale, date de naissance, adresse.</>,
               <><strong>Relire et valider</strong> chaque document : vous en êtes l'unique auteur et responsable.</>,
-              <>REDACTIO est une <strong>aide à la rédaction</strong>, pas un dispositif médical ni un outil d'aide à la décision.</>,
+              <>MEDACTIO est une <strong>aide à la rédaction</strong>, pas un dispositif médical ni un outil d'aide à la décision.</>,
             ]} />
           </DocSection>
 
@@ -164,7 +164,7 @@ export default function Conformite() {
 
       <footer>
         <div className="wrap foot-in">
-          <span>© {new Date().getFullYear()} REDACTIO — Aide à la rédaction, jamais à la décision médicale.</span>
+          <span>© {new Date().getFullYear()} MEDACTIO — Aide à la rédaction, jamais à la décision médicale.</span>
           <span className="foot-links"><a href="/">Accueil</a><a href="#engagements">Conformité</a><a href="#contact">Contact DPO</a></span>
           <span className="eco">un service de l'écosystème evc-pae.fr</span>
         </div>

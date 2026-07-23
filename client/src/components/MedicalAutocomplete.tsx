@@ -1,6 +1,6 @@
 /**
  * MedicalAutocomplete — Textarea enrichie avec autocomplétion médicale
- * Utilise le dictionnaire médical REDACTIO (430+ termes) pour suggérer
+ * Utilise le dictionnaire médical MEDACTIO (430+ termes) pour suggérer
  * des termes pendant la saisie. Conforme aux exigences de confidentialité :
  * seul le terme saisi (sans contexte patient) est envoyé au serveur.
  */
