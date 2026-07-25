@@ -343,7 +343,7 @@ const FAQ_ITEMS: FaqItem[] = [
   },
 ];
 
-export default function MonEmploi() {
+export default function ModeEmploi() {
   const [query, setQuery] = useState("");
   const [faqFilter, setFaqFilter] = useState<FaqCategory | "tous">("tous");
   const [openModules, setOpenModules] = useState<Set<string>>(
@@ -406,19 +406,19 @@ export default function MonEmploi() {
 
       <main className="emploi-main">
         <h1 className="emploi-title">
-          Mon <em>emploi</em>
+          Mode <em>d&apos;emploi</em>
         </h1>
         <p className="emploi-subtitle">
           Le guide complet de MEDACTIO, module par module, et les réponses aux
           questions que se posent le plus souvent les praticiens.
         </p>
 
-        <label className="emploi-search" aria-label="Rechercher dans Mon emploi">
+        <label className="emploi-search" aria-label="Rechercher dans le mode d'emploi">
           <Search aria-hidden="true" />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Rechercher dans Mon emploi (ex. traitement de sortie, dictée, export...)"
+            placeholder="Rechercher dans le mode d'emploi (ex. traitement de sortie, dictée, export...)"
           />
         </label>
 

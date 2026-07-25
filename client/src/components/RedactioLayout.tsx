@@ -54,8 +54,8 @@ const NAV_ITEMS: NavItem[] = [
     section: "repere",
   },
   {
-    label: "Mon emploi",
-    href: "/mon-emploi",
+    label: "Mode d'emploi",
+    href: "/mode-emploi",
     icon: <CircleHelp />,
     section: "repere",
   },

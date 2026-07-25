@@ -11,7 +11,7 @@ import Conformite from "./pages/Conformite";
 import Dictionnaire from "./pages/Dictionnaire";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
-import MonEmploi from "./pages/MonEmploi";
+import ModeEmploi from "./pages/ModeEmploi";
 import Organisations from "./pages/Organisations";
 import Paiement from "./pages/Paiement";
 import Profil from "./pages/Profil";
@@ -33,7 +33,8 @@ function Router() {
       <Route path="/redaction/correspondance-medicale" component={RedactionCorrespondanceMedicale} />
       <Route path="/redaction" component={Redaction} />
       <Route path="/tutoriels" component={Tutoriels} />
-      <Route path="/mon-emploi" component={MonEmploi} />
+      <Route path="/mode-emploi" component={ModeEmploi} />
+      <Route path="/mon-emploi" component={ModeEmploi} />
       <Route path="/backoffice" component={Backoffice} />
       <Route path="/organisations" component={Organisations} />
       <Route path="/utilisateurs" component={Utilisateurs} />
