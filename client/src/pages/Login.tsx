@@ -94,7 +94,12 @@ export default function Login() {
   const [signupError, setSignupError] = useState<string | null>(null);
 
   const loginMutation = trpc.auth.login.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data?.requiresPasswordChange) {
+        setLocation(`/reinitialiser-mot-de-passe?email=${encodeURIComponent(email.trim())}`);
+        window.location.reload();
+        return;
+      }
       setLocation("/dashboard");
       window.location.reload();
     },

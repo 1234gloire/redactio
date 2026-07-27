@@ -47,65 +47,60 @@ export async function getDb() {
 // ─── Utilisateurs ─────────────────────────────────────────────────────────────
 
 export async function upsertUser(user: InsertUser): Promise<void> {
-  if (!user.openId) throw new Error("User openId is required for upsert");
+  if (!user.openId) {
+    throw new Error("User openId is required for upsert");
+  }
+
   const db = await getDb();
+
   if (!db) {
     console.warn("[Database] Cannot upsert user: database not available");
     return;
   }
+
   try {
-    const values: InsertUser = { openId: user.openId };
+    const values: InsertUser = {
+      openId: user.openId,
+    };
+
     const updateSet: Record<string, unknown> = {};
 
+    // Champs texte pouvant être null
     const textFields = [
       "name",
       "email",
       "loginMethod",
       "passwordHash",
+      "specialite",
+      "rpps",
+      "twoFactorSecret",
       "stripeCustomerId",
       "stripeSubscriptionId",
       "stripeSubscriptionStatus",
     ] as const;
+
     for (const field of textFields) {
       const value = user[field];
-      if (value === undefined) continue;
-      const normalized = value ?? null;
-      values[field] = normalized;
-      updateSet[field] = normalized;
+
+      if (value === undefined) {
+        continue;
+      }
+
+      const normalizedValue = value ?? null;
+
+      values[field] = normalizedValue;
+      updateSet[field] = normalizedValue;
     }
 
-    if (user.lastSignedIn !== undefined) {
-      values.lastSignedIn = user.lastSignedIn;
-      updateSet.lastSignedIn = user.lastSignedIn;
+    // Rattachement à l’organisation
+    if (user.organisationId !== undefined) {
+      const organisationId = user.organisationId ?? null;
+
+      values.organisationId = organisationId;
+      updateSet.organisationId = organisationId;
     }
-    if (user.passwordUpdatedAt !== undefined) {
-      values.passwordUpdatedAt = user.passwordUpdatedAt;
-      updateSet.passwordUpdatedAt = user.passwordUpdatedAt;
-    }
-    if (user.marketingOptIn !== undefined) {
-      values.marketingOptIn = user.marketingOptIn;
-      updateSet.marketingOptIn = user.marketingOptIn;
-    }
-    if (user.termsAcceptedAt !== undefined) {
-      values.termsAcceptedAt = user.termsAcceptedAt;
-      updateSet.termsAcceptedAt = user.termsAcceptedAt;
-    }
-    if (user.privacyAcceptedAt !== undefined) {
-      values.privacyAcceptedAt = user.privacyAcceptedAt;
-      updateSet.privacyAcceptedAt = user.privacyAcceptedAt;
-    }
-    if (user.stripeCurrentPeriodEnd !== undefined) {
-      values.stripeCurrentPeriodEnd = user.stripeCurrentPeriodEnd;
-      updateSet.stripeCurrentPeriodEnd = user.stripeCurrentPeriodEnd;
-    }
-    if (user.stripeTrialEnd !== undefined) {
-      values.stripeTrialEnd = user.stripeTrialEnd;
-      updateSet.stripeTrialEnd = user.stripeTrialEnd;
-    }
-    if (user.stripeCancelAtPeriodEnd !== undefined) {
-      values.stripeCancelAtPeriodEnd = user.stripeCancelAtPeriodEnd;
-      updateSet.stripeCancelAtPeriodEnd = user.stripeCancelAtPeriodEnd;
-    }
+
+    // Rôle utilisateur
     if (user.role !== undefined) {
       values.role = user.role;
       updateSet.role = user.role;
@@ -113,12 +108,88 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       values.role = "admin";
       updateSet.role = "admin";
     }
-    if (!values.lastSignedIn) values.lastSignedIn = new Date();
-    if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
 
-    await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
+    // Dates
+    if (user.lastSignedIn !== undefined) {
+      values.lastSignedIn = user.lastSignedIn;
+      updateSet.lastSignedIn = user.lastSignedIn;
+    }
+
+    if (user.passwordUpdatedAt !== undefined) {
+      values.passwordUpdatedAt = user.passwordUpdatedAt;
+      updateSet.passwordUpdatedAt = user.passwordUpdatedAt;
+    }
+
+    if (user.termsAcceptedAt !== undefined) {
+      values.termsAcceptedAt = user.termsAcceptedAt;
+      updateSet.termsAcceptedAt = user.termsAcceptedAt;
+    }
+
+    if (user.privacyAcceptedAt !== undefined) {
+      values.privacyAcceptedAt = user.privacyAcceptedAt;
+      updateSet.privacyAcceptedAt = user.privacyAcceptedAt;
+    }
+
+    if (user.stripeCurrentPeriodEnd !== undefined) {
+      values.stripeCurrentPeriodEnd = user.stripeCurrentPeriodEnd;
+      updateSet.stripeCurrentPeriodEnd =
+        user.stripeCurrentPeriodEnd;
+    }
+
+    if (user.stripeTrialEnd !== undefined) {
+      values.stripeTrialEnd = user.stripeTrialEnd;
+      updateSet.stripeTrialEnd = user.stripeTrialEnd;
+    }
+
+    // Champs booléens
+    if (user.active !== undefined) {
+      values.active = user.active;
+      updateSet.active = user.active;
+    }
+
+    if (user.marketingOptIn !== undefined) {
+      values.marketingOptIn = user.marketingOptIn;
+      updateSet.marketingOptIn = user.marketingOptIn;
+    }
+
+    if (user.twoFactorEnabled !== undefined) {
+      values.twoFactorEnabled = user.twoFactorEnabled;
+      updateSet.twoFactorEnabled = user.twoFactorEnabled;
+    }
+
+    if (user.stripeCancelAtPeriodEnd !== undefined) {
+      values.stripeCancelAtPeriodEnd =
+        user.stripeCancelAtPeriodEnd;
+
+      updateSet.stripeCancelAtPeriodEnd =
+        user.stripeCancelAtPeriodEnd;
+    }
+
+    // Date de dernière connexion par défaut
+    if (!values.lastSignedIn) {
+      values.lastSignedIn = new Date();
+    }
+
+    if (Object.keys(updateSet).length === 0) {
+      updateSet.lastSignedIn = new Date();
+    }
+
+    await db
+      .insert(users)
+      .values(values)
+      .onDuplicateKeyUpdate({
+        set: updateSet,
+      });
   } catch (error) {
     console.error("[Database] Failed to upsert user:", error);
+
+    if (
+      error instanceof Error &&
+      "cause" in error
+    ) {
+      console.error("[Database] MySQL cause:", error.cause);
+    }
+
     throw error;
   }
 }

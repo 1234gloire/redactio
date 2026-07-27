@@ -43,10 +43,15 @@ export default function Utilisateurs() {
   const userRole = (user as { role?: string })?.role ?? "praticien";
   const isRedactioAdmin = userRole === "admin";
   const isOrgAdmin = userRole === "org_admin";
+  const organisationId = (user as { organisationId?: number | null })?.organisationId ?? undefined;
   const { data: users, refetch } = trpc.user.list.useQuery();
   const { data: orgs } = trpc.organisations.list.useQuery(undefined, {
     enabled: isRedactioAdmin,
   });
+  const { data: currentOrg } = trpc.organisations.get.useQuery(
+    { id: organisationId ?? 0 },
+    { enabled: isOrgAdmin && Boolean(organisationId) }
+  );
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string | null; email: string | null } | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState({
@@ -70,6 +75,16 @@ export default function Utilisateurs() {
       selectedOrg.subscription.status === "actif" &&
       selectedOrg.practitionerCount >= selectedOrg.subscription.seats
   );
+
+  const getOrganisationName = (organisationId?: number | null) => {
+    if (!organisationId) {
+      return "Compte individuel";
+    }
+    if (isRedactioAdmin) {
+      return orgs?.find((org) => org.id === organisationId)?.name ?? `Organisation #${organisationId}`;
+    }
+    return currentOrg?.name ?? `Organisation #${organisationId}`;
+  };
 
   const setRole = trpc.user.setRole.useMutation({
     onSuccess: () => { toast.success("Rôle mis à jour."); refetch(); },
@@ -279,7 +294,7 @@ export default function Utilisateurs() {
                   <p>Rôle : <Badge variant={user.role === "admin" ? "destructive" : "outline"} className="text-[11px]">{ROLE_LABELS[user.role]}</Badge></p>
                   <p className="inline-flex items-center gap-1">
                     <Building2 className="h-3 w-3" />
-                    Organisation : {user.organisationId ?? "Compte individuel"}
+                    Organisation : {getOrganisationName(user.organisationId)}
                   </p>
                   <p>Dernière connexion : {new Date(user.lastSignedIn).toLocaleDateString("fr-FR")}</p>
                 </CardContent>

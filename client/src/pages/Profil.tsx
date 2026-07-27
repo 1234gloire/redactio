@@ -67,6 +67,14 @@ export default function Profil() {
   const stripeTrialEnd = (user as { stripeTrialEnd?: unknown })?.stripeTrialEnd;
   const stripeCancelAtPeriodEnd = Boolean((user as { stripeCancelAtPeriodEnd?: boolean })?.stripeCancelAtPeriodEnd);
   const renewalDate = stripeStatus === "trialing" ? formatNullableDate(stripeTrialEnd) : formatNullableDate(stripeCurrentPeriodEnd);
+  const orgQuery = trpc.organisations.get.useQuery(
+    { id: organisationId ?? 0 },
+    { enabled: Boolean(organisationId) }
+  );
+  const orgSubscription = orgQuery.data?.subscription ?? null;
+  const orgEndDate = orgSubscription?.endDate ? new Date(orgSubscription.endDate) : null;
+  const organisationExpired = Boolean(orgEndDate && orgEndDate <= new Date());
+  const showConventionAlert = isConventionAccount && orgQuery.isSuccess && orgSubscription && organisationExpired;
   const planQuery = trpc.billing.getPlan.useQuery(undefined, {
     enabled: Boolean(user) && !isConventionAccount,
     staleTime: 5 * 60 * 1000,
@@ -182,13 +190,23 @@ export default function Profil() {
                 Conventionné
               </span>
             </div>
-            <div className="notice info">
-              <Clock aria-hidden="true" />
-              <span>
-                Votre accès dépend de la convention signée entre votre organisme et MEDACTIO.
-                La facturation et le nombre de praticiens autorisés sont gérés côté back-office MEDACTIO.
-              </span>
-            </div>
+            {showConventionAlert ? (
+              <div className="notice danger">
+                <AlertTriangle aria-hidden="true" />
+                <span>
+                  La convention de votre organisation a expiré le {formatDate(orgEndDate!)}.
+                  L'accès est suspendu jusqu'à son renouvellement.
+                </span>
+              </div>
+            ) : (
+              <div className="notice info">
+                <Clock aria-hidden="true" />
+                <span>
+                  Votre accès dépend de la convention signée entre votre organisme et MEDACTIO.
+                  La facturation et le nombre de praticiens autorisés sont gérés côté back-office MEDACTIO.
+                </span>
+              </div>
+            )}
           </section>
         ) : (
           <section className="profile-card">

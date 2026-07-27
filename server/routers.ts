@@ -170,10 +170,11 @@ export const appRouter = router({
             throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Le compte administrateur local n'a pas pu être trouvé." });
           }
 
+          const requiresPasswordChange = adminUser.passwordUpdatedAt === null;
           const sessionToken = await sdk.createSessionToken(adminUser.openId, { name: adminUser.name ?? "", expiresInMs: ONE_YEAR_MS });
           const cookieOptions = getSessionCookieOptions(ctx.req);
           ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
-          return { success: true };
+          return { success: true, requiresPasswordChange };
         }
 
         // Logique pour les autres utilisateurs (praticiens, etc.)
@@ -187,11 +188,12 @@ export const appRouter = router({
           throw new TRPCError({ code: "UNAUTHORIZED", message: "Identifiants invalides." });
         }
 
+        const requiresPasswordChange = user.passwordUpdatedAt === null;
         const sessionToken = await sdk.createSessionToken(user.openId, { name: user.name ?? "", expiresInMs: ONE_YEAR_MS });
         const cookieOptions = getSessionCookieOptions(ctx.req);
         ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
-        return { success: true };
+        return { success: true, requiresPasswordChange };
       }),
     requestPasswordReset: publicProcedure
       .input(z.object({ email: z.string().email() }))
@@ -461,68 +463,95 @@ export const appRouter = router({
       }),
 
     createOrgAdmin: adminProcedure
-      .input(
-        z.object({
-          organisationId: z.number(),
-          name: z.string().trim().min(2).max(128),
-          email: z.string().email(),
-          password: z.string().min(8).max(128),
-        })
-      )
-      .mutation(async ({ ctx, input }) => {
-        const org = await getOrganisationById(input.organisationId);
-        if (!org) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Organisation introuvable." });
-        }
+  .input(
+    z.object({
+      organisationId: z.number().int().positive(),
+      name: z.string().trim().min(2).max(128),
+      email: z.string().trim().email(),
+      password: z.string().min(8).max(128),
+    })
+  )
+  .mutation(async ({ ctx, input }) => {
+    const org = await getOrganisationById(input.organisationId);
 
-        const email = input.email.trim().toLowerCase();
-        const existingUser = await getUserByEmail(email);
-        if (existingUser) {
-          throw new TRPCError({
-            code: "CONFLICT",
-            message: "Un compte existe déjà avec cette adresse email.",
-          });
-        }
+    if (!org) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Organisation introuvable.",
+      });
+    }
 
-        const passwordHash = await hashPassword(input.password);
-        const openId = getLocalOpenId(email);
-        await upsertUser({
-          openId,
-          role: "org_admin",
-          name: input.name.trim(),
-          email,
-          passwordHash,
-          passwordUpdatedAt: new Date(),
-          loginMethod: "password",
-          termsAcceptedAt: new Date(),
-          privacyAcceptedAt: new Date(),
-        });
+    if (!org.active) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Cette organisation est inactive.",
+      });
+    }
 
-        const finalUser = await getUserByEmail(email);
-        if (!finalUser) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Création de l'administrateur organisme impossible.",
-          });
-        }
-        await updateUser(finalUser.id, {
-          organisationId: input.organisationId,
-          stripeSubscriptionStatus: "active",
-        });
+    const email = input.email.trim().toLowerCase();
+    const existingUser = await getUserByEmail(email);
 
-        await createAuditLog({
-          userId: ctx.user.id,
-          action: "admin.create_org_admin",
-          resource: "user",
-          resourceId: String(finalUser.id),
-          metadata: {
-            organisationId: input.organisationId,
-            role: "org_admin",
-          },
-        });
+    if (existingUser) {
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: "Un compte existe déjà avec cette adresse email.",
+      });
+    }
 
-        return { id: finalUser.id };
-      }),
+    const passwordHash = await hashPassword(input.password);
+    const openId = getLocalOpenId(email);
+    const now = new Date();
+
+    await upsertUser({
+      openId,
+      role: "org_admin",
+      organisationId: input.organisationId,
+      name: input.name.trim(),
+      email,
+      passwordHash,
+      passwordUpdatedAt: null,
+      loginMethod: "password",
+      termsAcceptedAt: now,
+      privacyAcceptedAt: now,
+      stripeSubscriptionStatus: "active",
+      active: true,
+    });
+
+    const finalUser = await getUserByEmail(email);
+
+    if (!finalUser) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Création de l'administrateur organisme impossible.",
+      });
+    }
+
+    if (finalUser.organisationId !== input.organisationId) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          "Le compte a été créé, mais son rattachement à l'organisation a échoué.",
+      });
+    }
+
+    await createAuditLog({
+      userId: ctx.user.id,
+      action: "admin.create_org_admin",
+      resource: "user",
+      resourceId: String(finalUser.id),
+      metadata: {
+        organisationId: input.organisationId,
+        organisationName: org.name,
+        role: "org_admin",
+      },
+    });
+
+    return {
+      id: finalUser.id,
+      organisationId: finalUser.organisationId,
+      success: true,
+    };
+  }),
 
     createPractitioner: adminOrOrgAdminProcedure
       .input(
@@ -592,7 +621,7 @@ export const appRouter = router({
           name: input.name.trim(),
           email,
           passwordHash,
-          passwordUpdatedAt: new Date(),
+          passwordUpdatedAt: null,
           loginMethod: "password",
           termsAcceptedAt: new Date(),
           privacyAcceptedAt: new Date(),
@@ -697,9 +726,15 @@ export const appRouter = router({
     get: protectedProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
-        const org = await getOrganisationById(input.id);
+        const [org, subscription] = await Promise.all([
+          getOrganisationById(input.id),
+          getSubscriptionByOrg(input.id),
+        ]);
         if (!org) throw new TRPCError({ code: "NOT_FOUND" });
-        return org;
+        return {
+          ...org,
+          subscription: subscription ?? null,
+        };
       }),
 
     create: adminProcedure
