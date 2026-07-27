@@ -383,6 +383,7 @@ export async function getSubscriptionByOrg(organisationId: number): Promise<Subs
     .select()
     .from(subscriptions)
     .where(eq(subscriptions.organisationId, organisationId))
+    .orderBy(desc(subscriptions.id))
     .limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
@@ -390,17 +391,31 @@ export async function getSubscriptionByOrg(organisationId: number): Promise<Subs
 export async function upsertSubscription(data: InsertSubscription): Promise<void> {
   const db = await getDb();
   if (!db) return;
-  const updateData: Partial<InsertSubscription> = {
+
+  const existing = await db
+    .select({ id: subscriptions.id })
+    .from(subscriptions)
+    .where(eq(subscriptions.organisationId, data.organisationId))
+    .orderBy(desc(subscriptions.id))
+    .limit(1);
+
+  const subscriptionData: InsertSubscription = {
+    organisationId: data.organisationId,
     plan: data.plan,
     status: data.status,
     seats: data.seats,
   };
+
   if (data.endDate !== undefined) {
-    updateData.endDate = data.endDate;
+    subscriptionData.endDate = data.endDate;
   }
-  await db.insert(subscriptions).values(data).onDuplicateKeyUpdate({
-    set: updateData,
-  });
+
+  if (existing.length > 0) {
+    await db.update(subscriptions).set(subscriptionData).where(eq(subscriptions.id, existing[0].id));
+    return;
+  }
+
+  await db.insert(subscriptions).values(subscriptionData);
 }
 
 // ─── Prompts — Socle commun ───────────────────────────────────────────────────

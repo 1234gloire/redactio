@@ -62,6 +62,7 @@ function statusVariant(status?: string | null) {
 }
 
 export default function Organisations() {
+  const utils = trpc.useUtils();
   const { data: orgs, refetch } = trpc.organisations.list.useQuery();
   const [open, setOpen] = useState(false);
   const [conventionOpen, setConventionOpen] = useState(false);
@@ -87,9 +88,9 @@ export default function Organisations() {
   });
 
   const saveConvention = trpc.organisations.upsertSubscription.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Convention mise à jour.");
-      refetch();
+      await utils.organisations.list.invalidate();
       setConventionOpen(false);
       setSelectedOrg(null);
     },
