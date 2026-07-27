@@ -1,5 +1,5 @@
 /**
- * VoiceRecorder — Composant de dictée vocale pour REDACTIO.
+ * VoiceRecorder — Composant de dictée vocale pour MEDACTIO.
  *
  * Contrôles complets : Start → Pause → Reprise → Stop
  * Indicateur visuel : onde sonore animée pendant l'enregistrement,

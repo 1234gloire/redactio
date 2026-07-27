@@ -32,24 +32,14 @@ function RedactioMark({ inverted = false }: { inverted?: boolean }) {
   if (inverted) {
     return (
       <div className="flex h-11 w-11 shrink-0 items-center justify-center">
-        <span
-          className="translate-y-px text-[30px] font-semibold italic leading-none tracking-[-2px] text-[#7fe3d3]"
-          style={{ fontFamily: '"Spectral", Georgia, serif' }}
-        >
-          Rd
-        </span>
+        <img src="/logo-mark-teal.png" alt="" className="h-full w-full object-contain" />
       </div>
     );
   }
 
   return (
-    <div className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[13px] bg-[#1e3a5f] shadow-[0_8px_20px_-8px_rgba(30,58,95,.55)]">
-      <span
-        className="-translate-x-px translate-y-px text-[21px] font-semibold italic leading-none tracking-[-1.5px] text-white"
-        style={{ fontFamily: '"Spectral", Georgia, serif' }}
-      >
-        Rd
-      </span>
+    <div className="h-[46px] w-[46px] shrink-0 overflow-hidden rounded-[13px] shadow-[0_8px_20px_-8px_rgba(30,58,95,.55)]">
+      <img src="/logo-mark-navy.png" alt="" className="h-full w-full object-cover" />
     </div>
   );
 }
@@ -65,7 +55,7 @@ function BrandLockup({ inverted = false }: { inverted?: boolean }) {
             inverted ? "text-white" : "text-[#0b1b29]"
           }`}
         >
-          REDACTIO
+          MEDACTIO
         </div>
 
         <div
@@ -124,7 +114,7 @@ export default function Login() {
   });
 
   useEffect(() => {
-    document.title = "REDACTIO — Bienvenue dans votre espace praticien";
+    document.title = "MEDACTIO — Bienvenue dans votre espace praticien";
   }, []);
 
   useEffect(() => {
@@ -240,7 +230,7 @@ export default function Login() {
           <p className="mt-[18px] hidden max-w-[46ch] text-[16px] leading-[1.55] text-[#d6e3e9] min-[861px]:block">
             Courrier de sortie, conciliation médicamenteuse,
             correspondance, observation : collez ou dictez vos notes,
-            REDACTIO les met en forme — pseudonymisées, conformes, prêtes
+            MEDACTIO les met en forme — pseudonymisées, conformes, prêtes
             à relire et signer.
           </p>
 
@@ -266,7 +256,7 @@ export default function Login() {
                 </h1>
 
                 <p className="mb-6 mt-1.5 text-[14.5px] leading-[1.5] text-[#5a6b78]">
-                  Connectez-vous à votre espace REDACTIO.
+                  Connectez-vous à votre espace MEDACTIO.
                 </p>
               </>
             ) : (
@@ -476,7 +466,7 @@ export default function Login() {
                         Inscription praticien individuel.
                       </strong>{" "}
                       Ce compte est personnel et déclenche le suivi
-                      d&apos;inscription REDACTIO.
+                      d&apos;inscription MEDACTIO.
                     </>
                   ) : (
                     <>
@@ -666,7 +656,7 @@ export default function Login() {
 
                   <span>
                     J&apos;accepte de recevoir des emails d&apos;information,
-                    newsletters et actualités de REDACTIO.{" "}
+                    newsletters et actualités de MEDACTIO.{" "}
                     <em className="italic">(facultatif)</em>
                   </span>
                 </label>

@@ -208,7 +208,7 @@ export function registerExportRoutes(app: Express): void {
       const buffer = await Packer.toBuffer(doc);
 
       // 5. Envoi de la réponse avec les bons en-têtes
-      res.setHeader("Content-Disposition", `attachment; filename="redactio.docx"`);
+      res.setHeader("Content-Disposition", `attachment; filename="medactio.docx"`);
       res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
       res.send(buffer);
     } catch (err) {

@@ -152,3 +152,11 @@
 ## Notes locales
 
 ubuntu@vps-cc025947:/var/www/redactio$ 
+
+
+
+cd /var/www/redactio
+sudo -u redactio git pull
+sudo -u redactio pnpm install --frozen-lockfile
+sudo -u redactio pnpm build
+sudo systemctl restart redactio

@@ -1,6 +1,6 @@
 {
-  "name": "REDACTIO — Rédaction hospitalière IA",
-  "short_name": "REDACTIO",
+  "name": "MEDACTIO — Rédaction hospitalière IA",
+  "short_name": "MEDACTIO",
   "description": "Assistant IA de rédaction hospitalière sécurisé",
   "start_url": "/",
   "display": "standalone",

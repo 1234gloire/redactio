@@ -185,8 +185,8 @@ export default function Profil() {
             <div className="notice info">
               <Clock aria-hidden="true" />
               <span>
-                Votre accès dépend de la convention signée entre votre organisme et REDACTIO.
-                La facturation et le nombre de praticiens autorisés sont gérés côté back-office REDACTIO.
+                Votre accès dépend de la convention signée entre votre organisme et MEDACTIO.
+                La facturation et le nombre de praticiens autorisés sont gérés côté back-office MEDACTIO.
               </span>
             </div>
           </section>
@@ -250,7 +250,7 @@ export default function Profil() {
           <h2>Fermer mon compte</h2>
           <p>
             Action différente de la résiliation d&apos;abonnement : ceci supprime
-            définitivement votre compte, votre profil et l&apos;accès à REDACTIO.
+            définitivement votre compte, votre profil et l&apos;accès à MEDACTIO.
           </p>
           <button
             type="button"

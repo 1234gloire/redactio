@@ -1,5 +1,5 @@
 /**
- * Tests Vitest — Dictionnaire médical REDACTIO
+ * Tests Vitest — Dictionnaire médical MEDACTIO
  * Vérifie la recherche, le comptage et l'incrémentation d'usage
  * sans dépendance à la base de données réelle.
  */

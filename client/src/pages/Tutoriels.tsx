@@ -77,7 +77,7 @@ export default function Tutoriels() {
           Tutoriels <em>vidéo</em>
         </h1>
         <p className="tutorial-subtitle">
-          Prenez REDACTIO en main en quelques minutes. Chaque vidéo démontre
+          Prenez MEDACTIO en main en quelques minutes. Chaque vidéo démontre
           l&apos;utilisation d&apos;un bloc, de la saisie à l&apos;export du document validé.
         </p>
 
@@ -96,7 +96,7 @@ export default function Tutoriels() {
 
           <div className="tutorial-featured-meta">
             <div className="tutorial-kick">Commencez ici</div>
-            <h2>Découvrir REDACTIO en 4 minutes</h2>
+            <h2>Découvrir MEDACTIO en 4 minutes</h2>
             <p>
               Le parcours complet : choisir un volet, dicter ou coller vos notes,
               laisser la pseudonymisation structurer le document, puis relire,

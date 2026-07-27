@@ -39,10 +39,10 @@ if (process.env.NODE_ENV === "production") {
 
 ensureLocalAdmin()
   .catch((error) => {
-    console.error("[REDACTIO] Initialisation admin locale impossible", error);
+    console.error("[MEDACTIO] Initialisation admin locale impossible", error);
   })
   .finally(() => {
     app.listen(PORT, () => {
-      console.log(`[REDACTIO] Serveur démarré sur http://localhost:${PORT}`);
+      console.log(`[MEDACTIO] Serveur démarré sur http://localhost:${PORT}`);
     });
   });

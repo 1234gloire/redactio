@@ -12,7 +12,7 @@ import {
 
 const STRIPE_API_BASE = "https://api.stripe.com/v1";
 const STRIPE_API_VERSION = "2025-11-17.clover";
-const PLAN_LABEL = "REDACTIO - Praticien individuel";
+const PLAN_LABEL = "MEDACTIO - Praticien individuel";
 const TRIAL_DAYS = 7;
 
 type StripeCheckoutSession = {
@@ -278,7 +278,7 @@ async function syncSubscription(subscription: StripeSubscription) {
   const customerId = subscription.customer;
   const existingUser = await getUserByStripeCustomerId(customerId);
   if (!existingUser) {
-    console.warn(`[Stripe] Aucun utilisateur REDACTIO pour customer ${customerId}`);
+    console.warn(`[Stripe] Aucun utilisateur MEDACTIO pour customer ${customerId}`);
     return;
   }
 

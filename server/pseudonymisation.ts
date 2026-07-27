@@ -1,5 +1,5 @@
 /**
- * FILTRE DE PSEUDONYMISATION — Composant critique REDACTIO
+ * FILTRE DE PSEUDONYMISATION — Composant critique MEDACTIO
  *
  * EXG-PSE-01 [BLOQUANT] : Filtre synchrone appliqué en sortie avant retour utilisateur.
  * EXG-PSE-02 [BLOQUANT] : Traitement en mémoire uniquement — aucune persistance.

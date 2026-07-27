@@ -35,7 +35,7 @@ export const users = mysqlTable("users", {
   passwordHash: varchar("passwordHash", { length: 255 }),
   passwordUpdatedAt: timestamp("passwordUpdatedAt"),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  // RBAC : rôles métier REDACTIO
+  // RBAC : rôles métier MEDACTIO
   role: mysqlEnum("role", [
     "praticien",
     "org_admin",

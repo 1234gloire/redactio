@@ -122,7 +122,7 @@ export default function Utilisateurs() {
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
               {isOrgAdmin
-                ? "Ajoutez les praticiens de votre organisme, dans la limite contractuelle fixée par REDACTIO."
+                ? "Ajoutez les praticiens de votre organisme, dans la limite contractuelle fixée par MEDACTIO."
                 : "Gestion globale des comptes, rôles RBAC, organismes et suppressions admin."}
             </p>
           </div>
@@ -293,7 +293,7 @@ export default function Utilisateurs() {
             <AlertDialogHeader>
               <AlertDialogTitle>Supprimer cet utilisateur ?</AlertDialogTitle>
               <AlertDialogDescription>
-                Le compte {deleteTarget?.name || deleteTarget?.email || "sélectionné"} sera supprimé de REDACTIO.
+                Le compte {deleteTarget?.name || deleteTarget?.email || "sélectionné"} sera supprimé de MEDACTIO.
                 Cette action retire son accès à l'application.
               </AlertDialogDescription>
             </AlertDialogHeader>

@@ -1,5 +1,5 @@
 /**
- * REDACTIO — MedicalTextHighlighter
+ * MEDACTIO — MedicalTextHighlighter
  *
  * Affiche un texte transcrit avec :
  *   - Surlignage vert  : terme médical reconnu exactement (ou via synonyme)
