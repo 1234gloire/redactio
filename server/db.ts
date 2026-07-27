@@ -286,10 +286,10 @@ export async function updateUserByStripeCustomerId(
   await db.update(users).set(data).where(eq(users.stripeCustomerId, stripeCustomerId));
 }
 
-export async function deleteUser(id: number): Promise<void> {
+export async function deactivateUser(id: number): Promise<void> {
   const db = await getDb();
   if (!db) return;
-  await db.delete(users).where(eq(users.id, id));
+  await db.update(users).set({ active: false }).where(eq(users.id, id));
 }
 
 export async function ensureLocalAdmin() {

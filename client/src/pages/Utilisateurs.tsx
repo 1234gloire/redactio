@@ -99,9 +99,9 @@ export default function Utilisateurs() {
     },
     onError: (e) => toast.error(e.message),
   });
-  const deleteUser = trpc.user.delete.useMutation({
+  const deactivateUser = trpc.user.delete.useMutation({
     onSuccess: () => {
-      toast.success("Utilisateur supprimé.");
+      toast.success("Utilisateur désactivé.");
       setDeleteTarget(null);
       refetch();
     },
@@ -283,7 +283,7 @@ export default function Utilisateurs() {
                         className="h-8 w-8 text-destructive hover:text-destructive"
                         disabled={isOrgAdmin && user.role !== "praticien"}
                         onClick={() => setDeleteTarget({ id: user.id, name: user.name, email: user.email })}
-                        aria-label="Supprimer l'utilisateur"
+                        aria-label="Désactiver l'utilisateur"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -306,21 +306,21 @@ export default function Utilisateurs() {
         <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Supprimer cet utilisateur ?</AlertDialogTitle>
+              <AlertDialogTitle>Désactiver cet utilisateur ?</AlertDialogTitle>
               <AlertDialogDescription>
-                Le compte {deleteTarget?.name || deleteTarget?.email || "sélectionné"} sera supprimé de MEDACTIO.
-                Cette action retire son accès à l'application.
+                Le compte {deleteTarget?.name || deleteTarget?.email || "sélectionné"} sera désactivé dans MEDACTIO.
+                Cette action retire son accès à l'application tout en conservant la traçabilité.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Annuler</AlertDialogCancel>
               <AlertDialogAction
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                onClick={() => deleteTarget && deleteUser.mutate({ userId: deleteTarget.id })}
-                disabled={deleteUser.isPending}
+                onClick={() => deleteTarget && deactivateUser.mutate({ userId: deleteTarget.id })}
+                disabled={deactivateUser.isPending}
               >
-                {deleteUser.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Supprimer
+                {deactivateUser.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Désactiver
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
