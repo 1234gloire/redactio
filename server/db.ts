@@ -376,31 +376,63 @@ export async function updateOrganisation(id: number, data: Partial<InsertOrganis
 
 // ─── Abonnements ──────────────────────────────────────────────────────────────
 
-export async function getSubscriptionByOrg(organisationId: number): Promise<Subscription | undefined> {
+export async function getSubscriptionByOrg(
+  organisationId: number
+): Promise<Subscription | undefined> {
   const db = await getDb();
-  if (!db) return undefined;
+
+  if (!db) {
+    return undefined;
+  }
+
   const result = await db
     .select()
     .from(subscriptions)
     .where(eq(subscriptions.organisationId, organisationId))
+    .orderBy(
+      desc(subscriptions.updatedAt),
+      desc(subscriptions.id)
+    )
     .limit(1);
-  return result.length > 0 ? result[0] : undefined;
+
+  return result[0];
 }
 
-export async function upsertSubscription(data: InsertSubscription): Promise<void> {
+export async function upsertSubscription(
+  data: InsertSubscription
+): Promise<void> {
   const db = await getDb();
-  if (!db) return;
+
+  if (!db) {
+    throw new Error("Base de données indisponible.");
+  }
+
+  const existing = await db
+    .select({
+      id: subscriptions.id,
+    })
+    .from(subscriptions)
+    .where(eq(subscriptions.organisationId, data.organisationId))
+    .orderBy(desc(subscriptions.id))
+    .limit(1);
+
   const updateData: Partial<InsertSubscription> = {
     plan: data.plan,
     status: data.status,
     seats: data.seats,
+    endDate: data.endDate ?? null,
   };
-  if (data.endDate !== undefined) {
-    updateData.endDate = data.endDate;
+
+  if (existing[0]) {
+    await db
+      .update(subscriptions)
+      .set(updateData)
+      .where(eq(subscriptions.id, existing[0].id));
+
+    return;
   }
-  await db.insert(subscriptions).values(data).onDuplicateKeyUpdate({
-    set: updateData,
-  });
+
+  await db.insert(subscriptions).values(data);
 }
 
 // ─── Prompts — Socle commun ───────────────────────────────────────────────────

@@ -203,7 +203,6 @@ export default function Profil() {
                 <Clock aria-hidden="true" />
                 <span>
                   Votre accès dépend de la convention signée entre votre organisme et MEDACTIO.
-                  La facturation et le nombre de praticiens autorisés sont gérés côté back-office MEDACTIO.
                 </span>
               </div>
             )}

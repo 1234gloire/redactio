@@ -24,8 +24,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Building2, Loader2, Plus, Trash2, Users } from "lucide-react";
-import { useState } from "react";
+import {
+  ArrowLeft,
+  Building2,
+  ChevronDown,
+  ChevronRight,
+  Loader2,
+  Plus,
+  Trash2,
+  UserRound,
+  Users,
+} from "lucide-react";
+import { useMemo, useState } from "react";
 import { trpc } from "../lib/trpc";
 import { toast } from "sonner";
 
@@ -38,12 +48,25 @@ const ROLE_LABELS: Record<string, string> = {
   admin: "Administrateur",
 };
 
+type PathView = "conventions" | "libre";
+
+type UserRow = {
+  id: number;
+  name: string | null;
+  email: string | null;
+  role: string;
+  active: boolean;
+  organisationId?: number | null;
+  lastSignedIn: string;
+};
+
 export default function Utilisateurs() {
   const { user } = useAuth();
   const userRole = (user as { role?: string })?.role ?? "praticien";
   const isRedactioAdmin = userRole === "admin";
   const isOrgAdmin = userRole === "org_admin";
   const organisationId = (user as { organisationId?: number | null })?.organisationId ?? undefined;
+
   const { data: users, refetch } = trpc.user.list.useQuery();
   const { data: orgs } = trpc.organisations.list.useQuery(undefined, {
     enabled: isRedactioAdmin,
@@ -52,6 +75,11 @@ export default function Utilisateurs() {
     { id: organisationId ?? 0 },
     { enabled: isOrgAdmin && Boolean(organisationId) }
   );
+
+  // Navigation à deux chemins (uniquement pour l'admin RÉDACTIO)
+  const [pathView, setPathView] = useState<PathView | null>(null);
+  const [expandedOrgs, setExpandedOrgs] = useState<Set<number>>(new Set());
+
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string | null; email: string | null } | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState({
@@ -63,8 +91,34 @@ export default function Utilisateurs() {
     rpps: "",
   });
 
+  const showOrgSelect = isRedactioAdmin && pathView === "conventions";
+
   const activePractitioners = users?.filter((item) => item.role === "praticien" && item.active).length ?? 0;
-  const selectedOrg = isRedactioAdmin && form.organisationId
+
+  const freePractitioners = useMemo<UserRow[]>(
+  () => (users ?? []).filter((u) => !u.organisationId && u.role === "praticien"),
+  [users]
+);
+
+  const sortedOrgs = useMemo(() => {
+    if (!orgs) return { active: [] as typeof orgs, inactive: [] as typeof orgs };
+    const active = orgs.filter((o) => o.subscription?.status === "actif");
+    const inactive = orgs.filter((o) => o.subscription?.status !== "actif");
+    return { active, inactive };
+  }, [orgs]);
+
+  const usersByOrg = useMemo(() => {
+    const map = new Map<number, UserRow[]>();
+    (users ?? []).forEach((u) => {
+      if (!u.organisationId) return;
+      const list = map.get(u.organisationId) ?? [];
+      list.push(u);
+      map.set(u.organisationId, list);
+    });
+    return map;
+  }, [users]);
+
+  const selectedOrg = showOrgSelect && form.organisationId
     ? orgs?.find((org) => org.id === Number(form.organisationId))
     : null;
   const orgLimit = selectedOrg?.subscription?.seats ?? null;
@@ -76,14 +130,14 @@ export default function Utilisateurs() {
       selectedOrg.practitionerCount >= selectedOrg.subscription.seats
   );
 
-  const getOrganisationName = (organisationId?: number | null) => {
-    if (!organisationId) {
-      return "Compte individuel";
+  const getOrganisationName = (orgId?: number | null) => {
+    if (!orgId) {
+      return "Praticien libre";
     }
     if (isRedactioAdmin) {
-      return orgs?.find((org) => org.id === organisationId)?.name ?? `Organisation #${organisationId}`;
+      return orgs?.find((org) => org.id === orgId)?.name ?? `Organisation #${orgId}`;
     }
-    return currentOrg?.name ?? `Organisation #${organisationId}`;
+    return currentOrg?.name ?? `Organisation #${orgId}`;
   };
 
   const setRole = trpc.user.setRole.useMutation({
@@ -108,17 +162,41 @@ export default function Utilisateurs() {
     onError: (e) => toast.error(e.message),
   });
 
+  function toggleOrg(id: number) {
+    setExpandedOrgs((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function openCreateDialog(presetOrgId?: number) {
+    setForm({
+      organisationId: presetOrgId ? String(presetOrgId) : "",
+      name: "",
+      email: "",
+      password: "",
+      specialite: "",
+      rpps: "",
+    });
+    setCreateOpen(true);
+  }
+
   function submitCreatePractitioner() {
     if (!form.name.trim() || !form.email.trim() || form.password.length < 8) {
       toast.error("Nom, email et mot de passe de 8 caractères minimum sont requis.");
       return;
     }
-    if (isRedactioAdmin && !form.organisationId) {
+    if (showOrgSelect && !form.organisationId) {
       toast.error("Sélectionnez l'organisation du praticien.");
       return;
     }
     createPractitioner.mutate({
-      organisationId: isRedactioAdmin ? Number(form.organisationId) : undefined,
+      organisationId: showOrgSelect ? Number(form.organisationId) : undefined,
       name: form.name,
       email: form.email,
       password: form.password,
@@ -127,106 +205,407 @@ export default function Utilisateurs() {
     });
   }
 
+  function renderPractitionerRow(item: UserRow) {
+    return (
+      <div key={item.id} className="flex items-center justify-between gap-3 rounded-lg border bg-card px-3 py-2">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-8 h-8 shrink-0 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
+            {item.name ? item.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) : "?"}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium truncate">{item.name ?? "Sans nom"}</p>
+            <p className="text-xs text-muted-foreground truncate">{item.email ?? "—"}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <Badge variant={item.active ? "secondary" : "outline"} className="text-[11px]">
+            {item.active ? "Actif" : "Inactif"}
+          </Badge>
+          {isRedactioAdmin ? (
+            <Select
+              value={item.role}
+              onValueChange={(role) => setRole.mutate({ userId: item.id, role: role as "praticien" | "org_admin" | "editeur_medical" | "relecteur_clinique" | "responsable_conformite" | "admin" })}
+            >
+              <SelectTrigger className="h-7 w-40 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(ROLE_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Badge variant="outline" className="text-[11px]">
+              {ROLE_LABELS[item.role] ?? item.role}
+            </Badge>
+          )}
+          <span className="text-[11px] text-muted-foreground hidden md:inline">
+            {new Date(item.lastSignedIn).toLocaleDateString("fr-FR")}
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-7 w-7 text-destructive hover:text-destructive"
+            disabled={isOrgAdmin && item.role !== "praticien"}
+            onClick={() => setDeleteTarget({ id: item.id, name: item.name, email: item.email })}
+            aria-label="Supprimer l'utilisateur"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const createDialog = (
+    <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {showOrgSelect ? "Ajouter un praticien conventionné" : "Ajouter un praticien libre"}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          {showOrgSelect && (
+            <div className="space-y-2">
+              <Label>Organisation</Label>
+              <Select
+                value={form.organisationId}
+                onValueChange={(orgId) => setForm({ ...form, organisationId: orgId })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Choisir l'organisation" />
+                </SelectTrigger>
+                <SelectContent>
+                  {orgs?.map((org) => (
+                    <SelectItem key={org.id} value={String(org.id)}>
+                      {org.name} · {org.practitionerCount}/{org.subscription?.seats ?? "?"} praticiens
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedOrg && (
+                <p className="text-xs text-muted-foreground">
+                  Convention : {selectedOrg.subscription?.status ?? "non configurée"} · quota {orgPractitionerCount}/{orgLimit ?? "?"}
+                </p>
+              )}
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label htmlFor="practitioner-name">Nom complet</Label>
+            <Input id="practitioner-name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="practitioner-email">Email professionnel</Label>
+            <Input id="practitioner-email" type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="practitioner-password">Mot de passe temporaire</Label>
+            <Input id="practitioner-password" type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="practitioner-specialite">Spécialité</Label>
+              <Input id="practitioner-specialite" value={form.specialite} onChange={(event) => setForm({ ...form, specialite: event.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="practitioner-rpps">RPPS</Label>
+              <Input
+                id="practitioner-rpps"
+                inputMode="numeric"
+                value={form.rpps}
+                onChange={(event) => setForm({ ...form, rpps: event.target.value.replace(/\D/g, "").slice(0, 11) })}
+              />
+            </div>
+          </div>
+          {selectedOrgFull && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+              Limite contractuelle atteinte pour cette organisation.
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setCreateOpen(false)}>Annuler</Button>
+          <Button onClick={submitCreatePractitioner} disabled={createPractitioner.isPending || (showOrgSelect && selectedOrgFull)}>
+            {createPractitioner.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Créer le praticien
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
+  const deleteDialog = (
+    <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Supprimer cet utilisateur ?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Le compte {deleteTarget?.name || deleteTarget?.email || "sélectionné"} sera supprimé de MEDACTIO.
+            Cette action retire son accès à l'application.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Annuler</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={() => deleteTarget && deleteUser.mutate({ userId: deleteTarget.id })}
+            disabled={deleteUser.isPending}
+          >
+            {deleteUser.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Supprimer
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
+  // ---- Vue org_admin : inchangée, liste unique des praticiens de son organisme ----
+  if (isOrgAdmin) {
+    return (
+      <RedactioLayout>
+        <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-xl font-bold text-foreground">Praticiens de l'organisme</h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Ajoutez les praticiens de votre organisme, dans la limite contractuelle fixée par MEDACTIO.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg border bg-card px-4 py-3 text-right">
+                <div className="text-xs text-muted-foreground">Praticiens actifs</div>
+                <div className="text-2xl font-bold">{activePractitioners}</div>
+              </div>
+              <Button size="sm" className="gap-1.5" onClick={() => openCreateDialog()}>
+                <Plus className="h-4 w-4" />
+                Ajouter un praticien
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {!users ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : users.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground text-sm">Aucun utilisateur enregistré.</div>
+            ) : (
+              users.map((item) => renderPractitionerRow(item))
+            )}
+          </div>
+        </div>
+        {createDialog}
+        {deleteDialog}
+      </RedactioLayout>
+    );
+  }
+
+  // ---- Vue admin RÉDACTIO : écran d'arrivée à deux chemins ----
+  if (isRedactioAdmin && !pathView) {
+    return (
+      <RedactioLayout>
+        <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+          <div>
+            <h1 className="text-xl font-bold text-foreground">Utilisateurs</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Gestion globale des comptes, rôles RBAC, organismes et suppressions admin.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card
+              className="cursor-pointer transition hover:border-primary hover:shadow-sm"
+              onClick={() => setPathView("conventions")}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Building2 className="h-5 w-5 text-primary" />
+                  </div>
+                  <CardTitle className="text-base">Conventions</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Organismes conventionnés, quotas de praticiens et informations associées.
+                </p>
+                <p className="text-xs text-muted-foreground mt-3">
+                  {orgs ? `${orgs.length} organisation(s)` : "Chargement…"}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card
+              className="cursor-pointer transition hover:border-primary hover:shadow-sm"
+              onClick={() => setPathView("libre")}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <UserRound className="h-5 w-5 text-primary" />
+                  </div>
+                  <CardTitle className="text-base">Praticien libre</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Praticiens sans organisme rattaché et leurs informations.
+                </p>
+                <p className="text-xs text-muted-foreground mt-3">
+                  {users ? `${freePractitioners.length} praticien(s)` : "Chargement…"}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+        {createDialog}
+        {deleteDialog}
+      </RedactioLayout>
+    );
+  }
+
+  // ---- Vue admin RÉDACTIO : Conventions ----
+  if (isRedactioAdmin && pathView === "conventions") {
+    return (
+      <RedactioLayout>
+        <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <button
+                type="button"
+                onClick={() => setPathView(null)}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-2"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Retour
+              </button>
+              <h1 className="text-xl font-bold text-foreground">Conventions</h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Organismes conventionnés, triés par statut, avec leur effectif de praticiens.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg border bg-card px-4 py-3 text-right">
+                <div className="text-xs text-muted-foreground">Organisations</div>
+                <div className="text-2xl font-bold">{orgs?.length ?? 0}</div>
+              </div>
+              <Button size="sm" className="gap-1.5" onClick={() => openCreateDialog()}>
+                <Plus className="h-4 w-4" />
+                Ajouter un praticien
+              </Button>
+            </div>
+          </div>
+
+          {!orgs ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : orgs.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground text-sm">Aucune organisation conventionnée.</div>
+          ) : (
+            <div className="space-y-6">
+              {([
+                { label: "Actives", items: sortedOrgs.active },
+                { label: "Inactives", items: sortedOrgs.inactive },
+              ] as const).map(({ label, items }) =>
+                items.length > 0 ? (
+                  <div key={label} className="space-y-3">
+                    <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {label} ({items.length})
+                    </h2>
+                    <div className="space-y-3">
+                      {items.map((org) => {
+                        const isExpanded = expandedOrgs.has(org.id);
+                        const orgPractitioners = usersByOrg.get(org.id) ?? [];
+                        const isActive = org.subscription?.status === "actif";
+                        return (
+                          <Card key={org.id}>
+                            <CardHeader
+                              className="pb-2 cursor-pointer select-none"
+                              onClick={() => toggleOrg(org.id)}
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  {isExpanded ? (
+                                    <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                  ) : (
+                                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                  )}
+                                  <div className="w-9 h-9 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center">
+                                    <Building2 className="h-4 w-4 text-primary" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <CardTitle className="text-sm truncate">{org.name}</CardTitle>
+                                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                      <Users className="h-3 w-3" />
+                                      {org.practitionerCount}/{org.subscription?.seats ?? "?"} praticiens
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <Badge variant={isActive ? "secondary" : "outline"} className="text-xs">
+                                    {org.subscription?.status ?? "non configurée"}
+                                  </Badge>
+                                  
+                                </div>
+                              </div>
+                            </CardHeader>
+                            {isExpanded && (
+                              <CardContent className="space-y-2 pt-0">
+                                {orgPractitioners.length === 0 ? (
+                                  <p className="text-xs text-muted-foreground py-2">
+                                    Aucun praticien rattaché à cette organisation.
+                                  </p>
+                                ) : (
+                                  orgPractitioners.map((item) => renderPractitionerRow(item))
+                                )}
+                              </CardContent>
+                            )}
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null
+              )}
+            </div>
+          )}
+        </div>
+        {createDialog}
+        {deleteDialog}
+      </RedactioLayout>
+    );
+  }
+
+  // ---- Vue admin RÉDACTIO : Praticien libre ----
   return (
     <RedactioLayout>
       <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-foreground">
-              {isOrgAdmin ? "Praticiens de l'organisme" : "Utilisateurs"}
-            </h1>
+            <button
+              type="button"
+              onClick={() => setPathView(null)}
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-2"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Retour
+            </button>
+            <h1 className="text-xl font-bold text-foreground">Praticien libre</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {isOrgAdmin
-                ? "Ajoutez les praticiens de votre organisme, dans la limite contractuelle fixée par MEDACTIO."
-                : "Gestion globale des comptes, rôles RBAC, organismes et suppressions admin."}
+              Praticiens sans organisme conventionné rattaché.
             </p>
           </div>
           <div className="flex items-center gap-3">
             <div className="rounded-lg border bg-card px-4 py-3 text-right">
-              <div className="text-xs text-muted-foreground">{isOrgAdmin ? "Praticiens actifs" : "Comptes"}</div>
-              <div className="text-2xl font-bold">{isOrgAdmin ? activePractitioners : users?.length ?? 0}</div>
+              <div className="text-xs text-muted-foreground">Praticiens libres</div>
+              <div className="text-2xl font-bold">{freePractitioners.length}</div>
             </div>
-            {(isOrgAdmin || isRedactioAdmin) && (
-              <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="gap-1.5">
-                    <Plus className="h-4 w-4" />
-                    Ajouter un praticien
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Ajouter un praticien conventionné</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    {isRedactioAdmin && (
-                      <div className="space-y-2">
-                        <Label>Organisation</Label>
-                        <Select
-                          value={form.organisationId}
-                          onValueChange={(organisationId) => setForm({ ...form, organisationId })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choisir l'organisation" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {orgs?.map((org) => (
-                              <SelectItem key={org.id} value={String(org.id)}>
-                                {org.name} · {org.practitionerCount}/{org.subscription?.seats ?? "?"} praticiens
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {selectedOrg && (
-                          <p className="text-xs text-muted-foreground">
-                            Convention : {selectedOrg.subscription?.status ?? "non configurée"} · quota {orgPractitionerCount}/{orgLimit ?? "?"}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    <div className="space-y-2">
-                      <Label htmlFor="practitioner-name">Nom complet</Label>
-                      <Input id="practitioner-name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="practitioner-email">Email professionnel</Label>
-                      <Input id="practitioner-email" type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="practitioner-password">Mot de passe temporaire</Label>
-                      <Input id="practitioner-password" type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="practitioner-specialite">Spécialité</Label>
-                        <Input id="practitioner-specialite" value={form.specialite} onChange={(event) => setForm({ ...form, specialite: event.target.value })} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="practitioner-rpps">RPPS</Label>
-                        <Input
-                          id="practitioner-rpps"
-                          inputMode="numeric"
-                          value={form.rpps}
-                          onChange={(event) => setForm({ ...form, rpps: event.target.value.replace(/\D/g, "").slice(0, 11) })}
-                        />
-                      </div>
-                    </div>
-                    {selectedOrgFull && (
-                      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-                        Limite contractuelle atteinte pour cette organisation.
-                      </div>
-                    )}
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setCreateOpen(false)}>Annuler</Button>
-                    <Button onClick={submitCreatePractitioner} disabled={createPractitioner.isPending || selectedOrgFull}>
-                      {createPractitioner.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                      Créer le praticien
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            )}
+            
           </div>
         </div>
 
@@ -235,97 +614,17 @@ export default function Utilisateurs() {
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
             </div>
-          ) : users.length === 0 ? (
+          ) : freePractitioners.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground text-sm">
-              Aucun utilisateur enregistré.
+              Aucun praticien libre enregistré.
             </div>
           ) : (
-            users.map((user) => (
-              <Card key={user.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                        {user.name ? user.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2) : "?"}
-                      </div>
-                      <div>
-                        <CardTitle className="text-sm">{user.name ?? "Sans nom"}</CardTitle>
-                        <p className="text-xs text-muted-foreground">{user.email ?? "—"}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={user.active ? "secondary" : "outline"} className="text-xs">
-                        {user.active ? "Actif" : "Inactif"}
-                      </Badge>
-                      {isRedactioAdmin ? (
-                        <Select
-                          value={user.role}
-                          onValueChange={(role) => setRole.mutate({ userId: user.id, role: role as "praticien" | "org_admin" | "editeur_medical" | "relecteur_clinique" | "responsable_conformite" | "admin" })}
-                        >
-                          <SelectTrigger className="h-7 w-44 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(ROLE_LABELS).map(([value, label]) => (
-                              <SelectItem key={value} value={value}>{label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <Badge variant="outline" className="text-xs">
-                          {ROLE_LABELS[user.role] ?? user.role}
-                        </Badge>
-                      )}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        disabled={isOrgAdmin && user.role !== "praticien"}
-                        onClick={() => setDeleteTarget({ id: user.id, name: user.name, email: user.email })}
-                        aria-label="Supprimer l'utilisateur"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="text-xs text-muted-foreground flex flex-wrap gap-x-5 gap-y-1">
-                  <p>Rôle : <Badge variant={user.role === "admin" ? "destructive" : "outline"} className="text-[11px]">{ROLE_LABELS[user.role]}</Badge></p>
-                  <p className="inline-flex items-center gap-1">
-                    <Building2 className="h-3 w-3" />
-                    Organisation : {getOrganisationName(user.organisationId)}
-                  </p>
-                  <p>Dernière connexion : {new Date(user.lastSignedIn).toLocaleDateString("fr-FR")}</p>
-                </CardContent>
-              </Card>
-            ))
+            freePractitioners.map((item) => renderPractitionerRow(item))
           )}
         </div>
-
-        <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Supprimer cet utilisateur ?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Le compte {deleteTarget?.name || deleteTarget?.email || "sélectionné"} sera supprimé de MEDACTIO.
-                Cette action retire son accès à l'application.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Annuler</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                onClick={() => deleteTarget && deleteUser.mutate({ userId: deleteTarget.id })}
-                disabled={deleteUser.isPending}
-              >
-                {deleteUser.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Supprimer
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
+      {createDialog}
+      {deleteDialog}
     </RedactioLayout>
   );
 }

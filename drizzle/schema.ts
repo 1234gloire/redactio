@@ -83,7 +83,9 @@ export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 // ─── Abonnements ──────────────────────────────────────────────────────────────
 export const subscriptions = mysqlTable("subscriptions", {
   id: int("id").autoincrement().primaryKey(),
-  organisationId: int("organisationId").notNull(),
+  organisationId: int("organisationId")
+  .notNull()
+  .unique(),
   plan: mysqlEnum("plan", ["essai", "standard", "premium", "entreprise"])
     .default("essai")
     .notNull(),

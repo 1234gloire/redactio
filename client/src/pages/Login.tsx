@@ -15,7 +15,12 @@ import {
   ShieldCheck,
   UserRound,
 } from "lucide-react";
-import { FormEvent, MouseEvent, useEffect, useState } from "react";
+import {
+  FormEvent,
+  MouseEvent,
+  useEffect,
+  useState,
+} from "react";
 import { useLocation } from "wouter";
 
 const TRUST_CHIPS = [
@@ -28,23 +33,39 @@ const TRUST_CHIPS = [
 type Tab = "login" | "signup";
 type SignupMode = "practitioner" | "hospital";
 
-function RedactioMark({ inverted = false }: { inverted?: boolean }) {
+function RedactioMark({
+  inverted = false,
+}: {
+  inverted?: boolean;
+}) {
   if (inverted) {
     return (
       <div className="flex h-11 w-11 shrink-0 items-center justify-center">
-        <img src="/logo-mark-teal.png" alt="" className="h-full w-full object-contain" />
+        <img
+          src="/logo-mark-teal.png"
+          alt=""
+          className="h-full w-full object-contain"
+        />
       </div>
     );
   }
 
   return (
     <div className="h-[46px] w-[46px] shrink-0 overflow-hidden rounded-[13px] shadow-[0_8px_20px_-8px_rgba(30,58,95,.55)]">
-      <img src="/logo-mark-navy.png" alt="" className="h-full w-full object-cover" />
+      <img
+        src="/logo-mark-navy.png"
+        alt=""
+        className="h-full w-full object-cover"
+      />
     </div>
   );
 }
 
-function BrandLockup({ inverted = false }: { inverted?: boolean }) {
+function BrandLockup({
+  inverted = false,
+}: {
+  inverted?: boolean;
+}) {
   return (
     <div className="flex items-center gap-3">
       <RedactioMark inverted={inverted} />
@@ -87,22 +108,36 @@ export default function Login() {
   const [hospitalName, setHospitalName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
-  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] =
+    useState(false);
   const [specialty, setSpecialty] = useState("");
+  const [postalAddress, setPostalAddress] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [rpps, setRpps] = useState("");
-  const [marketingConsent, setMarketingConsent] = useState(false);
-  const [signupError, setSignupError] = useState<string | null>(null);
+
+  const [marketingConsent, setMarketingConsent] =
+    useState(false);
+  const [legalConsent, setLegalConsent] = useState(false);
+
+  const [signupError, setSignupError] =
+    useState<string | null>(null);
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: (data) => {
       if (data?.requiresPasswordChange) {
-        setLocation(`/reinitialiser-mot-de-passe?email=${encodeURIComponent(email.trim())}`);
+        setLocation(
+          `/reinitialiser-mot-de-passe?email=${encodeURIComponent(
+            email.trim(),
+          )}`,
+        );
         window.location.reload();
         return;
       }
+
       setLocation("/dashboard");
       window.location.reload();
     },
+
     onError: (err) => {
       setError(err.message || "Connexion impossible.");
     },
@@ -113,13 +148,17 @@ export default function Login() {
       setLocation("/paiement");
       window.location.reload();
     },
+
     onError: (err) => {
-      setSignupError(err.message || "Inscription impossible.");
+      setSignupError(
+        err.message || "Inscription impossible.",
+      );
     },
   });
 
   useEffect(() => {
-    document.title = "MEDACTIO — Bienvenue dans votre espace praticien";
+    document.title =
+      "MEDACTIO — Bienvenue dans votre espace praticien";
   }, []);
 
   useEffect(() => {
@@ -134,7 +173,20 @@ export default function Login() {
     setSignupError(null);
   };
 
-  const handleLogin = (event: FormEvent<HTMLFormElement>) => {
+  const handleSignupModeChange = (
+    mode: SignupMode,
+  ) => {
+    setSignupMode(mode);
+    setSignupError(null);
+
+    if (mode === "practitioner") {
+      setLegalConsent(false);
+    }
+  };
+
+  const handleLogin = (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
     setError(null);
 
@@ -144,26 +196,44 @@ export default function Login() {
     });
   };
 
-  const handlePasswordResetNavigation = (event: MouseEvent<HTMLAnchorElement>) => {
+  const handlePasswordResetNavigation = (
+    event: MouseEvent<HTMLAnchorElement>,
+  ) => {
     event.preventDefault();
+
     const normalizedEmail = email.trim();
+
     if (!normalizedEmail) {
-      setError("Veuillez renseigner votre adresse email avant de réinitialiser votre mot de passe.");
+      setError(
+        "Veuillez renseigner votre adresse email avant de réinitialiser votre mot de passe.",
+      );
       return;
     }
 
-    const query = normalizedEmail
-      ? `?email=${encodeURIComponent(email.trim())}`
-      : "";
-    setLocation(`/reinitialiser-mot-de-passe${query}`);
+    const query = `?email=${encodeURIComponent(
+      normalizedEmail,
+    )}`;
+
+    setLocation(
+      `/reinitialiser-mot-de-passe${query}`,
+    );
   };
 
-  const handleSignup = (event: FormEvent<HTMLFormElement>) => {
+  const handleSignup = (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
     setSignupError(null);
 
     if (signupMode === "hospital") {
-      window.location.href = "/#demo";
+      if (!legalConsent) {
+        setSignupError(
+          "Vous devez accepter les Conditions d’utilisation et la Politique de confidentialité.",
+        );
+        return;
+      }
+
+      window.location.href = "/#contact";
       return;
     }
 
@@ -208,16 +278,20 @@ export default function Login() {
             backgroundPosition: "62% center",
           }}
         >
-          <div className="absolute inset-x-0 top-0 flex flex-wrap items-center gap-3 bg-[#0b1b29]/55 px-[26px] py-3 text-[11.5px] text-[#dbe6ec] backdrop-blur-md min-[861px]:gap-4 min-[861px]:px-10 min-[861px]:text-[12.5px] min-[1081px]:px-[60px]">
+          <div className="absolute inset-x-0 top-0 flex flex-wrap items-center gap-3 bg-[#0b1b29]/55 px-[26px] py-3 text-[11.5px] text-[#dbe6ec]            backdrop-blur-md min-[861px]:gap-4 min-[861px]:px-10 min-[861px]:text-[12.5px] min-[1081px]:px-[60px]">
             <span className="flex items-center gap-2 font-semibold text-white">
               <ShieldCheck className="h-[15px] w-[15px] shrink-0 text-[#5fd6c6]" />
-              Conforme aux exigences de protection des données de santé
+              Conforme aux exigences de protection des
+              données de santé
             </span>
 
             <span className="flex flex-wrap gap-x-4 gap-y-1">
               {TRUST_CHIPS.map((label) => (
-                <span key={label} className="inline-flex items-center gap-1">
-                  <span className="font-bold text-[#5fd6c6]">✓</span>
+                <span
+                  key={label}
+                  className="inline-flex items-center gap-1"
+                >
+                  <span className="w-[15px] shrink-0 font-bold text-[#5fd6c6]">✓</span>
                   {label}
                 </span>
               ))}
@@ -226,16 +300,23 @@ export default function Login() {
 
           <h2
             className="m-0 max-w-none text-[32px] font-semibold leading-[1.1] tracking-[-.5px] drop-shadow-[0_2px_30px_rgba(0,0,0,.35)] min-[861px]:max-w-[13ch] min-[861px]:text-[clamp(34px,3.6vw,54px)]"
-            style={{ fontFamily: '"Spectral", Georgia, serif' }}
+            style={{
+              fontFamily:
+                '"Spectral", Georgia, serif',
+            }}
           >
             Bienvenue dans votre espace{" "}
-            <em className="italic text-[#7fe3d3]">praticien</em>.
+            <em className="italic text-[#7fe3d3]">
+              praticien
+            </em>
+            .
           </h2>
 
           <p className="mt-[18px] hidden max-w-[46ch] text-[16px] leading-[1.55] text-[#d6e3e9] min-[861px]:block">
-            Courrier de sortie, conciliation médicamenteuse,
-            correspondance, observation : collez ou dictez vos notes,
-            MEDACTIO les met en forme — pseudonymisées, conformes, prêtes
+            Courrier de sortie, conciliation
+            médicamenteuse, correspondance, observation :
+            collez ou dictez vos notes, MEDACTIO les met
+            en forme — pseudonymisées, conformes, prêtes
             à relire et signer.
           </p>
 
@@ -254,10 +335,16 @@ export default function Login() {
               <>
                 <h1
                   className="m-0 text-[31px] font-semibold leading-[1.15] tracking-[-.3px]"
-                  style={{ fontFamily: '"Spectral", Georgia, serif' }}
+                  style={{
+                    fontFamily:
+                      '"Spectral", Georgia, serif',
+                  }}
                 >
                   Bon{" "}
-                  <em className="italic text-[#0a7b70]">retour</em>.
+                  <em className="italic text-[#0a7b70]">
+                    retour
+                  </em>
+                  .
                 </h1>
 
                 <p className="mb-6 mt-1.5 text-[14.5px] leading-[1.5] text-[#5a6b78]">
@@ -268,15 +355,22 @@ export default function Login() {
               <>
                 <h1
                   className="m-0 text-[31px] font-semibold leading-[1.15] tracking-[-.3px]"
-                  style={{ fontFamily: '"Spectral", Georgia, serif' }}
+                  style={{
+                    fontFamily:
+                      '"Spectral", Georgia, serif',
+                  }}
                 >
                   Créons votre{" "}
-                  <em className="italic text-[#0a7b70]">compte</em>.
+                  <em className="italic text-[#0a7b70]">
+                    compte
+                  </em>
+                  .
                 </h1>
 
                 <p className="mb-6 mt-1.5 text-[14.5px] leading-[1.5] text-[#5a6b78]">
-                  Choisissez le parcours adapté : praticien individuel ou
-                  convention hospitalière.
+                  Choisissez le parcours adapté :
+                  praticien individuel ou convention
+                  hospitalière.
                 </p>
               </>
             )}
@@ -284,9 +378,13 @@ export default function Login() {
             <div className="mb-[22px] flex gap-1 rounded-[14px] bg-[#eef2f4] p-[5px]">
               <button
                 type="button"
-                onClick={() => handleTabChange("login")}
+                onClick={() =>
+                  handleTabChange("login")
+                }
                 className={`flex-1 rounded-[10px] border-0 px-2 py-[11px] text-[14.5px] font-bold transition ${
-                  tab === "login" ? activeTabClass : inactiveTabClass
+                  tab === "login"
+                    ? activeTabClass
+                    : inactiveTabClass
                 }`}
               >
                 Connexion
@@ -294,9 +392,13 @@ export default function Login() {
 
               <button
                 type="button"
-                onClick={() => handleTabChange("signup")}
+                onClick={() =>
+                  handleTabChange("signup")
+                }
                 className={`flex-1 rounded-[10px] border-0 px-2 py-[11px] text-[14.5px] font-bold transition ${
-                  tab === "signup" ? activeTabClass : inactiveTabClass
+                  tab === "signup"
+                    ? activeTabClass
+                    : inactiveTabClass
                 }`}
               >
                 Inscription
@@ -319,7 +421,9 @@ export default function Login() {
                     placeholder="votre@email.com"
                     autoComplete="username"
                     value={email}
-                    onChange={(event) => setEmail(event.target.value)}
+                    onChange={(event) =>
+                      setEmail(event.target.value)
+                    }
                     required
                     className={inputClass}
                   />
@@ -336,7 +440,9 @@ export default function Login() {
 
                     <a
                       href="/reinitialiser-mot-de-passe"
-                      onClick={handlePasswordResetNavigation}
+                      onClick={
+                        handlePasswordResetNavigation
+                      }
                       className="text-[12.5px] font-bold text-[#0e9c8e] hover:underline"
                     >
                       Oublié ?
@@ -346,11 +452,17 @@ export default function Login() {
                   <div className="relative">
                     <Input
                       id="password"
-                      type={showPassword ? "text" : "password"}
+                      type={
+                        showPassword
+                          ? "text"
+                          : "password"
+                      }
                       placeholder="••••••••"
                       autoComplete="current-password"
                       value={password}
-                      onChange={(event) => setPassword(event.target.value)}
+                      onChange={(event) =>
+                        setPassword(event.target.value)
+                      }
                       required
                       className={`${inputClass} pr-11`}
                     />
@@ -358,7 +470,10 @@ export default function Login() {
                     <button
                       type="button"
                       onClick={() =>
-                        setShowPassword((currentValue) => !currentValue)
+                        setShowPassword(
+                          (currentValue) =>
+                            !currentValue,
+                        )
                       }
                       className={`absolute right-3 top-1/2 flex -translate-y-1/2 border-0 bg-transparent p-1 transition ${
                         showPassword
@@ -396,6 +511,7 @@ export default function Login() {
                   className="h-auto w-full gap-2 rounded-full border-0 bg-[#0e9c8e] py-[15px] text-[15.5px] font-bold text-white shadow-[0_12px_26px_-12px_rgba(14,156,142,.9)] transition hover:-translate-y-px hover:bg-[#0c8a7d] hover:shadow-[0_16px_32px_-12px_rgba(14,156,142,.95)] disabled:pointer-events-none disabled:opacity-60"
                 >
                   <Lock className="h-[17px] w-[17px]" />
+
                   {loginMutation.isPending
                     ? "Connexion…"
                     : "Se connecter"}
@@ -404,7 +520,9 @@ export default function Login() {
                 <nav className="mt-[26px] overflow-hidden rounded-2xl border border-[#e4ebee] bg-white">
                   <a
                     href="/reinitialiser-mot-de-passe"
-                    onClick={handlePasswordResetNavigation}
+                    onClick={
+                      handlePasswordResetNavigation
+                    }
                     className="flex items-center justify-between gap-2.5 border-b border-[#e4ebee] px-[18px] py-[15px] text-[14px] font-semibold text-[#0b1b29] transition hover:bg-[#eef6f4] hover:text-[#0a7b70]"
                   >
                     J&apos;ai oublié mon mot de passe
@@ -415,7 +533,8 @@ export default function Login() {
                     href="/conformite"
                     className="flex items-center justify-between gap-2.5 border-b border-[#e4ebee] px-[18px] py-[15px] text-[14px] font-semibold text-[#0b1b29] transition hover:bg-[#eef6f4] hover:text-[#0a7b70]"
                   >
-                    Sécurité &amp; protection des données
+                    Sécurité &amp; protection des
+                    données
                     <ChevronRight className="h-4 w-4 shrink-0 text-[#8a99a4]" />
                   </a>
 
@@ -433,10 +552,11 @@ export default function Login() {
                 <div className="mb-[18px] flex gap-1 rounded-[14px] bg-[#eef2f4] p-[5px]">
                   <button
                     type="button"
-                    onClick={() => {
-                      setSignupMode("practitioner");
-                      setSignupError(null);
-                    }}
+                    onClick={() =>
+                      handleSignupModeChange(
+                        "practitioner",
+                      )
+                    }
                     className={`flex flex-1 items-center justify-center gap-[7px] rounded-[10px] border-0 px-2 py-[11px] text-[14px] font-bold transition ${
                       signupMode === "practitioner"
                         ? activeTabClass
@@ -449,10 +569,9 @@ export default function Login() {
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setSignupMode("hospital");
-                      setSignupError(null);
-                    }}
+                    onClick={() =>
+                      handleSignupModeChange("hospital")
+                    }
                     className={`flex flex-1 items-center justify-center gap-[7px] rounded-[10px] border-0 px-2 py-[11px] text-[14px] font-bold transition ${
                       signupMode === "hospital"
                         ? activeTabClass
@@ -470,16 +589,18 @@ export default function Login() {
                       <strong className="text-[#0a7b70]">
                         Inscription praticien individuel.
                       </strong>{" "}
-                      Ce compte est personnel et déclenche le suivi
-                      d&apos;inscription MEDACTIO.
+                      Ce compte est personnel et déclenche
+                      le suivi d&apos;inscription MEDACTIO.
                     </>
                   ) : (
                     <>
                       <strong className="text-[#0a7b70]">
                         Convention hospitalière.
                       </strong>{" "}
-                      Votre établissement signe une convention : nous vous
-                      recontactons pour ouvrir les accès de votre service.
+                      Votre établissement signe une
+                      convention : nous vous recontactons
+                      pour ouvrir les accès de votre
+                      service.
                     </>
                   )}
                 </div>
@@ -489,7 +610,9 @@ export default function Login() {
                     htmlFor="fullName"
                     className="mb-[7px] block text-[13px] font-bold text-[#0b1b29]"
                   >
-                    Nom complet
+                    {signupMode === "practitioner"
+                      ? "Nom complet"
+                      : "Nom complet du responsable"}
                   </Label>
 
                   <Input
@@ -498,7 +621,9 @@ export default function Login() {
                     placeholder="Jean Dupont"
                     autoComplete="name"
                     value={fullName}
-                    onChange={(event) => setFullName(event.target.value)}
+                    onChange={(event) =>
+                      setFullName(event.target.value)
+                    }
                     required
                     className={inputClass}
                   />
@@ -510,7 +635,7 @@ export default function Login() {
                       htmlFor="hospitalName"
                       className="mb-[7px] block text-[13px] font-bold text-[#0b1b29]"
                     >
-                      Établissement / service
+                      Établissement / GHT
                     </Label>
 
                     <Input
@@ -519,7 +644,9 @@ export default function Login() {
                       placeholder="CH de … — service de …"
                       value={hospitalName}
                       onChange={(event) =>
-                        setHospitalName(event.target.value)
+                        setHospitalName(
+                          event.target.value,
+                        )
                       }
                       required
                       className={inputClass}
@@ -549,124 +676,243 @@ export default function Login() {
                   />
                 </div>
 
-                <div className="mb-4">
-                  <Label
-                    htmlFor="signupPassword"
-                    className="mb-[7px] block text-[13px] font-bold text-[#0b1b29]"
-                  >
-                    Mot de passe
-                  </Label>
-
-                  <div className="relative">
-                    <Input
-                      id="signupPassword"
-                      type={showSignupPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      autoComplete="new-password"
-                      value={signupPassword}
-                      onChange={(event) =>
-                        setSignupPassword(event.target.value)
-                      }
-                      required={signupMode === "practitioner"}
-                      minLength={8}
-                      className={`${inputClass} pr-11`}
-                    />
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowSignupPassword(
-                          (currentValue) => !currentValue,
-                        )
-                      }
-                      className={`absolute right-3 top-1/2 flex -translate-y-1/2 border-0 bg-transparent p-1 transition ${
-                        showSignupPassword
-                          ? "text-[#0e9c8e]"
-                          : "text-[#8a99a4] hover:text-[#0e9c8e]"
-                      }`}
-                      aria-label={
-                        showSignupPassword
-                          ? "Masquer le mot de passe"
-                          : "Afficher le mot de passe"
-                      }
-                    >
-                      {showSignupPassword ? (
-                        <EyeOff className="h-[19px] w-[19px]" />
-                      ) : (
-                        <Eye className="h-[19px] w-[19px]" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
-                  <div className="mb-4">
-                    <Label
-                      htmlFor="specialty"
-                      className="mb-[7px] block text-[13px] font-bold text-[#0b1b29]"
-                    >
-                      Spécialité
-                    </Label>
-
-                    <Input
-                      id="specialty"
-                      type="text"
-                      placeholder="Cardiologie"
-                      value={specialty}
-                      onChange={(event) =>
-                        setSpecialty(event.target.value)
-                      }
-                      required={signupMode === "practitioner"}
-                      className={inputClass}
-                    />
-                  </div>
-
-                  <div className="mb-4">
-                    <div className="mb-[7px] flex items-baseline justify-between">
+                {signupMode === "hospital" && (
+                  <>
+                    <div className="mb-4">
                       <Label
-                        htmlFor="rpps"
-                        className="text-[13px] font-bold text-[#0b1b29]"
+                        htmlFor="postalAddress"
+                        className="mb-[7px] block text-[13px] font-bold text-[#0b1b29]"
                       >
-                        RPPS
+                        Adresse postale
                       </Label>
 
-                      <span className="text-[12px] font-semibold text-[#8a99a4]">
-                        (facultatif)
-                      </span>
+                      <Input
+                        id="postalAddress"
+                        type="text"
+                        placeholder="1 rue de l'Hôpital, 75001 Paris"
+                        value={postalAddress}
+                        onChange={(event) =>
+                          setPostalAddress(
+                            event.target.value,
+                          )
+                        }
+                        required
+                        className={inputClass}
+                      />
                     </div>
 
-                    <Input
-                      id="rpps"
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="11 chiffres"
-                      pattern="\d{11}"
-                      title="Le numéro RPPS doit comporter 11 chiffres"
-                      value={rpps}
-                      onChange={(event) => setRpps(event.target.value)}
-                      className={inputClass}
+                    <div className="mb-4">
+                      <Label
+                        htmlFor="phoneNumber"
+                        className="mb-[7px] block text-[13px] font-bold text-[#0b1b29]"
+                      >
+                        Numéro de téléphone
+                      </Label>
+
+                      <Input
+                        id="phoneNumber"
+                        type="tel"
+                        placeholder="01 23 45 67 89"
+                        value={phoneNumber}
+                        onChange={(event) =>
+                          setPhoneNumber(
+                            event.target.value,
+                          )
+                        }
+                        required
+                        className={inputClass}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {signupMode === "practitioner" && (
+                  <>
+                    <div className="mb-4">
+                      <Label
+                        htmlFor="signupPassword"
+                        className="mb-[7px] block text-[13px] font-bold text-[#0b1b29]"
+                      >
+                        Mot de passe
+                      </Label>
+
+                      <div className="relative">
+                        <Input
+                          id="signupPassword"
+                          type={
+                            showSignupPassword
+                              ? "text"
+                              : "password"
+                          }
+                          placeholder="••••••••"
+                          autoComplete="new-password"
+                          value={signupPassword}
+                          onChange={(event) =>
+                            setSignupPassword(
+                              event.target.value,
+                            )
+                          }
+                          required
+                          minLength={8}
+                          className={`${inputClass} pr-11`}
+                        />
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowSignupPassword(
+                              (currentValue) =>
+                                !currentValue,
+                            )
+                          }
+                          className={`absolute right-3 top-1/2 flex -translate-y-1/2 border-0 bg-transparent p-1 transition ${
+                            showSignupPassword
+                              ? "text-[#0e9c8e]"
+                              : "text-[#8a99a4] hover:text-[#0e9c8e]"
+                          }`}
+                          aria-label={
+                            showSignupPassword
+                              ? "Masquer le mot de passe"
+                              : "Afficher le mot de passe"
+                          }
+                        >
+                          {showSignupPassword ? (
+                            <EyeOff className="h-[19px] w-[19px]" />
+                          ) : (
+                            <Eye className="h-[19px] w-[19px]" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
+                      <div className="mb-4">
+                        <Label
+                          htmlFor="specialty"
+                          className="mb-[7px] block text-[13px] font-bold text-[#0b1b29]"
+                        >
+                          Spécialité
+                        </Label>
+
+                        <Input
+                          id="specialty"
+                          type="text"
+                          placeholder="Cardiologie"
+                          value={specialty}
+                          onChange={(event) =>
+                            setSpecialty(
+                              event.target.value,
+                            )
+                          }
+                          required
+                          className={inputClass}
+                        />
+                      </div>
+
+                      <div className="mb-4">
+                        <div className="mb-[7px] flex items-baseline justify-between">
+                          <Label
+                            htmlFor="rpps"
+                            className="text-[13px] font-bold text-[#0b1b29]"
+                          >
+                            RPPS
+                          </Label>
+
+                          <span className="text-[12px] font-semibold text-[#8a99a4]">
+                            (facultatif)
+                          </span>
+                        </div>
+
+                        <Input
+                          id="rpps"
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="11 chiffres"
+                          pattern="\d{11}"
+                          title="Le numéro RPPS doit comporter 11 chiffres"
+                          value={rpps}
+                          onChange={(event) =>
+                            setRpps(event.target.value)
+                          }
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+
+                    <label className="mb-[18px] mt-1.5 flex cursor-pointer items-start gap-3 rounded-xl border border-[#e4ebee] bg-[#f7fafa] px-[15px] py-3.5 text-[12.7px] leading-[1.45] text-[#5a6b78]">
+                      <input
+                        type="checkbox"
+                        checked={marketingConsent}
+                        onChange={(event) =>
+                          setMarketingConsent(
+                            event.target.checked,
+                          )
+                        }
+                        className="mt-0.5 h-5 w-5 shrink-0 accent-[#0e9c8e]"
+                      />
+
+                      <span>
+                        J&apos;accepte de recevoir des
+                        emails d&apos;information,
+                        newsletters et actualités de
+                        MEDACTIO.{" "}
+                        <em className="italic">
+                          (facultatif)
+                        </em>
+                      </span>
+                    </label>
+                  </>
+                )}
+
+                {signupMode === "hospital" && (
+                  <label className="mb-[18px] mt-2 flex cursor-pointer items-start gap-3 rounded-xl border border-[#e4ebee] bg-[#f7fafa] px-[15px] py-3.5 text-[12.7px] leading-[1.45] text-[#5a6b78]">
+                    <input
+                      type="checkbox"
+                      checked={legalConsent}
+                      onChange={(event) => {
+                        setLegalConsent(
+                          event.target.checked,
+                        );
+
+                        if (event.target.checked) {
+                          setSignupError(null);
+                        }
+                      }}
+                      required
+                      className="mt-0.5 h-5 w-5 shrink-0 accent-[#0e9c8e]"
                     />
-                  </div>
-                </div>
 
-                <label className="mb-[18px] mt-1.5 flex cursor-pointer items-start gap-3 rounded-xl border border-[#e4ebee] bg-[#f7fafa] px-[15px] py-3.5 text-[12.7px] leading-[1.45] text-[#5a6b78]">
-                  <input
-                    type="checkbox"
-                    checked={marketingConsent}
-                    onChange={(event) =>
-                      setMarketingConsent(event.target.checked)
-                    }
-                    className="mt-0.5 h-5 w-5 shrink-0 accent-[#0e9c8e]"
-                  />
+                    <span>
+                      J&apos;accepte les{" "}
+                      <a
+                        href="/conditions-utilisation"
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(event) =>
+                          event.stopPropagation()
+                        }
+                        className="font-semibold text-[#0e9c8e] hover:underline"
+                      >
+                        Conditions d&apos;utilisation
+                      </a>{" "}
+                      et la{" "}
+                      <a
+                        href="/politique-confidentialite"
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(event) =>
+                          event.stopPropagation()
+                        }
+                        className="font-semibold text-[#0e9c8e] hover:underline"
+                      >
+                        Politique de confidentialité
+                      </a>
+                      .
+                    </span>
+                  </label>
+                )}
 
-                  <span>
-                    J&apos;accepte de recevoir des emails d&apos;information,
-                    newsletters et actualités de MEDACTIO.{" "}
-                    <em className="italic">(facultatif)</em>
-                  </span>
-                </label>
-
-                {signupError && signupMode === "practitioner" && (
+                {signupError && (
                   <div
                     role="alert"
                     className="mb-4 flex items-start gap-2 rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
@@ -679,8 +925,10 @@ export default function Login() {
                 <Button
                   type="submit"
                   disabled={
-                    signupMode === "practitioner" &&
-                    signupMutation.isPending
+                    (signupMode === "practitioner" &&
+                      signupMutation.isPending) ||
+                    (signupMode === "hospital" &&
+                      !legalConsent)
                   }
                   className={`h-auto w-full gap-2 rounded-full border-0 py-[15px] text-[15.5px] font-bold text-white shadow-[0_12px_26px_-12px_rgba(14,156,142,.9)] transition hover:-translate-y-px disabled:pointer-events-none disabled:opacity-60 ${
                     signupMode === "hospital"
@@ -702,24 +950,6 @@ export default function Login() {
                     </>
                   )}
                 </Button>
-
-                <p className="mx-0.5 mt-4 text-center text-[11.8px] leading-[1.55] text-[#8a99a4]">
-                  En créant un compte, vous acceptez nos{" "}
-                  <a
-                    href="#"
-                    className="font-semibold text-[#0e9c8e] hover:underline"
-                  >
-                    Conditions d&apos;utilisation
-                  </a>{" "}
-                  et notre{" "}
-                  <a
-                    href="#"
-                    className="font-semibold text-[#0e9c8e] hover:underline"
-                  >
-                    Politique de confidentialité
-                  </a>
-                  .
-                </p>
               </form>
             )}
 
