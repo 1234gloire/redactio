@@ -1,14 +1,23 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import VoiceRecorderWithPreview from "@/components/VoiceRecorderWithPreview";
 import { getLoginUrl } from "@/const";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, Bone, Check, Copy, FileText, RefreshCw, Shield } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import {
+  useCallback,
+  useMemo,
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from "react";
 import { toast } from "sonner";
 import { Link } from "wouter";
 
 const ORTHO_SUBTYPE = "chirurgie_orthopedique";
 const MISS = "[à préciser par l'opérateur]";
+const ORTHO_FIELD_MAX_CHARS = 200_000;
 
 type Side = "D" | "G" | "B" | "";
 type Preset = {
@@ -279,6 +288,43 @@ function numberedConsignes(value: string) {
   return lines.length ? lines.map((line, index) => `${index + 1}. ${line}`).join("\n") : MISS;
 }
 
+function appendDictatedText(current: string, dictatedText: string) {
+  const normalizedText = dictatedText.trim();
+  if (!normalizedText) return current;
+  if (!current.trim()) return normalizedText.slice(0, ORTHO_FIELD_MAX_CHARS);
+  const separator = current.endsWith("\n") ? "" : "\n";
+  return `${current}${separator}${normalizedText}`.slice(0, ORTHO_FIELD_MAX_CHARS);
+}
+
+type DictationLabelProps = {
+  label: ReactNode;
+  fieldLabel: string;
+  onInsert: (text: string) => void;
+  disabled?: boolean;
+};
+
+function DictationLabel({
+  label,
+  fieldLabel,
+  onInsert,
+  disabled = false,
+}: DictationLabelProps) {
+  return (
+    <div className="ortho-label-row">
+      <label>{label}</label>
+      <div className="ortho-dictation">
+        <span>Dictée</span>
+        <VoiceRecorderWithPreview
+          onInsert={onInsert}
+          fieldLabel={fieldLabel}
+          insertMode="append"
+          disabled={disabled}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function RedactionChirurgieOrthopedique() {
   const loginUrl = getLoginUrl("/redaction/chirurgie-orthopedique");
   const { isAuthenticated, loading: authLoading } = useAuth({
@@ -312,6 +358,18 @@ export default function RedactionChirurgieOrthopedique() {
   const [streamingText, setStreamingText] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [pseudoInfo, setPseudoInfo] = useState<{ maskCount: number; detectedCategories: string[] } | null>(null);
+
+  const insertDictation = useCallback(
+    (
+      setter: Dispatch<SetStateAction<string>>,
+      fieldLabel: string,
+      dictatedText: string,
+    ) => {
+      setter((current) => appendDictatedText(current, dictatedText));
+      toast.success(`Dictée ajoutée au champ « ${fieldLabel} ».`);
+    },
+    [],
+  );
 
   const applyPreset = useCallback((key: PresetKey) => {
     const next = PRESETS[key];
@@ -553,7 +611,7 @@ Bien confraternellement,
         <div>
           <Link href="/dashboard" className="ortho-back"><ArrowLeft size={16} /> Tableau de bord</Link>
           <h1><Bone size={24} /> Saisie rapide — Courrier de sortie de chirurgie orthopédique</h1>
-          <p>AGAPE / MEDACTIO · Aide rédactionnelle : l'outil met en forme ce que vous saisissez. Les valeurs entre crochets restent à compléter par l'opérateur.</p>
+          <p>MEDACTIO · Aide rédactionnelle : l'outil met en forme ce que vous saisissez. Les valeurs entre crochets restent à compléter par l'opérateur.</p>
         </div>
       </header>
 
@@ -567,6 +625,9 @@ Bien confraternellement,
       <main className="ortho-wrap">
         <section className="ortho-card">
           <h2>1 · Geste (trame)</h2>
+          <div className="ortho-dictation-notice">
+            Utilisez le bouton de dictée placé à côté de chaque champ libre. La transcription est ajoutée au contenu existant sans l'effacer.
+          </div>
           <div className="ortho-presets">
             {(Object.entries(PRESETS) as [PresetKey, Preset][]).map(([key, item]) => (
               <button key={key} type="button" className={cn("ortho-preset", key === presetKey && "active")} onClick={() => applyPreset(key)}>
@@ -588,7 +649,12 @@ Bien confraternellement,
           )}
 
           <h2>2 · Contexte</h2>
-          <label>Motif d'entrée — pathologie causale <span className="ortho-badge">≠ le geste</span></label>
+          <DictationLabel
+            label={<>Motif d'entrée — pathologie causale <span className="ortho-badge">≠ le geste</span></>}
+            fieldLabel="Motif d'entrée"
+            onInsert={(text) => insertDictation(setMotif, "Motif d'entrée", text)}
+            disabled={isGenerating}
+          />
           <textarea value={motif} onChange={(event) => setMotif(event.target.value)} placeholder="Saisie libre. Ex. Gonarthrose invalidante ; fracture pertrochantérienne de la hanche ; rupture du ligament croisé antérieur..." />
           <p className="ortho-hint">Zone de texte libre : décrivez la pathologie causale, jamais le geste.</p>
 
@@ -615,7 +681,12 @@ Bien confraternellement,
             </div>
           </div>
 
-          <label>Type de chirurgie (geste + matériel)</label>
+          <DictationLabel
+            label="Type de chirurgie (geste + matériel)"
+            fieldLabel="Type de chirurgie"
+            onInsert={(text) => insertDictation(setGeste, "Type de chirurgie", text)}
+            disabled={isGenerating}
+          />
           <textarea value={geste} onChange={(event) => setGeste(event.target.value)} placeholder="Saisie libre. Ex. arthroplastie totale du genou ; ostéosynthèse par clou gamma ; plaque antérieure du radius distal..." />
           <p className="ortho-hint">Zone de texte libre : modifiable même après un preset.</p>
 
@@ -639,7 +710,22 @@ Bien confraternellement,
               </select>
             </div>
           </div>
-          {perop === "__" && <textarea value={peropText} onChange={(event) => setPeropText(event.target.value)} placeholder="Décrire le déroulement per-opératoire (saignement, difficulté technique, incident...)" className="ortho-inline-input" />}
+          {perop === "__" && (
+            <div className="ortho-dictation-field">
+              <DictationLabel
+                label="Précisions sur le déroulement per-opératoire"
+                fieldLabel="Déroulement per-opératoire"
+                onInsert={(text) => insertDictation(setPeropText, "Déroulement per-opératoire", text)}
+                disabled={isGenerating}
+              />
+              <textarea
+                value={peropText}
+                onChange={(event) => setPeropText(event.target.value)}
+                placeholder="Décrire le déroulement per-opératoire (saignement, difficulté technique, incident...)"
+                className="ortho-inline-input"
+              />
+            </div>
+          )}
 
           <h2>3 · Dates</h2>
           <div className="ortho-row">
@@ -652,17 +738,43 @@ Bien confraternellement,
           {isTransfert && <input value={structureAval} onChange={(event) => setStructureAval(event.target.value)} placeholder="structure d'aval (SMR, service...)" className="ortho-inline-input" />}
 
           <h2>4 · Clinique</h2>
-          <label>Antécédents (+ allergies)</label>
+          <DictationLabel
+            label="Antécédents (+ allergies)"
+            fieldLabel="Antécédents et allergies"
+            onInsert={(text) => insertDictation(setAntecedents, "Antécédents et allergies", text)}
+            disabled={isGenerating}
+          />
           <textarea value={antecedents} onChange={(event) => setAntecedents(event.target.value)} />
           <label>Suites post-opératoires</label>
           <select value={suites} onChange={(event) => setSuites(event.target.value as "simples" | "compliquees")}>
             <option value="simples">simples</option>
             <option value="compliquees">compliquées → à décrire</option>
           </select>
-          {suites === "compliquees" && <textarea value={suitesText} onChange={(event) => setSuitesText(event.target.value)} placeholder="Décrire les suites compliquées (ex. escarre talonnière ; anémie post-op ayant nécessité VENOFER ; sigmoïdite ; confusion post-op...)" className="ortho-inline-input" />}
+          {suites === "compliquees" && (
+            <div className="ortho-dictation-field">
+              <DictationLabel
+                label="Description des suites compliquées"
+                fieldLabel="Suites post-opératoires compliquées"
+                onInsert={(text) => insertDictation(setSuitesText, "Suites post-opératoires compliquées", text)}
+                disabled={isGenerating}
+              />
+              <textarea
+                value={suitesText}
+                onChange={(event) => setSuitesText(event.target.value)}
+                placeholder="Décrire les suites compliquées (ex. escarre talonnière ; anémie post-op ayant nécessité VENOFER ; sigmoïdite ; confusion post-op...)"
+                className="ortho-inline-input"
+              />
+            </div>
+          )}
           <label className="ortho-check"><input type="checkbox" checked={orthoGeriatrie} onChange={(event) => setOrthoGeriatrie(event.target.checked)} /> Prise en charge ortho-gériatrique conjointe</label>
 
           <h2>5 · Consignes de suivi</h2>
+          <DictationLabel
+            label="Consignes de suivi et de sortie"
+            fieldLabel="Consignes de suivi"
+            onInsert={(text) => insertDictation(setConsignes, "Consignes de suivi", text)}
+            disabled={isGenerating}
+          />
           <textarea className="ortho-consignes" value={consignes} onChange={(event) => setConsignes(event.target.value)} />
           <div className="ortho-flag">Trame à valider et compléter : les éléments entre [ ] relèvent de l'opérateur. L'outil n'en propose aucune valeur.</div>
           <button type="button" className="ortho-reset" onClick={() => setConsignes(bulletList(preset.consignes))}><RefreshCw size={14} /> Recharger la trame du geste</button>
@@ -672,7 +784,12 @@ Bien confraternellement,
             <div><label>Heure</label><input type="time" value={heureRdv} onChange={(event) => setHeureRdv(event.target.value)} /></div>
           </div>
           <div className="ortho-encadre">
-            <label>Radiographies de contrôle <span className="ortho-badge">saisie libre</span></label>
+            <DictationLabel
+              label={<>Radiographies de contrôle <span className="ortho-badge">saisie libre</span></>}
+              fieldLabel="Radiographies de contrôle"
+              onInsert={(text) => insertDictation(setRadios, "Radiographies de contrôle", text)}
+              disabled={isGenerating}
+            />
             <input value={radios} onChange={(event) => setRadios(event.target.value)} placeholder={preset.radios ? `Suggestion : ${preset.radios} — à valider / compléter` : "À remplir par le médecin"} />
             <p className="ortho-hint">Champ libre : non rempli automatiquement. Le preset propose seulement une suggestion en placeholder — c'est à vous de saisir la valeur retenue.</p>
           </div>
@@ -728,6 +845,7 @@ const orthoStyles = `
 .ortho-encadre{border:1.5px dashed var(--brand);background:var(--accent);border-radius:12px;padding:12px 14px;margin-top:12px}
 .ortho-encadre b{display:block;color:var(--brand-d);margin-bottom:4px}.ortho-encadre p{margin:0;color:var(--muted);font-size:.84rem;line-height:1.45}.ortho-encadre label{margin-top:0!important}
 .ortho-card label{display:block;font-weight:700;font-size:.82rem;color:var(--muted);margin:12px 0 5px}
+.ortho-label-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}.ortho-label-row>label{margin:0!important}.ortho-dictation{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.76rem;font-weight:700;flex:none}.ortho-dictation-field{margin-top:8px}.ortho-dictation-notice{margin:0 0 12px;padding:10px 12px;border:1px solid #BFE6E0;border-radius:10px;background:#E7F4F2;color:#0A7B70;font-size:.82rem;font-weight:600;line-height:1.45}
 .ortho-card input[type=text],.ortho-card input[type=number],.ortho-card input[type=date],.ortho-card input[type=time],.ortho-card select,.ortho-card textarea{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:10px;font-size:.92rem;font-family:inherit;background:#fff;color:var(--ink)}
 .ortho-card textarea{resize:vertical;min-height:72px}.ortho-consignes{min-height:170px!important}
 .ortho-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.ortho-row:has(> div:nth-child(3)){grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -743,5 +861,5 @@ const orthoStyles = `
 .ortho-tabbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.ortho-tabbar button{padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:.82rem;font-weight:800;color:var(--muted)}.ortho-tabbar button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
 .ortho-copy-preview{margin-top:10px}
 .ortho-page :focus-visible{outline:2px solid #0E9C8E;outline-offset:2px;border-radius:5px}
-@media(max-width:900px){.ortho-wrap{grid-template-columns:1fr;padding:18px}.ortho-row,.ortho-row:has(> div:nth-child(3)){grid-template-columns:1fr}.ortho-top{padding:20px}.ortho-top h1{font-size:1.45rem}}
+@media(max-width:900px){.ortho-wrap{grid-template-columns:1fr;padding:18px}.ortho-row,.ortho-row:has(> div:nth-child(3)){grid-template-columns:1fr}.ortho-top{padding:20px}.ortho-top h1{font-size:1.45rem}.ortho-label-row{align-items:flex-start;flex-direction:column}.ortho-dictation{width:100%;justify-content:flex-end}}
 `;
