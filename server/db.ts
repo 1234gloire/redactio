@@ -286,10 +286,10 @@ export async function updateUserByStripeCustomerId(
   await db.update(users).set(data).where(eq(users.stripeCustomerId, stripeCustomerId));
 }
 
-export async function deleteUser(id: number): Promise<void> {
+export async function deactivateUser(id: number): Promise<void> {
   const db = await getDb();
   if (!db) return;
-  await db.delete(users).where(eq(users.id, id));
+  await db.update(users).set({ active: false }).where(eq(users.id, id));
 }
 
 export async function ensureLocalAdmin() {
@@ -389,10 +389,8 @@ export async function getSubscriptionByOrg(
     .select()
     .from(subscriptions)
     .where(eq(subscriptions.organisationId, organisationId))
-    .orderBy(
-      desc(subscriptions.updatedAt),
-      desc(subscriptions.id)
-    )
+
+    .orderBy(desc(subscriptions.id))
     .limit(1);
 
   return result[0];
@@ -403,36 +401,35 @@ export async function upsertSubscription(
 ): Promise<void> {
   const db = await getDb();
 
-  if (!db) {
-    throw new Error("Base de données indisponible.");
-  }
+  if (!db) return;
 
   const existing = await db
-    .select({
-      id: subscriptions.id,
-    })
+    .select({ id: subscriptions.id })
+
     .from(subscriptions)
     .where(eq(subscriptions.organisationId, data.organisationId))
     .orderBy(desc(subscriptions.id))
     .limit(1);
 
-  const updateData: Partial<InsertSubscription> = {
+
+  const subscriptionData: InsertSubscription = {
+    organisationId: data.organisationId,
     plan: data.plan,
     status: data.status,
     seats: data.seats,
     endDate: data.endDate ?? null,
   };
 
-  if (existing[0]) {
-    await db
-      .update(subscriptions)
-      .set(updateData)
-      .where(eq(subscriptions.id, existing[0].id));
+  if (data.endDate !== undefined) {
+    subscriptionData.endDate = data.endDate;
+  }
 
+  if (existing.length > 0) {
+    await db.update(subscriptions).set(subscriptionData).where(eq(subscriptions.id, existing[0].id));
     return;
   }
 
-  await db.insert(subscriptions).values(data);
+  await db.insert(subscriptions).values(subscriptionData);
 }
 
 // ─── Prompts — Socle commun ───────────────────────────────────────────────────

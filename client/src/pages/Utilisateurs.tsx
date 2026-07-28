@@ -95,10 +95,12 @@ export default function Utilisateurs() {
 
   const activePractitioners = users?.filter((item) => item.role === "praticien" && item.active).length ?? 0;
 
+  // Praticiens libres = rôle praticien ET sans organisation rattachée
+  // (exclut les org_admin / admin sans organisationId renseigné)
   const freePractitioners = useMemo<UserRow[]>(
-  () => (users ?? []).filter((u) => !u.organisationId && u.role === "praticien"),
-  [users]
-);
+    () => (users ?? []).filter((u) => !u.organisationId && u.role === "praticien"),
+    [users]
+  );
 
   const sortedOrgs = useMemo(() => {
     if (!orgs) return { active: [] as typeof orgs, inactive: [] as typeof orgs };
@@ -468,7 +470,7 @@ export default function Utilisateurs() {
     );
   }
 
-  // ---- Vue admin RÉDACTIO : Conventions ----
+  // ---- Vue admin RÉDACTIO : Conventions (pas de création de praticien ici — c'est le rôle de l'admin d'organisme) ----
   if (isRedactioAdmin && pathView === "conventions") {
     return (
       <RedactioLayout>
@@ -488,15 +490,9 @@ export default function Utilisateurs() {
                 Organismes conventionnés, triés par statut, avec leur effectif de praticiens.
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg border bg-card px-4 py-3 text-right">
-                <div className="text-xs text-muted-foreground">Organisations</div>
-                <div className="text-2xl font-bold">{orgs?.length ?? 0}</div>
-              </div>
-              <Button size="sm" className="gap-1.5" onClick={() => openCreateDialog()}>
-                <Plus className="h-4 w-4" />
-                Ajouter un praticien
-              </Button>
+            <div className="rounded-lg border bg-card px-4 py-3 text-right">
+              <div className="text-xs text-muted-foreground">Organisations</div>
+              <div className="text-2xl font-bold">{orgs?.length ?? 0}</div>
             </div>
           </div>
 
@@ -546,12 +542,9 @@ export default function Utilisateurs() {
                                     </p>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-2 shrink-0">
-                                  <Badge variant={isActive ? "secondary" : "outline"} className="text-xs">
-                                    {org.subscription?.status ?? "non configurée"}
-                                  </Badge>
-                                  
-                                </div>
+                                <Badge variant={isActive ? "secondary" : "outline"} className="text-xs shrink-0">
+                                  {org.subscription?.status ?? "non configurée"}
+                                </Badge>
                               </div>
                             </CardHeader>
                             {isExpanded && (
@@ -605,7 +598,10 @@ export default function Utilisateurs() {
               <div className="text-xs text-muted-foreground">Praticiens libres</div>
               <div className="text-2xl font-bold">{freePractitioners.length}</div>
             </div>
-            
+            <Button size="sm" className="gap-1.5" onClick={() => openCreateDialog()}>
+              <Plus className="h-4 w-4" />
+              Ajouter un praticien
+            </Button>
           </div>
         </div>
 

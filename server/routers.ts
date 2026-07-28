@@ -14,7 +14,7 @@ import {
   countActivePractitionersByOrg,
   createMedicalTerm,
   deactivateMedicalTerm,
-  deleteUser,
+  deactivateUser,
   incrementMedicalTermUsage,
   listMedicalTermsPaginated,
   searchMedicalTerms,
@@ -127,6 +127,16 @@ const adminOrOrgAdminProcedure = protectedProcedure.use(({ ctx, next }) => {
 function ensureOrgAdminScope(user: User, organisationId: number) {
   if (user.role === "admin") return;
   if (user.role !== "org_admin" || user.organisationId !== organisationId) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Accès refusé : organisation hors périmètre.",
+    });
+  }
+}
+
+function ensureOrganisationReadScope(user: User, organisationId: number) {
+  if (user.role === "admin") return;
+  if (user.organisationId !== organisationId) {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "Accès refusé : organisation hors périmètre.",
@@ -670,7 +680,7 @@ export const appRouter = router({
         if (input.userId === ctx.user.id) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Vous ne pouvez pas supprimer votre propre compte administrateur.",
+            message: "Vous ne pouvez pas désactiver votre propre compte administrateur.",
           });
         }
 
@@ -682,14 +692,14 @@ export const appRouter = router({
           if (!ctx.user.organisationId || target.organisationId !== ctx.user.organisationId || target.role !== "praticien") {
             throw new TRPCError({
               code: "FORBIDDEN",
-              message: "Un admin organisme peut supprimer uniquement les praticiens de son organisme.",
+              message: "Un admin organisme peut désactiver uniquement les praticiens de son organisme.",
             });
           }
         }
 
         await createAuditLog({
           userId: ctx.user.id,
-          action: "admin.delete_user",
+          action: "admin.deactivate_user",
           resource: "user",
           resourceId: String(input.userId),
           metadata: {
@@ -697,7 +707,7 @@ export const appRouter = router({
             role: target.role,
           },
         });
-        await deleteUser(input.userId);
+        await deactivateUser(input.userId);
         return { success: true };
       }),
   }),
@@ -725,7 +735,8 @@ export const appRouter = router({
 
     get: protectedProcedure
       .input(z.object({ id: z.number() }))
-      .query(async ({ input }) => {
+      .query(async ({ ctx, input }) => {
+        ensureOrganisationReadScope(ctx.user, input.id);
         const [org, subscription] = await Promise.all([
           getOrganisationById(input.id),
           getSubscriptionByOrg(input.id),
@@ -795,12 +806,31 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
+        const [org, activePractitioners] = await Promise.all([
+          getOrganisationById(input.organisationId),
+          countActivePractitionersByOrg(input.organisationId),
+        ]);
+
+        if (!org) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Organisation introuvable.",
+          });
+        }
+
+        if (input.seats < activePractitioners) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Impossible de définir ${input.seats} sièges : ${activePractitioners} praticien(s) actif(s) existent déjà.`,
+          });
+        }
+
         await upsertSubscription({
           organisationId: input.organisationId,
           plan: input.plan,
           status: input.status,
           seats: input.seats,
-          endDate: input.endDate ? new Date(input.endDate) : undefined,
+          endDate: input.endDate ? new Date(input.endDate) : null,
         });
         await createAuditLog({
           userId: ctx.user.id,
