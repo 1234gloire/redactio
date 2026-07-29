@@ -15,6 +15,7 @@ import {
   createMedicalTerm,
   deactivateMedicalTerm,
   deactivateUser,
+  deleteUserPermanently,
   incrementMedicalTermUsage,
   listMedicalTermsPaginated,
   searchMedicalTerms,
@@ -428,10 +429,11 @@ export const appRouter = router({
       }),
 
     deactivateOwnAccount: protectedProcedure.mutation(async ({ ctx }) => {
-      if (ctx.user.role !== "praticien") {
+      if (!["praticien", "org_admin"].includes(ctx.user.role)) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Seul un praticien peut désactiver son propre compte.",
+          message:
+            "Seuls les praticiens et les administrateurs d’organisme peuvent désactiver leur propre compte.",
         });
       }
 
@@ -706,7 +708,7 @@ export const appRouter = router({
         return { id: finalUser.id };
       }),
 
-    delete: adminOrOrgAdminProcedure
+    deactivate: adminProcedure
       .input(z.object({ userId: z.number() }))
       .mutation(async ({ ctx, input }) => {
         if (input.userId === ctx.user.id) {
@@ -717,33 +719,69 @@ export const appRouter = router({
         }
 
         const target = await getUserById(input.userId);
+
         if (!target) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Utilisateur introuvable." });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Utilisateur introuvable.",
+          });
         }
-        if (ctx.user.role === "org_admin") {
-          if (!ctx.user.organisationId || target.organisationId !== ctx.user.organisationId || target.role !== "praticien") {
-            throw new TRPCError({
-              code: "FORBIDDEN",
-              message: "Un admin organisme peut désactiver uniquement les praticiens de son organisme.",
-            });
-          }
+
+        if (!target.active) {
+          return { success: true };
         }
 
         await createAuditLog({
           userId: ctx.user.id,
           action: "admin.deactivate_user",
           resource: "user",
-          resourceId: String(input.userId),
+          resourceId: String(target.id),
           metadata: {
             email: target.email,
             role: target.role,
           },
         });
-        await deactivateUser(input.userId);
+
+        await deactivateUser(target.id);
+
+        return { success: true };
+      }),
+
+    delete: adminProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (input.userId === ctx.user.id) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Vous ne pouvez pas supprimer votre propre compte administrateur.",
+          });
+        }
+
+        const target = await getUserById(input.userId);
+
+        if (!target) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Utilisateur introuvable.",
+          });
+        }
+
+        await createAuditLog({
+          userId: ctx.user.id,
+          action: "admin.delete_user",
+          resource: "user",
+          resourceId: String(target.id),
+          metadata: {
+            email: target.email,
+            role: target.role,
+          },
+        });
+
+        await deleteUserPermanently(target.id);
+
         return { success: true };
       }),
   }),
-
   // ─── Organisations ─────────────────────────────────────────────────────────
   organisations: router({
     list: adminProcedure.query(async () => {

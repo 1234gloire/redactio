@@ -214,6 +214,16 @@ export async function getUserByEmail(email: string): Promise<User | undefined> {
   }
 }
 
+export async function deleteUserPermanently(id: number): Promise<void> {
+  const db = await getDb();
+
+  if (!db) {
+    throw new Error("Base de données indisponible.");
+  }
+
+  await db.delete(users).where(eq(users.id, id));
+}
+
 export async function createPasswordResetToken(
   userId: number,
   tokenHash: string,
