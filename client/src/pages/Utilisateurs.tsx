@@ -38,6 +38,8 @@ import {
 import { useMemo, useState } from "react";
 import { trpc } from "../lib/trpc";
 import { toast } from "sonner";
+import type { inferRouterOutputs } from "@trpc/server";
+import type { AppRouter } from "../../../server/routers";
 
 const ROLE_LABELS: Record<string, string> = {
   praticien: "Praticien",
@@ -50,15 +52,8 @@ const ROLE_LABELS: Record<string, string> = {
 
 type PathView = "conventions" | "libre";
 
-type UserRow = {
-  id: number;
-  name: string | null;
-  email: string | null;
-  role: string;
-  active: boolean;
-  organisationId?: number | null;
-  lastSignedIn: string;
-};
+type UserRow = inferRouterOutputs<AppRouter>["user"]["list"][number];
+type OrganisationRow = inferRouterOutputs<AppRouter>["organisations"]["list"][number];
 
 export default function Utilisateurs() {
   const { user } = useAuth();
@@ -103,7 +98,7 @@ export default function Utilisateurs() {
   );
 
   const sortedOrgs = useMemo(() => {
-    if (!orgs) return { active: [] as typeof orgs, inactive: [] as typeof orgs };
+    if (!orgs) return { active: [] as OrganisationRow[], inactive: [] as OrganisationRow[] };
     const active = orgs.filter((o) => o.subscription?.status === "actif");
     const inactive = orgs.filter((o) => o.subscription?.status !== "actif");
     return { active, inactive };

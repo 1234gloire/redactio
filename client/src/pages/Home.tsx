@@ -772,8 +772,8 @@ footer{background:var(--sand);padding:60px 0 0}
   </div>
   <div class="footer-col">
     <h5>Plateforme</h5>
-    <a href="/conformite.html">Conformité &amp; sécurité</a>
-    <a href="https://medactio.fr/dashboard">Connexion</a>
+    <a href="/conformite.html">CGU</a>
+    <a href="https://medactio.fr/dashboard">CGV</a>
     <a href="#">Mentions légales</a>
   </div>
 </div>

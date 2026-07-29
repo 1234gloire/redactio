@@ -86,11 +86,11 @@ export default function Profil() {
     ? "Essai actif"
     : stripeStatus === "active"
       ? stripeCancelAtPeriodEnd ? "Résiliation programmée" : "Actif"
-    : stripeStatus === "canceled"
-      ? "Résilié"
-      : stripeStatus === "past_due"
-        ? "Paiement requis"
-        : "À activer";
+      : stripeStatus === "canceled"
+        ? "Résilié"
+        : stripeStatus === "past_due"
+          ? "Paiement requis"
+          : "À activer";
   const isProblemStatus = ["Résilié", "Paiement requis", "Résiliation programmée", "À activer"].includes(statusLabel);
 
   const updateProfile = trpc.user.updateProfile.useMutation({
@@ -263,21 +263,28 @@ export default function Profil() {
           </section>
         )}
 
-        <section className="danger-zone">
-          <h2>Fermer mon compte</h2>
-          <p>
-            Action différente de la résiliation d&apos;abonnement : ceci supprime
-            définitivement votre compte, votre profil et l&apos;accès à MEDACTIO.
-          </p>
-          <button
-            type="button"
-            className="profile-btn danger-outline"
-            onClick={() => toast.info("Suppression de compte à brancher côté serveur.")}
-          >
-            <Trash2 aria-hidden="true" />
-            Supprimer définitivement mon compte
-          </button>
-        </section>
+        {role !== "org_admin" && (
+          <section className="danger-zone">
+            <h2>Fermer mon compte</h2>
+
+            <p>
+              Action différente de la résiliation d&apos;abonnement : ceci supprime
+              définitivement votre compte, votre profil et l&apos;accès à MEDACTIO.
+            </p>
+
+            <button
+              type="button"
+              className="profile-btn danger-outline"
+              onClick={() =>
+                toast.info("Suppression de compte à brancher côté serveur.")
+              }
+            >
+              <Trash2 aria-hidden="true" />
+              Supprimer définitivement mon compte
+            </button>
+          </section>
+        )}
+
       </main>
     </RedactioLayout>
   );
