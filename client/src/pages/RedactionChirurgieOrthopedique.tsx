@@ -296,6 +296,10 @@ function appendDictatedText(current: string, dictatedText: string) {
   return `${current}${separator}${normalizedText}`.slice(0, ORTHO_FIELD_MAX_CHARS);
 }
 
+function isNonCourrierResponse(text: string) {
+  return /coller ci-dessous le bloc|coller ici le bloc|pour générer le courrier|medactio\.fr\/redaction\/chirurgie-orthopedique|\[\*\*?Chirurgie orthopédique\*\*?\]|Compte rendu opératoire et courrier de sortie/i.test(text);
+}
+
 type DictationLabelProps = {
   label: ReactNode;
   fieldLabel: string;
@@ -564,10 +568,10 @@ Bien confraternellement,
             accumulated += String(parsed.content ?? "");
             setStreamingText(accumulated);
           } else if (parsed.type === "done") {
-            if (/coller ci-dessous le bloc|coller ici le bloc|pour générer le courrier/i.test(accumulated)) {
+            if (isNonCourrierResponse(accumulated)) {
               setStreamingText("");
               setGeneratedText(buildLocalCourrier());
-              toast.warning("Le moteur a demandé le bloc au lieu de rédiger : courrier local généré à partir des données saisies.");
+              toast.warning("Le moteur a renvoyé une réponse hors courrier : courrier local généré à partir des données saisies.");
             } else {
               setGeneratedText(accumulated);
               toast.success("Courrier généré.");

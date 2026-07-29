@@ -1,524 +1,294 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Button } from "@/components/ui/button";
+import RedactioLayout from "@/components/RedactioLayout";
+import MedicalAutocomplete from "@/components/MedicalAutocomplete";
 import VoiceRecorderWithPreview from "@/components/VoiceRecorderWithPreview";
 import { getLoginUrl } from "@/const";
-import { cn } from "@/lib/utils";
-import { ArrowLeft, Bone, Check, Copy, FileText, RefreshCw, Shield } from "lucide-react";
 import {
-  useCallback,
-  useMemo,
-  useState,
-  type Dispatch,
-  type ReactNode,
-  type SetStateAction,
-} from "react";
+  getDefaultSubtype,
+  isValidVolet,
+  REDACTION_SUBTYPES,
+  type RedactionSubtype,
+  type Volet,
+} from "@shared/redactionOptions";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  Bone,
+  BookOpen,
+  Check,
+  CheckCircle,
+  Copy,
+  Download,
+  FilePenLine,
+  FileText,
+  FileUp,
+  Loader2,
+  RotateCcw,
+  Shield,
+  Stethoscope,
+  X,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
+import { useLocation } from "wouter";
+import { cn } from "../lib/utils";
 import { toast } from "sonner";
-import { Link } from "wouter";
 
-const ORTHO_SUBTYPE = "chirurgie_orthopedique";
-const MISS = "[à préciser par l'opérateur]";
-const ORTHO_FIELD_MAX_CHARS = 200_000;
-
-type Side = "D" | "G" | "B" | "";
-type Preset = {
-  label: string;
-  motif: string;
-  motifGender: "m" | "f";
-  geste: string;
-  gesteGender: "m" | "f" | "n";
-  finalite: "med" | "chir" | "fonc" | "n";
-  anesth: string;
-  radios: string;
-  consignes: string[];
+const RAW_DATA_MAX_CHARS = 200_000;
+type ConciliationImportTarget = "entry" | "exit";
+type PseudonymisationInfo = {
+  maskCount: number;
+  detectedCategories: string[];
+  hasPotentialOvermasking: boolean;
 };
 
-const PRESETS = {
-  PTG: {
-    label: "PTG (genou)",
-    motif: "Gonarthrose invalidante",
-    motifGender: "f",
-    geste: "arthroplastie totale du genou",
-    gesteGender: "m",
-    finalite: "med",
-    anesth: "anesthésie générale",
-    radios: "genou face + profil + défilé fémoro-patellaire + pangonogramme",
-    consignes: [
-      "Soins locaux : [rythme] jusqu'à cicatrisation complète.",
-      "Ablation du matériel de suture : [agrafes/fils] à [délai].",
-      "Antalgie : palier 1 systématique, palier 2 à la demande.",
-      "Appui : [modalité] sur le membre opéré, sous couvert de cannes.",
-      "Bas de contention pour limiter l'œdème.",
-      "Kinésithérapie : amplitudes, renforcement du quadriceps, remise à la marche.",
-      "Thromboprophylaxie veineuse : [molécule] pendant [durée].",
-    ],
+const VOLETS: Record<Volet, { label: string; icon: ReactNode; description: string; color: string }> = {
+  courrier_sortie: {
+    label: "Courrier de sortie",
+    icon: <FileText className="w-6 h-6" />,
+    description: "Rédaction structurée du courrier de sortie d'hospitalisation.",
+    color: "teal",
   },
-  PTH: {
-    label: "PTH (hanche)",
-    motif: "Coxarthrose invalidante",
-    motifGender: "f",
-    geste: "arthroplastie totale de hanche",
-    gesteGender: "f",
-    finalite: "med",
-    anesth: "anesthésie générale",
-    radios: "bassin de face + hanche profil (Dunn / Lequesne)",
-    consignes: [
-      "Soins locaux : [rythme] jusqu'à cicatrisation complète.",
-      "Ablation du matériel de suture : [agrafes/fils] à [délai].",
-      "Antalgie : palier 1 systématique, palier 2 à la demande.",
-      "Appui : [modalité] sur le membre opéré, sous couvert de cannes.",
-      "Prévention de la luxation selon la voie d'abord.",
-      "Kinésithérapie : marche, transferts, amplitudes.",
-      "Bas de contention.",
-      "Thromboprophylaxie veineuse : [molécule] pendant [durée].",
-    ],
+  conciliation: {
+    label: "Conciliation médicamenteuse",
+    icon: <Stethoscope className="w-6 h-6" />,
+    description: "Bilan de conciliation médicamenteuse à l'admission, au transfert ou à la sortie.",
+    color: "slate",
   },
-  OSTEO_HANCHE: {
-    label: "Ostéosynthèse hanche",
-    motif: "Fracture pertrochantérienne de la hanche",
-    motifGender: "f",
-    geste: "ostéosynthèse par clou gamma",
-    gesteGender: "m",
-    finalite: "chir",
-    anesth: "rachianesthésie",
-    radios: "bassin de face + hanche profil",
-    consignes: [
-      "Soins de pansement : [rythme] jusqu'à cicatrisation complète.",
-      "Ablation du matériel de suture : [agrafes/fils] à [délai].",
-      "Antalgie : palier 1 systématique, palier 2 à la demande.",
-      "Appui / mise en charge : [modalité] (aides techniques si besoin).",
-      "Rééducation à la marche avec kinésithérapeute.",
-      "Thromboprophylaxie veineuse : [molécule] pendant [durée] ([surveillance si HBPM]).",
-    ],
+  correspondance: {
+    label: "Correspondance médicale",
+    icon: <BookOpen className="w-6 h-6" />,
+    description: "Rédaction d'une correspondance médicale professionnelle entre praticiens.",
+    color: "seal",
   },
-  EPAULE: {
-    label: "Arthroplastie épaule",
-    motif: "Omarthrose",
-    motifGender: "f",
-    geste: "arthroplastie d'épaule (prothèse inversée)",
-    gesteGender: "f",
-    finalite: "med",
-    anesth: "anesthésie générale",
-    radios: "épaule de face + profil (contrôle)",
-    consignes: [
-      "Immobilisation : [dispositif] pendant [durée], retirable pour la toilette.",
-      "Rééducation : [protocole] (passif d'abord, puis actif-aidé) selon prescription.",
-      "Soins locaux : [rythme] jusqu'à cicatrisation.",
-      "Antalgie : palier 1 systématique, palier 2 à la demande.",
-    ],
+  observation: {
+    label: "Observation médicale",
+    icon: <FilePenLine className="w-6 h-6" />,
+    description: "Prise de notes, suivi journalier, transmissions ciblées.",
+    color: "indigo",
   },
-  RADIUS: {
-    label: "Plaque radius",
-    motif: "Fracture de l'extrémité distale du radius",
-    motifGender: "f",
-    geste: "ostéosynthèse par plaque antérieure",
-    gesteGender: "f",
-    finalite: "chir",
-    anesth: "anesthésie loco-régionale",
-    radios: "poignet face + profil",
-    consignes: [
-      "Mobilisation des doigts dès le lendemain de l'intervention.",
-      "Attelle de poignet pendant [durée].",
-      "Port de charges : [consigne] pendant l'immobilisation.",
-      "Soins locaux : [rythme] ([type de fils]).",
-      "Rééducation : [modalités].",
-    ],
-  },
-  OLECRANE: {
-    label: "Olécrane",
-    motif: "Fracture de l'olécrane",
-    motifGender: "f",
-    geste: "embrochage-haubanage",
-    gesteGender: "m",
-    finalite: "chir",
-    anesth: "anesthésie générale",
-    radios: "coude face + profil",
-    consignes: [
-      "Immobilisation : [dispositif] selon le montage.",
-      "Soins locaux : [rythme].",
-      "Ablation des fils à [délai].",
-      "Antalgie : palier 1 systématique, palier 2 à la demande.",
-    ],
-  },
-  RACHIS: {
-    label: "Arthrodèse / rachis",
-    motif: "Lombosciatique sur hernie discale",
-    motifGender: "f",
-    geste: "arthrodèse lombaire",
-    gesteGender: "f",
-    finalite: "chir",
-    anesth: "anesthésie générale",
-    radios: "rachis lombaire face + profil",
-    consignes: [
-      "Lever et marche : [modalités] ; reprise progressive des activités.",
-      "Port de charges lourdes : [consigne / durée].",
-      "Mouvements à éviter (rotations, flexions forcées) : [durée].",
-      "Corset : [prescription].",
-      "Reprise de la conduite : après sevrage des antalgiques altérant la vigilance.",
-      "Délai de consolidation de la greffe : [à préciser].",
-    ],
-  },
-  LCA: {
-    label: "LCA / arthroscopie",
-    motif: "Rupture du ligament croisé antérieur",
-    motifGender: "f",
-    geste: "ligamentoplastie du LCA",
-    gesteGender: "m",
-    finalite: "med",
-    anesth: "anesthésie générale",
-    radios: "genou face + profil",
-    consignes: [
-      "Attelle et appui : [protocole].",
-      "Auto-mobilisation précoce (flexion-extension).",
-      "Kinésithérapie : [modalités] dès la cicatrisation.",
-      "Antalgie : palier 1 systématique, palier 2 à la demande.",
-    ],
-  },
-  CHEVILLE: {
-    label: "Cheville",
-    motif: "Fracture bimalléolaire",
-    motifGender: "f",
-    geste: "ostéosynthèse",
-    gesteGender: "f",
-    finalite: "chir",
-    anesth: "rachianesthésie",
-    radios: "cheville face + profil",
-    consignes: [
-      "Immobilisation : [dispositif].",
-      "Appui : [modalité] pendant [durée] jusqu'à consolidation.",
-      "Reprise de l'appui et rééducation après consolidation.",
-      "Soins locaux : [rythme] ; ablation des fils à [délai].",
-      "Thromboprophylaxie veineuse : [molécule] pendant [durée] ([surveillance si HBPM]).",
-    ],
-  },
-  HALLUX: {
-    label: "Hallux valgus",
-    motif: "Hallux valgus",
-    motifGender: "m",
-    geste: "chirurgie de l'avant-pied (ostéotomie)",
-    gesteGender: "m",
-    finalite: "chir",
-    anesth: "anesthésie loco-régionale",
-    radios: "pied face + profil en charge",
-    consignes: [
-      "Chaussure de décharge : [type] pendant [durée].",
-      "Surélévation du pied et glaçage.",
-      "Soins locaux : [rythme].",
-      "Antalgie : palier 1 systématique, palier 2 à la demande.",
-    ],
-  },
-  FONCTIONNEL: {
-    label: "Traitement fonctionnel",
-    motif: "Fracture du cadre obturateur",
-    motifGender: "f",
-    geste: "traitement fonctionnel (abstention chirurgicale)",
-    gesteGender: "n",
-    finalite: "fonc",
-    anesth: "[sans objet]",
-    radios: "bassin de face + hanches",
-    consignes: [
-      "Mise au fauteuil en fonction de la douleur.",
-      "Remise en charge : [modalité / délai].",
-    ],
-  },
-  AUTRE: {
-    label: "Autre / libre",
-    motif: "",
-    motifGender: "f",
-    geste: "",
-    gesteGender: "m",
-    finalite: "chir",
-    anesth: "anesthésie générale",
-    radios: "",
-    consignes: [
-      "Soins locaux : [rythme] jusqu'à cicatrisation.",
-      "Antalgie : palier 1 systématique, palier 2 à la demande.",
-    ],
-  },
-} satisfies Record<string, Preset>;
-
-type PresetKey = keyof typeof PRESETS;
-
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function addDaysIso(value: string, days: number) {
-  if (!value) return "";
-  const date = new Date(value);
-  date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
-}
-
-function formatDate(value: string) {
-  if (!value) return MISS;
-  const [year, month, day] = value.split("-");
-  return `${day}/${month}/${year}`;
-}
-
-const ORTHO_DIRECTIVE = `# CONSIGNE — Aide RÉDACTIONNELLE. Mets en forme le courrier de sortie à partir du bloc §2 ci-dessous (toutes les données saisies par le médecin dans le formulaire).
-Respecte STRICTEMENT la trame du prompt "Prompt_Courrier_Sortie_Chirurgie_Ortho.md" (structure §5, moteur d'expansion §3, trames §4, style §6) :
-- Le bloc §2 ci-dessous contient TOUT ce qui a été saisi dans le formulaire (motif, âge, dates, type de chirurgie, déroulement per-op, antécédents, suites, consignes, RDV, radios). Utilise-le intégralement : ne rédige jamais un courrier "vide" si le bloc contient des données.
-- MOTIF = pathologie causale ayant conduit au geste (jamais le geste seul).
-- DATES : les dates du champ 3 (Entrée / Intervention / Sortie ou Transfert) sont RÉELLES et VALIDÉES par le médecin. Recopie-les TELLES QUELLES dans « SÉJOUR HOSPITALIER » et dans la phrase d'introduction. N'écris JAMAIS "${MISS}" à la place d'une date fournie ; seule une date réellement vide reste un espace à compléter.
-- ÂGE : reprends l'âge du champ 2 dans la phrase d'introduction (« … ans »).
-- Reformule et structure UNIQUEMENT ce qui est saisi. N'ajoute AUCUNE valeur clinique (durée, délai, rythme, molécule, modalité d'appui/immobilisation) : laisse les [ ] tels quels ou "${MISS}".
-- SUITES POST-OP : si « simples », bloc stéréotypé (§3-c). Sinon, intègre le texte du champ 7 EN PROSE FLUIDE ET LITTÉRAIRE, rattaché au récit de l'évolution — n'utilise JAMAIS « À noter : … » ni aucune formule de liste sèche (voir §6 du prompt).
-- CONSIGNES DE SORTIE : reconstruis la liste UNIQUEMENT à partir du champ 8, dans l'ordre des rubriques habituelles du §4 pour ce geste ; ne remplace ni n'invente aucune valeur.
-- N'inclus AUCUNE section traitement ni tableau de médicaments (transmis séparément).
-- Aucun nom de professionnel ni donnée d'identité (cryptés en entrée). Conserve dates, âge, latéralité, matériel, antécédents complets, noms des structures.
-- Sortie en TEXTE BRUT (pas de markdown : pas de **gras**, pas de #titres). Titres de rubriques en MAJUSCULES suivis de « : », comme dans la structure §5.
-- Ton confraternel, 3e personne, synthétique. L'outil met en forme, il ne décide pas.`;
-
-function sideWord(gender: Preset["motifGender"] | Preset["gesteGender"], side: Side) {
-  if (!side || gender === "n") return "";
-  const masculine = { D: "droit", G: "gauche", B: "bilatéral" } as const;
-  const feminine = { D: "droite", G: "gauche", B: "bilatérale" } as const;
-  return (gender === "f" ? feminine : masculine)[side];
-}
-
-function bulletList(lines: string[]) {
-  return lines.map((line) => `• ${line}`).join("\n");
-}
-
-function numberedConsignes(value: string) {
-  const lines = value
-    .split("\n")
-    .map((line) => line.replace(/^•\s*/, "").trim())
-    .filter(Boolean);
-  return lines.length ? lines.map((line, index) => `${index + 1}. ${line}`).join("\n") : MISS;
-}
-
-function appendDictatedText(current: string, dictatedText: string) {
-  const normalizedText = dictatedText.trim();
-  if (!normalizedText) return current;
-  if (!current.trim()) return normalizedText.slice(0, ORTHO_FIELD_MAX_CHARS);
-  const separator = current.endsWith("\n") ? "" : "\n";
-  return `${current}${separator}${normalizedText}`.slice(0, ORTHO_FIELD_MAX_CHARS);
-}
-
-type DictationLabelProps = {
-  label: ReactNode;
-  fieldLabel: string;
-  onInsert: (text: string) => void;
-  disabled?: boolean;
 };
 
-function DictationLabel({
-  label,
-  fieldLabel,
-  onInsert,
-  disabled = false,
-}: DictationLabelProps) {
-  return (
-    <div className="ortho-label-row">
-      <label>{label}</label>
-      <div className="ortho-dictation">
-        <span>Dictée</span>
-        <VoiceRecorderWithPreview
-          onInsert={onInsert}
-          fieldLabel={fieldLabel}
-          insertMode="append"
-          disabled={disabled}
-        />
-      </div>
-    </div>
+const VOLET_ICON_CLASSES: Record<string, string> = {
+  teal: "volet-icon-teal",
+  teal_accent: "var(--teal)",
+  slate: "volet-icon-slate",
+  slate_accent: "var(--navy)",
+  seal: "volet-icon-seal",
+  seal_accent: "var(--gold)",
+  indigo: "volet-icon-indigo",
+  indigo_accent: "var(--purple)",
+  ortho: "volet-icon-ortho",
+  blue_accent: "var(--blue)",
+};
+
+function getCurrentRedactionReturnPath() {
+  if (typeof window === "undefined") return "/redaction";
+  return `${window.location.pathname}${window.location.search}`;
+}
+
+function getSubtypeLabel(volet: Volet) {
+  if (volet === "courrier_sortie") return "Service / spécialité";
+  if (volet === "conciliation") return "Type de conciliation";
+  if (volet === "correspondance") return "Type de correspondance";
+  return "Type de document";
+}
+
+function getSubtypeHint(volet: Volet) {
+  if (volet === "courrier_sortie") return "oriente la structure du document";
+  if (volet === "conciliation") return "étape du parcours de soins";
+  if (volet === "correspondance") return "oriente le ton et la structure";
+  return "oriente le document";
+}
+
+const STEPS_DEFAULT = [
+  { id: 1, label: "Volet" },
+  { id: 2, label: "Données" },
+  { id: 3, label: "Génération" },
+  { id: 4, label: "Relecture" },
+  { id: 5, label: "Export" },
+];
+
+const STEPS_OBSERVATION = [
+  { id: 1, label: "Volet" },
+  { id: 2, label: "Données" },
+  { id: 3, label: "Exporter" },
+];
+
+
+
+// Regex pour détecter les balises [À COMPLÉTER PAR LE MÉDECIN]
+const TAG_REGEX = /\[À COMPLÉTER PAR LE MÉDECIN\]/g;
+
+function highlightTags(text: string): string {
+  return text.replace(
+    TAG_REGEX,
+    '<mark class="tag-a-completer" title="Cliquez pour compléter">[À COMPLÉTER PAR LE MÉDECIN]</mark>'
   );
 }
 
-export default function RedactionChirurgieOrthopedique() {
-  const loginUrl = getLoginUrl("/redaction/chirurgie-orthopedique");
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function isMarkdownTableSeparator(line: string): boolean {
+  return /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);
+}
+
+function splitMarkdownTableRow(line: string): string[] {
+  return line
+    .trim()
+    .replace(/^\|/, "")
+    .replace(/\|$/, "")
+    .split("|")
+    .map((cell) => cell.trim());
+}
+
+function renderInlineMarkdown(text: string): string {
+  return escapeHtml(text)
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>");
+}
+
+function renderMarkdownTable(headerLine: string, bodyLines: string[]): string {
+  const headers = splitMarkdownTableRow(headerLine);
+  const rows = bodyLines
+    .map(splitMarkdownTableRow)
+    .filter((cells) => cells.some((cell) => cell.length > 0));
+
+  return [
+    '<div class="tableWrapper">',
+    "<table>",
+    "<tbody>",
+    "<tr>",
+    ...headers.map((cell) => `<th contenteditable="true" spellcheck="false">${renderInlineMarkdown(cell) || "&nbsp;"}</th>`),
+    "</tr>",
+    ...rows.flatMap((cells) => [
+      "<tr>",
+      ...headers.map((_, index) => `<td contenteditable="true" spellcheck="false">${renderInlineMarkdown(cells[index] ?? "") || "&nbsp;"}</td>`),
+      "</tr>",
+    ]),
+    "</tbody>",
+    "</table>",
+    "</div>",
+  ].join("");
+}
+
+function renderGeneratedDocumentHtml(documentText: string): string {
+  const lines = documentText.split("\n");
+  const html: string[] = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    let separatorIndex = index + 1;
+    while (separatorIndex < lines.length && !lines[separatorIndex].trim()) {
+      separatorIndex += 1;
+    }
+
+    if (line.includes("|") && isMarkdownTableSeparator(lines[separatorIndex] ?? "")) {
+      const bodyLines: string[] = [];
+      index = separatorIndex + 1;
+      while (index < lines.length) {
+        if (!lines[index].trim()) {
+          index += 1;
+          continue;
+        }
+        if (!lines[index].includes("|") || isMarkdownTableSeparator(lines[index])) {
+          break;
+        }
+        bodyLines.push(lines[index]);
+        index += 1;
+      }
+      index -= 1;
+      html.push(renderMarkdownTable(line, bodyLines));
+      continue;
+    }
+
+    const heading = line.match(/^(#{1,3})\s+(.+)$/);
+    if (heading) {
+      const level = Math.min(heading[1].length + 1, 4);
+      html.push(`<h${level}>${renderInlineMarkdown(heading[2])}</h${level}>`);
+      continue;
+    }
+
+    html.push(`<p>${line.trim() ? renderInlineMarkdown(line) : "&nbsp;"}</p>`);
+  }
+
+  return highlightTags(html.join(""));
+}
+
+export default function Redaction() {
+  const [, setLocation] = useLocation();
+  const loginUrl = getLoginUrl(getCurrentRedactionReturnPath());
   const { isAuthenticated, loading: authLoading } = useAuth({
     redirectOnUnauthenticated: true,
     redirectPath: loginUrl,
   });
 
-  const [presetKey, setPresetKey] = useState<PresetKey>("PTG");
-  const preset = PRESETS[presetKey];
-  const [side, setSide] = useState<Side>("D");
-  const [motif, setMotif] = useState(preset.motif);
-  const [age, setAge] = useState("");
-  const [geste, setGeste] = useState(preset.geste);
-  const [anesth, setAnesth] = useState(preset.anesth);
-  const [perop, setPerop] = useState("sans particularité");
-  const [peropText, setPeropText] = useState("");
-  const [dateEntree, setDateEntree] = useState("");
-  const [dateChirurgie, setDateChirurgie] = useState("");
-  const [dateSortie, setDateSortie] = useState(todayIso());
-  const [isTransfert, setIsTransfert] = useState(false);
-  const [structureAval, setStructureAval] = useState("");
-  const [antecedents, setAntecedents] = useState("sans particularité");
-  const [suites, setSuites] = useState<"simples" | "compliquees">("simples");
-  const [suitesText, setSuitesText] = useState("");
-  const [orthoGeriatrie, setOrthoGeriatrie] = useState(false);
-  const [consignes, setConsignes] = useState(bulletList(preset.consignes));
-  const [dateRdv, setDateRdv] = useState("");
-  const [heureRdv, setHeureRdv] = useState("10:30");
-  const [radios, setRadios] = useState("");
-  const [generatedText, setGeneratedText] = useState("");
-  const [streamingText, setStreamingText] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [pseudoInfo, setPseudoInfo] = useState<{ maskCount: number; detectedCategories: string[] } | null>(null);
+  // Récupérer le volet depuis l'URL
+  const searchParams = new URLSearchParams(window.location.search);
+  const requestedVolet = searchParams.get("volet");
+  const initialVolet = requestedVolet && isValidVolet(requestedVolet) ? requestedVolet : null;
 
-  const insertDictation = useCallback(
-    (
-      setter: Dispatch<SetStateAction<string>>,
-      fieldLabel: string,
-      dictatedText: string,
-    ) => {
-      setter((current) => appendDictatedText(current, dictatedText));
-      toast.success(`Dictée ajoutée au champ « ${fieldLabel} ».`);
-    },
-    [],
+  const [step, setStep] = useState(initialVolet ? 2 : 1);
+  const [selectedVolet, setSelectedVolet] = useState<Volet | null>(initialVolet);
+  const [selectedSubtype, setSelectedSubtype] = useState<RedactionSubtype | null>(
+    initialVolet ? getDefaultSubtype(initialVolet) : null
   );
+  const [rawData, setRawData] = useState("");
+  const [treatmentEntryData, setTreatmentEntryData] = useState("");
+  const [treatmentExitData, setTreatmentExitData] = useState("");
+  const [treatmentExitDate, setTreatmentExitDate] = useState("");
+  const [noTreatmentEntry, setNoTreatmentEntry] = useState(false);
+  const [treatmentEntryBackup, setTreatmentEntryBackup] = useState("");
+  const [conciliationImportTarget, setConciliationImportTarget] = useState<ConciliationImportTarget>("entry");
+  const [observationText, setObservationText] = useState("");
+  const [generatedDoc, setGeneratedDoc] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isExtractingFile, setIsExtractingFile] = useState(false);
+  const [isFileDragOver, setIsFileDragOver] = useState(false);
+  const [validated, setValidated] = useState(false);
+  const [pseudoInfo, setPseudoInfo] = useState<PseudonymisationInfo | null>(null);
+  const [observationSafeText, setObservationSafeText] = useState("");
+  const [observationPseudoInfo, setObservationPseudoInfo] = useState<PseudonymisationInfo | null>(null);
+  const [isSecuringObservation, setIsSecuringObservation] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const documentEditorRef = useRef<HTMLDivElement | null>(null);
+  const [streamingText, setStreamingText] = useState("");
+  const [renderedDocumentHtml, setRenderedDocumentHtml] = useState("");
+  const [editedDocumentHtml, setEditedDocumentHtml] = useState("");
 
-  const applyPreset = useCallback((key: PresetKey) => {
-    const next = PRESETS[key];
-    setPresetKey(key);
-    setMotif(next.motif);
-    setGeste(next.geste);
-    setAnesth(next.anesth);
-    setConsignes(bulletList(next.consignes));
-  }, []);
+  useEffect(() => {
+    if (initialVolet === "correspondance") {
+      setLocation("/redaction/correspondance-medicale");
+    }
+  }, [initialVolet, setLocation]);
 
-  const handleDateChirurgieChange = useCallback((value: string) => {
-    setDateChirurgie(value);
-    if (value && !dateRdv) setDateRdv(addDaysIso(value, 35));
-  }, [dateRdv]);
-
-  const motifSided = useMemo(() => {
-    const suffix = sideWord(preset.motifGender, side);
-    return `${motif}${suffix ? ` ${suffix}` : ""}`.trim();
-  }, [motif, preset.motifGender, side]);
-
-  const gesteSided = useMemo(() => {
-    const suffix = sideWord(preset.gesteGender, side);
-    return `${geste}${suffix ? ` ${suffix}` : ""}`.trim();
-  }, [geste, preset.gesteGender, side]);
-
-  const peropValue = perop === "__" ? peropText.trim() || MISS : perop;
-  const ageValue = age.trim() ? `${age.trim()} ans` : MISS;
-  const suitesValue = suites === "compliquees" ? suitesText.trim() || MISS : "simples";
-
-  const blocText = useMemo(() => `1. MOTIF D'ENTRÉE        : ${motifSided || MISS}
-2. ÂGE DU PATIENT        : ${ageValue}
-3. DATES (réelles, à recopier telles quelles — ne pas remplacer par un placeholder) :
-   - Entrée               : ${formatDate(dateEntree)}
-   - Intervention         : ${formatDate(dateChirurgie)}
-   - ${isTransfert ? "Transfert            " : "Sortie               "} : ${formatDate(dateSortie)}${isTransfert && structureAval ? ` (${structureAval})` : ""}
-4. TYPE DE CHIRURGIE     : ${gesteSided || MISS}, ${anesth}
-5. DÉROULEMENT PER-OP    : ${peropValue}
-6. ANTÉCÉDENTS           : ${antecedents.trim() || "sans particularité"}
-7. SUITES POST-OP        : ${suitesValue}${orthoGeriatrie ? " ; prise en charge ortho-gériatrique conjointe" : ""}
-8. CONSIGNES DE SUIVI    :
-${consignes.replace(/^/gm, "   ")}
-   Suivi : consultation de contrôle radio-clinique le ${formatDate(dateRdv)} à ${heureRdv || MISS}.
-   Radiographies : ${radios.trim() || MISS}.`, [
-    ageValue,
-    anesth,
-    antecedents,
-    consignes,
-    dateChirurgie,
-    dateEntree,
-    dateRdv,
-    dateSortie,
-    gesteSided,
-    heureRdv,
-    isTransfert,
-    motifSided,
-    orthoGeriatrie,
-    peropValue,
-    radios,
-    structureAval,
-    suitesValue,
-  ]);
-
-  const missingCount = (blocText.match(/\[/g) ?? []).length;
-
-  const generationInput = useMemo(() => `${ORTHO_DIRECTIVE}
-
-BLOC §2 RENSEIGNÉ PAR LE MÉDECIN — UTILISER CES DONNÉES POUR RÉDIGER :
-${blocText}
-
-Rédige directement le courrier final. Ne demande pas de coller un autre bloc.`, [blocText]);
-
-  const buildLocalCourrier = useCallback(() => {
-    const finaliteMap: Record<Preset["finalite"], string> = {
-      med: "prise en charge médico-rééducative post-opératoire",
-      chir: "prise en charge chirurgicale",
-      fonc: "prise en charge fonctionnelle (traitement non chirurgical)",
-      n: "prise en charge",
-    };
-    const finalite = finaliteMap[preset.finalite] || "prise en charge";
-    const sortieVerbe = isTransfert ? "transféré(e)" : "sorti(e)";
-    const avalPhrase = isTransfert && structureAval.trim() ? ` vers ${structureAval.trim()}` : "";
-    const motifValue = motifSided || MISS;
-    const gesteValue = gesteSided || MISS;
-
-    const evolution = suites === "simples"
-      ? `Les suites opératoires ont été simples. La plaie est belle, de bonne allure. Le contrôle radiographique est satisfaisant.${/genou|hanche|fémur|cheville|clou/i.test(gesteValue) ? " Rééducation à la marche entreprise dans le service." : ""}`
-      : suitesText.trim()
-        ? `Les suites opératoires ont été marquées par ${suitesText.trim()}.`
-        : `Les suites opératoires ont été compliquées : ${MISS}.`;
-
-    const orthoPhrase = orthoGeriatrie
-      ? "\n\nPrise en charge ortho-gériatrique conjointe pendant le séjour ; les consignes et prescriptions thérapeutiques de l'orthogériatre seront transmises séparément."
-      : "";
-
-    return `Cher Confrère,
-
-Votre patient(e) ([sexe à préciser] ; ${ageValue}) a été hospitalisé(e) du ${formatDate(dateEntree)} au ${formatDate(dateSortie)} dans le service de [service / centre hospitalier à préciser], pour ${motifValue}.
-
-MOTIF D'HOSPITALISATION :
-${motifValue} ayant conduit à ${gesteValue}, pour ${finalite}.
-
-SÉJOUR HOSPITALIER :
-Le/la patient(e) a été admis(e) le ${formatDate(dateEntree)}. L'intervention, réalisée le ${formatDate(dateChirurgie)} sous ${anesth}, a consisté en une ${gesteValue} ; elle s'est déroulée ${peropValue}. Le/la patient(e) a ensuite été ${sortieVerbe} le ${formatDate(dateSortie)}${avalPhrase}.
-
-ANTÉCÉDENTS :
-${antecedents.trim() || "sans particularité"}
-Allergies : ${MISS}.
-
-ÉVOLUTION POST-OPÉRATOIRE :
-${evolution}
-
-CONSIGNES DE SORTIE :
-${numberedConsignes(consignes)}${orthoPhrase}
-
-SUIVI :
-Consultation de contrôle radio-clinique le ${formatDate(dateRdv)} à ${heureRdv || MISS}.
-Radiographies : ${radios.trim() || MISS}.
-
-Bien confraternellement,
-
-[Signataire — chirurgien, RPPS]`;
-  }, [
-    ageValue,
-    anesth,
-    antecedents,
-    consignes,
-    dateChirurgie,
-    dateEntree,
-    dateRdv,
-    dateSortie,
-    gesteSided,
-    heureRdv,
-    isTransfert,
-    motifSided,
-    orthoGeriatrie,
-    peropValue,
-    preset.finalite,
-    radios,
-    structureAval,
-    suites,
-    suitesText,
-  ]);
-
-  const handleGenerate = useCallback(async () => {
-    if (blocText.trim().length < 10) return;
-    setGeneratedText("");
-    setStreamingText("");
-    setPseudoInfo(null);
+  // Génération via streaming SSE
+  const handleStreamGenerate = useCallback(async (
+    volet: Volet,
+    subtype: RedactionSubtype,
+    rawData: string
+  ) => {
     setIsGenerating(true);
+    setGeneratedDoc("");
+    setEditedDocumentHtml("");
+    setStreamingText("");
+    setValidated(false);
+    setPseudoInfo(null);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     let accumulated = "";
 
     try {
@@ -526,20 +296,16 @@ Bien confraternellement,
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          volet: "courrier_sortie",
-          subtype: ORTHO_SUBTYPE,
-          rawData: generationInput,
-        }),
+        body: JSON.stringify({ volet, subtype, rawData }),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
-        const errorPayload = await response.json().catch(() => ({ error: "Erreur réseau" }));
-        throw new Error(errorPayload.error || `HTTP ${response.status}`);
+        const err = await response.json().catch(() => ({ error: "Erreur réseau" }));
+        throw new Error(err.error || `HTTP ${response.status}`);
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error("Flux de génération indisponible.");
+      const reader = response.body!.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
 
@@ -554,312 +320,2515 @@ Bien confraternellement,
           if (!line.startsWith("data: ")) continue;
           const data = line.slice(6).trim();
           if (!data) continue;
-          const parsed = JSON.parse(data);
-          if (parsed.type === "pseudonymisation") {
-            setPseudoInfo({
-              maskCount: Number(parsed.maskCount ?? 0),
-              detectedCategories: Array.isArray(parsed.detectedCategories) ? parsed.detectedCategories : [],
-            });
-          } else if (parsed.type === "token") {
-            accumulated += String(parsed.content ?? "");
-            setStreamingText(accumulated);
-          } else if (parsed.type === "done") {
-            if (/coller ci-dessous le bloc|coller ici le bloc|pour générer le courrier/i.test(accumulated)) {
-              setStreamingText("");
-              setGeneratedText(buildLocalCourrier());
-              toast.warning("Le moteur a demandé le bloc au lieu de rédiger : courrier local généré à partir des données saisies.");
-            } else {
-              setGeneratedText(accumulated);
-              toast.success("Courrier généré.");
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.type === "pseudonymisation") {
+              setPseudoInfo({
+                maskCount: parsed.maskCount,
+                detectedCategories: parsed.detectedCategories,
+                hasPotentialOvermasking: parsed.hasPotentialOvermasking,
+              });
+            } else if (parsed.type === "token") {
+              accumulated += parsed.content;
+              setStreamingText(accumulated);
+            } else if (parsed.type === "done") {
+              setGeneratedDoc(accumulated);
+              setIsGenerating(false);
+              setStep(4);
+            } else if (parsed.type === "error") {
+              throw new Error(parsed.message);
             }
-          } else if (parsed.type === "error") {
-            throw new Error(parsed.message || "Erreur de génération.");
+          } catch (e) {
+            if (e instanceof SyntaxError) continue;
+            throw e;
           }
         }
       }
-    } catch (error) {
-      const fallback = buildLocalCourrier();
-      setGeneratedText(fallback);
-      toast.warning(
-        error instanceof Error
-          ? `Backend indisponible : génération locale utilisée. ${error.message}`
-          : "Backend indisponible : génération locale utilisée."
-      );
-    } finally {
+    } catch (err: unknown) {
+      setStep(2);
+      if (err instanceof Error && err.name === "AbortError") {
+        setIsGenerating(false);
+        toast.info("Génération annulée.");
+        return;
+      }
       setIsGenerating(false);
+      toast.error(err instanceof Error ? err.message : "Erreur lors de la génération.");
     }
-  }, [blocText, buildLocalCourrier, generationInput]);
+  }, []);
 
-  const handleCopy = useCallback(async () => {
-    const text = generatedText || streamingText || blocText;
-    await navigator.clipboard.writeText(text);
-    toast.success("Texte copié.");
-  }, [blocText, generatedText, streamingText]);
+  useEffect(() => {
+    if (generatedDoc) {
+      const html = renderGeneratedDocumentHtml(generatedDoc);
+      setRenderedDocumentHtml(html);
+      setEditedDocumentHtml(html);
+    }
+  }, [generatedDoc]);
 
-  if (authLoading || !isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#EEF3F5]">
-        <div className="w-8 h-8 border-2 border-[#0E9C8E] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  const buildGenerationRawData = useCallback(() => {
+    if (selectedVolet !== "conciliation") return rawData;
+    return `TRAITEMENT D'ENTRÉE :
+${noTreatmentEntry ? "Aucun traitement à l'entrée" : treatmentEntryData.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}
+
+TRAITEMENT DE SORTIE :
+${treatmentExitData.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}
+
+DATE DE RÉDACTION DE LA SORTIE :
+${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
+  }, [rawData, selectedVolet, noTreatmentEntry, treatmentEntryData, treatmentExitData, treatmentExitDate]);
+
+  const currentInputLength = selectedVolet === "conciliation"
+    ? treatmentEntryData.length + treatmentExitData.length + treatmentExitDate.length
+    : rawData.length;
+  const canGenerate = selectedVolet === "conciliation"
+    ? Boolean(selectedSubtype && (noTreatmentEntry || treatmentEntryData.trim().length >= 3) && treatmentExitData.trim().length >= 3)
+    : Boolean(selectedSubtype && rawData.trim().length >= 10);
+
+  const handleGenerate = useCallback(() => {
+    if (!selectedVolet || !selectedSubtype || !canGenerate) return;
+    handleStreamGenerate(selectedVolet, selectedSubtype, buildGenerationRawData());
+  }, [buildGenerationRawData, canGenerate, selectedVolet, selectedSubtype, handleStreamGenerate]);
+
+  const handleFileUpload = useCallback(async (file: File | null) => {
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    setIsExtractingFile(true);
+
+    try {
+      const isObservationExamImport = selectedVolet === "observation";
+      const response = await fetch(isObservationExamImport ? "/api/observation/extract-exam" : "/api/extract-file", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || "Extraction du fichier impossible.");
+      }
+
+      const extractedText = String(payload.text ?? "").trim();
+      if (!extractedText) {
+        throw new Error("Aucun texte exploitable trouvé dans ce fichier.");
+      }
+
+      if (selectedVolet === "conciliation") {
+        const updateTreatment = conciliationImportTarget === "exit" ? setTreatmentExitData : setTreatmentEntryData;
+        updateTreatment((current) => {
+          const separator = current.trim().length > 0 ? "\n\n--- Contenu importé ---\n\n" : "";
+          return `${current}${separator}${extractedText}`.slice(0, RAW_DATA_MAX_CHARS);
+        });
+      } else if (selectedVolet === "observation") {
+        setObservationText((current) => {
+          const separator = current.trim().length > 0 ? "\n\n--- Résultats d'examen extraits ---\n\n" : "";
+          return `${current}${separator}${extractedText}`.slice(0, RAW_DATA_MAX_CHARS);
+        });
+      } else {
+        setRawData((current) => {
+          const separator = current.trim().length > 0 ? "\n\n--- Contenu importé ---\n\n" : "";
+          return `${current}${separator}${extractedText}`.slice(0, RAW_DATA_MAX_CHARS);
+        });
+      }
+      if (isObservationExamImport && payload.warning) {
+        toast.warning(String(payload.warning));
+      } else {
+        toast.success(
+          isObservationExamImport
+            ? `Résultats d'examen extraits depuis ${payload.filename || file.name}.`
+            : `Texte extrait depuis ${payload.filename || file.name}.`
+        );
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Extraction du fichier impossible.");
+    } finally {
+      setIsExtractingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }, [conciliationImportTarget, selectedVolet]);
+
+  // ─── Dictée vocale ─────────────────────────────────────────────────────────
+  /**
+   * Appelé par VoiceRecorder quand la transcription est prête.
+   * Le texte est ajouté à la fin du contenu existant (mode append).
+   * Pour la conciliation, le texte est ajouté dans le champ actif selon conciliationImportTarget.
+   */
+  const handleVoiceTranscript = useCallback((text: string) => {
+    if (selectedVolet === "conciliation") {
+      const updateTreatment = conciliationImportTarget === "exit" ? setTreatmentExitData : setTreatmentEntryData;
+      updateTreatment((prev) => {
+        if (!prev.trim()) return text;
+        const separator = prev.endsWith("\n") ? "" : "\n";
+        return `${prev}${separator}${text}`.slice(0, RAW_DATA_MAX_CHARS);
+      });
+    } else if (selectedVolet === "observation") {
+      setObservationText((prev) => {
+        if (!prev.trim()) return text;
+        const separator = prev.endsWith("\n") ? "" : "\n";
+        return `${prev}${separator}${text}`.slice(0, RAW_DATA_MAX_CHARS);
+      });
+    } else {
+      setRawData((prev) => {
+        if (!prev.trim()) return text;
+        const separator = prev.endsWith("\n") ? "" : "\n";
+        return `${prev}${separator}${text}`.slice(0, RAW_DATA_MAX_CHARS);
+      });
+    }
+    toast.success("Dictée ajoutée au champ de saisie.");
+  }, [conciliationImportTarget, selectedVolet]);
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  const handleFileDrag = useCallback((event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (isExtractingFile) return;
+    setIsFileDragOver(event.type === "dragenter" || event.type === "dragover");
+  }, [isExtractingFile]);
+
+  const handleFileDrop = useCallback((event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsFileDragOver(false);
+    if (isExtractingFile) return;
+    const file = event.dataTransfer.files?.[0] ?? null;
+    if (!file) return;
+    void handleFileUpload(file);
+  }, [handleFileUpload, isExtractingFile]);
+
+  const handleCancelGeneration = useCallback(() => {
+    setIsGenerating(false);
+    abortRef.current?.abort();
+  }, []);
+
+  const handleCopy = useCallback(() => {
+    if (!validated) return;
+    const html = documentEditorRef.current?.innerHTML ?? editedDocumentHtml;
+    const text = documentEditorRef.current?.innerText ?? html.replace(/<[^>]+>/g, "\n") ?? generatedDoc;
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success("Document copié dans le presse-papier.");
+    });
+  }, [validated, editedDocumentHtml, generatedDoc]);
+
+  const handleDownloadWord = useCallback(async () => {
+    if (!validated) return;
+    try {
+      toast.info("Génération du document Word en cours...");
+      const html = (documentEditorRef.current?.innerHTML ?? editedDocumentHtml) || renderedDocumentHtml;
+      const response = await fetch("/api/export/docx", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ content: html }),
+      });
+
+      if (!response.ok) {
+        throw new Error("La génération du document a échoué.");
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `redactio_${selectedVolet}_${new Date().toISOString().slice(0, 10)}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Document Word généré et téléchargé.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Téléchargement Word impossible.");
+    }
+  }, [validated, editedDocumentHtml, renderedDocumentHtml, selectedVolet]);
+
+  const handleSecureObservation = useCallback(async () => {
+    if (selectedVolet !== "observation" || !observationText.trim()) return;
+    setIsSecuringObservation(true);
+    try {
+      const response = await fetch("/api/security/pseudonymise", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ content: observationText }),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error ?? "La pseudonymisation de l'observation a échoué.");
+      }
+
+      const result = await response.json() as PseudonymisationInfo & { filteredText: string };
+      setObservationSafeText(result.filteredText);
+      setObservationPseudoInfo({
+        maskCount: result.maskCount,
+        detectedCategories: result.detectedCategories,
+        hasPotentialOvermasking: result.hasPotentialOvermasking,
+      });
+      setStep(3);
+
+      if (result.maskCount > 0) {
+        toast.success(`${result.maskCount} identifiant${result.maskCount > 1 ? "s" : ""} masqué${result.maskCount > 1 ? "s" : ""} avant export.`);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Pseudonymisation impossible.");
+    } finally {
+      setIsSecuringObservation(false);
+    }
+  }, [observationText, selectedVolet]);
+
+  const getObservationExportText = useCallback(
+    () => observationSafeText || observationText,
+    [observationSafeText, observationText]
+  );
+
+  const handleDownloadObservationWord = useCallback(async () => {
+    if (selectedVolet !== "observation") return;
+    try {
+      toast.info("Génération du document Word en cours...");
+      const content = getObservationExportText();
+      const response = await fetch("/api/export/docx", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ content }),
+      });
+      if (!response.ok) throw new Error("La génération du document a échoué.");
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `redactio_observation_${new Date().toISOString().slice(0, 10)}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Document Word (.docx) téléchargé.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Téléchargement Word impossible.");
+    }
+  }, [getObservationExportText, selectedVolet]);
+
+  const handleDownloadTxt = useCallback(() => {
+    if (selectedVolet !== "observation") return;
+    try {
+      const text = getObservationExportText();
+      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `redactio_observation_${new Date().toISOString().slice(0, 10)}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Document texte (.txt) téléchargé.");
+    } catch (err) {
+      toast.error("Téléchargement .txt impossible.");
+    }
+  }, [getObservationExportText, selectedVolet]);
+
+  const handleCopyObservation = useCallback(() => {
+    navigator.clipboard.writeText(getObservationExportText()).then(() => {
+      toast.success("Observation copiée dans le presse-papier.");
+    });
+  }, [getObservationExportText]);
+
+  const handleValidateDocument = useCallback(() => {
+    setEditedDocumentHtml((documentEditorRef.current?.innerHTML ?? editedDocumentHtml) || renderedDocumentHtml);
+    setValidated(true);
+    setStep(5);
+  }, [editedDocumentHtml, renderedDocumentHtml]);
+
+  const handleReset = useCallback(() => {
+    setStep(1);
+    setSelectedVolet(null);
+    setSelectedSubtype(null);
+    setRawData("");
+    setTreatmentEntryData("");
+    setTreatmentEntryBackup("");
+    setTreatmentExitData("");
+    setTreatmentExitDate("");
+    setObservationText("");
+    setObservationSafeText("");
+    setObservationPseudoInfo(null);
+    setConciliationImportTarget("entry");
+    setGeneratedDoc("");
+    setRenderedDocumentHtml("");
+    setEditedDocumentHtml("");
+    setValidated(false);
+    setPseudoInfo(null);
+  }, []);
+
+  // Redirection via useEffect pour éviter setState pendant le rendu
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      setLocation(loginUrl);
+    }
+  }, [authLoading, isAuthenticated, loginUrl, setLocation]);
+
+
+  const STEPS = selectedVolet === "observation" ? STEPS_OBSERVATION : STEPS_DEFAULT;
 
   return (
-    <div className="ortho-page">
-      <style>{orthoStyles}</style>
-      <header className="ortho-top">
-        <div>
-          <Link href="/dashboard" className="ortho-back"><ArrowLeft size={16} /> Tableau de bord</Link>
-          <h1><Bone size={24} /> Saisie rapide — Courrier de sortie de chirurgie orthopédique</h1>
-          <p>MEDACTIO · Aide rédactionnelle : l'outil met en forme ce que vous saisissez. Les valeurs entre crochets restent à compléter par l'opérateur.</p>
+    <RedactioLayout>
+      <style>{newRedactionStyles}</style>
+
+      {selectedVolet === "conciliation" && (
+        <div className="redaction-warning-bar" role="alert">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>
+            Avertissement : ne saisissez aucun identifiant direct du patient
+            (nom, prénom, numéro de sécurité sociale, date de naissance ou adresse).
+          </span>
         </div>
-      </header>
+      )}
 
-      <div className="ortho-cbar">
-        <span><Shield size={14} /> Conforme aux exigences de protection des données de santé</span>
-        <span><Check size={12} /> RGPD</span>
-        <span><Check size={12} /> HDS</span>
-        <span><Check size={12} /> Pseudonymisation</span>
+      <div className="redaction-compliance-bar" aria-label="Conformité données de santé">
+        <span className="redaction-compliance-lead">
+          <Shield className="h-3.5 w-3.5" />
+          <span>Conforme aux exigences de protection des données de santé</span>
+        </span>
+        <span className="redaction-compliance-items">
+          <span><Check className="h-3 w-3" /> RGPD</span>
+          <span><Check className="h-3 w-3" /> HDS</span>
+          <span><Check className="h-3 w-3" /> Secret médical</span>
+          <span><Check className="h-3 w-3" /> Pseudonymisation</span>
+        </span>
       </div>
-
-      <main className="ortho-wrap">
-        <section className="ortho-card">
-          <h2>1 · Geste (trame)</h2>
-          <div className="ortho-dictation-notice">
-            Utilisez le bouton de dictée placé à côté de chaque champ libre. La transcription est ajoutée au contenu existant sans l'effacer.
+      <div className="redaction-shell">
+        <div className="redaction-header">
+          <div className="redaction-title-row">
+            <h1 className="redaction-page-title">Nouvelle rédaction</h1>
+            <Button variant="outline" size="sm" onClick={handleReset} aria-label="Recommencer" className="redaction-restart">
+              <RotateCcw className="w-4 h-4 mr-1.5" />
+              Recommencer
+            </Button>
           </div>
-          <div className="ortho-presets">
-            {(Object.entries(PRESETS) as [PresetKey, Preset][]).map(([key, item]) => (
-              <button key={key} type="button" className={cn("ortho-preset", key === presetKey && "active")} onClick={() => applyPreset(key)}>
-                {item.label}
-              </button>
+
+          
+
+          <div className="redaction-stepper" role="list" aria-label="Étapes du parcours">
+            {STEPS.map((s, index) => (
+              <div key={s.id} className="step-wrap">
+                <div className={cn("step-indicator", { current: step === s.id, done: step > s.id })} role="listitem">
+                  <div className={cn("step-dot", { active: step === s.id, completed: step > s.id, pending: step < s.id })} aria-current={step === s.id ? "step" : undefined}>
+                    {step > s.id ? <Check className="w-3 h-3" /> : s.id}
+                  </div>
+                  <span className="step-label">{s.label}</span>
+                </div>
+                {index < STEPS.length - 1 && <span className="step-sep" aria-hidden="true" />}
+              </div>
             ))}
           </div>
-          <p className="ortho-hint">Un clic pré-remplit le motif probable, le geste et les rubriques de consignes. La radio reste libre : le preset propose seulement une suggestion.</p>
-
-          {presetKey === "AUTRE" && (
-            <div className="ortho-encadre">
-              <b>Mode « Autre / libre »</b>
-              <p>
-                Aucun geste n'est prérempli. Saisissez vous-même ci-dessous le motif d'entrée
-                (pathologie causale) et le type de chirurgie (geste + matériel). L'outil ne
-                suggère aucune valeur clinique dans ce mode.
+        </div>
+        {/* ─── Étape 1 : Choix du volet ─── */}
+        {step === 1 && (
+          <div className="redaction-panel animate-fade-in">
+            <div>
+              <h2 className="redaction-section-title">Choisissez un volet</h2>
+              <p className="redaction-step-subtitle">
+                Sélectionnez le type de document à rédiger.
               </p>
             </div>
-          )}
-
-          <h2>2 · Contexte</h2>
-          <DictationLabel
-            label={<>Motif d'entrée — pathologie causale <span className="ortho-badge">≠ le geste</span></>}
-            fieldLabel="Motif d'entrée"
-            onInsert={(text) => insertDictation(setMotif, "Motif d'entrée", text)}
-            disabled={isGenerating}
-          />
-          <textarea value={motif} onChange={(event) => setMotif(event.target.value)} placeholder="Saisie libre. Ex. Gonarthrose invalidante ; fracture pertrochantérienne de la hanche ; rupture du ligament croisé antérieur..." />
-          <p className="ortho-hint">Zone de texte libre : décrivez la pathologie causale, jamais le geste.</p>
-
-          <div className="ortho-row">
-            <div>
-              <label>Âge du patient</label>
-              <input type="number" min={0} max={120} value={age} onChange={(event) => setAge(event.target.value)} placeholder="ex. 82" />
-              <p className="ortho-hint">Conservé dans le courrier (« ... ans »).</p>
+            <div className="redaction-volets">
+              {(Object.entries(VOLETS) as [Volet, typeof VOLETS[Volet]][]).map(([id, volet]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={cn("volet", { sel: selectedVolet === id })}
+                  style={{ "--accent": VOLET_ICON_CLASSES[`${volet.color}_accent`] } as CSSProperties}
+                  onClick={() => {
+                    if (id === "correspondance") {
+                      setLocation("/redaction/correspondance-medicale");
+                      return;
+                    }
+                    setSelectedVolet(id);
+                    setSelectedSubtype(getDefaultSubtype(id));
+                  }}>
+                  <span className="check"><Check /></span>
+                  <div className="ic">
+                    {volet.icon}
+                  </div>
+                  <div>
+                    <h3>{volet.label}</h3>
+                    <p>{volet.description}</p>
+                  </div>
+                </button>
+              ))}
+              <button
+                type="button"
+                className="volet"
+                style={{ "--accent": VOLET_ICON_CLASSES.blue_accent } as CSSProperties}
+                onClick={() => setLocation("/redaction/chirurgie-orthopedique")}
+                aria-label="Ouvrir Chirurgie orthopédique"
+              >
+                <span className="check"><Check /></span>
+                <div className="ic">
+                  <Bone className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3>Chirurgie orthopédique</h3>
+                  <p>Compte rendu opératoire et courrier de sortie d'hospitalisation structurés.</p>
+                </div>
+              </button>
             </div>
-            <div>
-              <label>Latéralité</label>
-              <div className="ortho-seg">
-                {[
-                  ["D", "Droite"],
-                  ["G", "Gauche"],
-                  ["B", "Bilatérale"],
-                  ["", "Sans objet"],
-                ].map(([value, label]) => (
-                  <button key={label} type="button" className={side === value ? "on" : ""} onClick={() => setSide(value as Side)}>
-                    {label}
-                  </button>
+            <div className="step-foot">
+              <span className="hint">
+                {selectedVolet ? `Volet sélectionné : ${VOLETS[selectedVolet].label}` : "Sélectionnez un volet pour continuer."}
+              </span>
+              <Button onClick={() => setStep(2)} disabled={!selectedVolet} className="gap-2 redaction-primary-button">
+                Continuer <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+        {/* ─── Étape 2 : Injection des données ─── */}
+        {step === 2 && selectedVolet && selectedVolet !== "observation" && (
+          <div
+            className={cn(
+              "redaction-panel animate-fade-in",
+              selectedVolet === "conciliation" && "conciliation-module"
+            )}
+          >
+            <div
+              className={cn(
+                "redaction-back-heading",
+                selectedVolet === "conciliation" && "conciliation-heading"
+              )}
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setStep(1)}
+                aria-label="Retour"
+                className={cn(selectedVolet === "conciliation" && "conciliation-back-button")}
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <div>
+                {selectedVolet === "conciliation" && (
+                  <span className="conciliation-back-label">
+                    Conciliation médicamenteuse
+                  </span>
+                )}
+                <h2 className="redaction-step-title">
+                  {VOLETS[selectedVolet].label}
+                </h2>
+                <p className="redaction-step-subtitle">Saisissez les données médicales — sans identifiant direct du patient.</p>
+              </div>
+            </div>
+
+            {/* Avertissement renforcé */}
+            <div
+              className="redaction-confidentiality"
+              role="alert"
+            >
+              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-semibold">Consigne de confidentialité obligatoire</p>
+                <p>
+                  Ne saisissez <strong>aucun identifiant direct</strong> du patient : ni nom, ni prénom,
+                  ni numéro de sécurité sociale, ni date de naissance, ni adresse, ni numéro de téléphone.
+                </p>
+                <p className="text-xs">
+                  Le filtre de pseudonymisation détectera et masquera automatiquement les identifiants
+                  structurés, mais vous restez responsable de ne pas saisir d'identité directe.
+                </p>
+              </div>
+            </div>
+
+            <div
+              className={cn(
+                "redaction-field-group",
+                selectedVolet === "conciliation" && "conciliation-card conciliation-type-card",
+                selectedVolet === "courrier_sortie" && "redaction-module-card"
+              )}
+            >
+              <fieldset className="space-y-2">
+                {selectedVolet === "conciliation" ? (
+                  <>
+                    <legend className="redaction-field-label conciliation-card-title">
+                      Type de conciliation
+                    </legend>
+                    <p className="conciliation-card-hint">
+                      Étape du parcours de soins concernée.
+                    </p>
+                  </>
+                ) : selectedVolet === "courrier_sortie" ? (
+                  <>
+                    <legend className="redaction-module-card-title">Service / spécialité</legend>
+                    <p className="redaction-module-card-hint">
+                      Oriente la structure du courrier généré (ex. plan gériatrique ajouté en court séjour gériatrique).
+                    </p>
+                  </>
+                ) : (
+                  <legend className="redaction-field-label">
+                    {getSubtypeLabel(selectedVolet)}
+                    <span className="text-muted-foreground font-normal ml-1">
+                      ({getSubtypeHint(selectedVolet)})
+                    </span>
+                  </legend>
+                )}
+                <div
+                  className={
+                    selectedVolet === "courrier_sortie"
+                      ? "redaction-pillgrid"
+                      : cn(
+                          "grid grid-cols-1 sm:grid-cols-2 gap-2",
+                          selectedVolet === "conciliation" && "conciliation-pill-grid"
+                        )
+                  }
+                >
+                  {REDACTION_SUBTYPES[selectedVolet].map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setSelectedSubtype(option.id)}
+                      className={
+                        selectedVolet === "conciliation"
+                          ? cn("conciliation-pill", selectedSubtype === option.id && "is-selected")
+                          : selectedVolet === "courrier_sortie"
+                          ? cn("redaction-pill", selectedSubtype === option.id && "on")
+                          : cn(
+                              "flex min-h-11 items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-colors",
+                              selectedSubtype === option.id
+                                ? "border-primary bg-primary/5 text-primary"
+                                : "border-border bg-background text-foreground hover:bg-muted/60"
+                            )
+                      }
+                      aria-pressed={selectedSubtype === option.id}
+                    >
+                      {selectedVolet === "conciliation" && (
+                        <span className="conciliation-pill-check">
+                          {selectedSubtype === option.id && <Check className="h-3 w-3" />}
+                        </span>
+                      )}
+                      {selectedVolet === "courrier_sortie" && (
+                        <span className="redaction-pill-check">
+                          <Check className="h-3 w-3" />
+                        </span>
+                      )}
+                      <span className="font-medium leading-snug">{option.label}</span>
+                      {selectedVolet !== "conciliation" &&
+                        selectedVolet !== "courrier_sortie" &&
+                        selectedSubtype === option.id && (
+                          <CheckCircle className="h-4 w-4 shrink-0" />
+                        )}
+                    </button>
+                  ))}
+                </div>
+
+                {selectedVolet !== "conciliation" && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {getSubtypeHint(selectedVolet)}
+                  </p>
+                )}
+              </fieldset>
+            </div>
+
+            <div
+              className={cn(
+                "redaction-field-group",
+                selectedVolet === "conciliation" &&
+                  "conciliation-card conciliation-data-card"
+              )}
+            >
+              {selectedVolet === "conciliation" ? (
+                <div className="conciliation-form">
+                  <div className="conciliation-row">
+                    <section className="conciliation-column">
+                      <div className="conciliation-label-row">
+                        <label
+                          htmlFor="treatmentEntryData"
+                          className="conciliation-field-label"
+                        >
+                          Traitement d&apos;entrée{" "}
+                          <span>(bilan médicamenteux)</span>
+                        </label>
+
+                        <div className="conciliation-dictation">
+                          <span>Dictée</span>
+                          <VoiceRecorderWithPreview
+                            onInsert={(dictatedText) => {
+                              if (noTreatmentEntry) return;
+                              setConciliationImportTarget("entry");
+                              setTreatmentEntryData((previous) => {
+                                if (!previous.trim()) return dictatedText;
+                                const separator = previous.endsWith("\n")
+                                  ? ""
+                                  : "\n";
+                                return `${previous}${separator}${dictatedText}`.slice(
+                                  0,
+                                  RAW_DATA_MAX_CHARS
+                                );
+                              });
+                            }}
+                            fieldLabel="Traitement d'entrée"
+                            insertMode="append"
+                            disabled={noTreatmentEntry}
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        className={cn(
+                          "conciliation-empty-toggle",
+                          noTreatmentEntry && "is-active"
+                        )}
+                        aria-pressed={noTreatmentEntry}
+                        onClick={() => {
+                          if (noTreatmentEntry) {
+                            setNoTreatmentEntry(false);
+                            setTreatmentEntryData(treatmentEntryBackup);
+                            setConciliationImportTarget("entry");
+                            return;
+                          }
+
+                          setTreatmentEntryBackup(treatmentEntryData);
+                          setTreatmentEntryData("");
+                          setNoTreatmentEntry(true);
+                          setConciliationImportTarget("exit");
+                        }}
+                      >
+                        <span className="conciliation-empty-check">
+                          {noTreatmentEntry && (
+                            <Check className="h-3 w-3" />
+                          )}
+                        </span>
+                        Pas de traitement d&apos;entrée
+                      </button>
+
+                      <MedicalAutocomplete
+                        id="treatmentEntryData"
+                        value={treatmentEntryData}
+                        onChange={(value) => {
+                          setTreatmentEntryData(value);
+                          if (value.trim()) setNoTreatmentEntry(false);
+                        }}
+                        onFocus={() => {
+                          if (!noTreatmentEntry) {
+                            setConciliationImportTarget("entry");
+                          }
+                        }}
+                        placeholder={
+                          noTreatmentEntry
+                            ? "Aucun traitement à l'entrée (confirmé)."
+                            : `Exemple :
+AMLODIPINE 5 mg gélule : 1 le matin
+ZOPICLONE 7,5 mg cp : 1 au coucher
+KARDEGIC 75 mg : 1 sachet à midi`
+                        }
+                        className="conciliation-textarea min-h-[190px]"
+                        rows={9}
+                        maxLength={RAW_DATA_MAX_CHARS}
+                        disabled={noTreatmentEntry}
+                      />
+
+                      <div className="conciliation-charcount">
+                        {treatmentEntryData.length.toLocaleString("fr-FR")}/
+                        {RAW_DATA_MAX_CHARS.toLocaleString("fr-FR")} caractères
+                      </div>
+
+                      <p className="conciliation-hint">
+                        Cochez « Pas de traitement d&apos;entrée » si le patient
+                        était sans traitement à l&apos;admission. La conciliation
+                        reste due et chaque traitement de sortie sera indiqué
+                        comme « Ajouté ».
+                      </p>
+                    </section>
+
+                    <section className="conciliation-column">
+                      <div className="conciliation-label-row">
+                        <label
+                          htmlFor="treatmentExitData"
+                          className="conciliation-field-label"
+                        >
+                          Traitement de sortie{" "}
+                          <span>(ordonnance finale)</span>
+                        </label>
+
+                        <div className="conciliation-dictation">
+                          <span>Dictée</span>
+                          <VoiceRecorderWithPreview
+                            onInsert={(dictatedText) => {
+                              setConciliationImportTarget("exit");
+                              setTreatmentExitData((previous) => {
+                                if (!previous.trim()) return dictatedText;
+                                const separator = previous.endsWith("\n")
+                                  ? ""
+                                  : "\n";
+                                return `${previous}${separator}${dictatedText}`.slice(
+                                  0,
+                                  RAW_DATA_MAX_CHARS
+                                );
+                              });
+                            }}
+                            fieldLabel="Traitement de sortie"
+                            insertMode="append"
+                          />
+                        </div>
+                      </div>
+
+                      <MedicalAutocomplete
+                        id="treatmentExitData"
+                        value={treatmentExitData}
+                        onChange={setTreatmentExitData}
+                        onFocus={() => setConciliationImportTarget("exit")}
+                        placeholder={`Exemple :
+AMLODIPINE 5 mg gélule : 1 le matin
+APIXABAN 5 mg cp : 1 matin et 1 soir`}
+                        className="conciliation-textarea min-h-[190px]"
+                        rows={9}
+                        maxLength={RAW_DATA_MAX_CHARS}
+                      />
+
+                      <div className="conciliation-charcount">
+                        {treatmentExitData.length.toLocaleString("fr-FR")}/
+                        {RAW_DATA_MAX_CHARS.toLocaleString("fr-FR")} caractères
+                      </div>
+
+                      <p className="conciliation-hint">
+                        Format libre : une ligne par molécule, avec le nom, le
+                        dosage et la posologie.
+                      </p>
+                    </section>
+                  </div>
+
+                  <div className="conciliation-date-block">
+                    <label
+                      htmlFor="treatmentExitDate"
+                      className="conciliation-field-label"
+                    >
+                      Date de rédaction de la sortie{" "}
+                      <span>(optionnel)</span>
+                    </label>
+
+                    <input
+                      id="treatmentExitDate"
+                      type="text"
+                      value={treatmentExitDate}
+                      onChange={(event) =>
+                        setTreatmentExitDate(event.target.value)
+                      }
+                      placeholder="JJ/MM/AAAA"
+                      className="conciliation-date-input"
+                      maxLength={32}
+                    />
+
+                    <p className="conciliation-hint">
+                      Sert au calcul des durées de traitement.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="redaction-label-row">
+                    <label htmlFor="rawData" className="redaction-field-label">
+                      {selectedVolet === "courrier_sortie" ? "Données médicales brutes (sans identifiant direct)" : "Données médicales brutes"}
+                      {selectedVolet !== "courrier_sortie" && <span className="text-muted-foreground font-normal ml-1">(sans identifiant direct)</span>}
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground hidden sm:inline">Dictée vocale</span>
+                      <VoiceRecorderWithPreview
+                        onInsert={handleVoiceTranscript}
+                        fieldLabel="Données médicales brutes"
+                        insertMode="append"
+                        disabled={isGenerating}
+                      />
+                    </div>
+                  </div>
+                  <MedicalAutocomplete
+                    id="rawData"
+                    value={rawData}
+                    onChange={setRawData}
+                    placeholder={
+                      selectedVolet === "courrier_sortie"
+                        ? "Exemple : entrée le [date], sortie le [date], motif d'hospitalisation : ... Antécédents : ... Traitement à domicile : ... Mode de vie : ... Histoire de la maladie : ... Examen clinique : ... Biologie (avec dates) : ... Examens paracliniques : ... Évolution : ... Traitement de sortie : ... Devenir : domicile / transfert vers ..."
+                        : `Exemple pour ${VOLETS[selectedVolet].label} :\n\nService : Cardiologie\nMotif d'hospitalisation : Décompensation cardiaque\nAntécédents : HTA, FA chronique, insuffisance cardiaque FE 35%\nTraitement habituel : Furosémide 40mg, Bisoprolol 5mg, Rivaroxaban 20mg\n...\n\nVous pouvez aussi utiliser le bouton microphone pour dicter directement.`
+                    }
+                    className={selectedVolet === "courrier_sortie" ? "redaction-module-textarea" : "min-h-[280px]"}
+                    rows={selectedVolet === "courrier_sortie" ? 11 : 12}
+                    aria-describedby="rawData-help"
+                    maxLength={RAW_DATA_MAX_CHARS}
+                  />
+                  {selectedVolet === "courrier_sortie" && (
+                    <p className="redaction-hint">
+                      Saisie libre, abréviations admises — le contenu est mis en forme selon la trame du service sélectionné ci-dessus. Aucune donnée n'est inventée : tout élément manquant reste « [à compléter] ».
+                    </p>
+                  )}
+                </>
+              )}
+              {selectedVolet !== "conciliation" && (
+                <div className="flex items-center justify-between gap-3">
+                  <p
+                    id="rawData-help"
+                    className={selectedVolet === "courrier_sortie" ? "redaction-charcount" : "text-xs text-muted-foreground"}
+                  >
+                    {currentInputLength}/
+                    {RAW_DATA_MAX_CHARS.toLocaleString("fr-FR")} caractères
+                  </p>
+                  {currentInputLength > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      Pseudonymisation automatique activée
+                    </Badge>
+                  )}
+                </div>
+              )}
+
+              {selectedVolet === "conciliation" && currentInputLength > 0 && (
+                <div className="conciliation-security-status">
+                  <Shield className="h-3.5 w-3.5" />
+                  Pseudonymisation automatique activée
+                </div>
+              )}
+              <div
+                className={cn(
+                  "redaction-dropzone",
+                  selectedVolet === "conciliation" && "conciliation-dropzone",
+                  selectedVolet === "courrier_sortie" && "redaction-module-dropzone",
+                  isFileDragOver ? "is-over" : ""
+                )}
+                onDragEnter={handleFileDrag}
+                onDragOver={handleFileDrag}
+                onDragLeave={handleFileDrag}
+                onDrop={handleFileDrop}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept=".txt,.md,.csv,.json,.xml,.html,.rtf,.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/*"
+                  onChange={(event) => handleFileUpload(event.target.files?.[0] ?? null)}
+                />
+                <div className="flex items-center gap-3">
+                  <div className="redaction-dropzone-icon">
+                    {isExtractingFile ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <FileUp className="h-4 w-4" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      Glissez-déposez un fichier ici
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {selectedVolet === "conciliation"
+                        ? `Destination : traitement ${conciliationImportTarget === "entry" ? "d'entrée" : "de sortie"}.`
+                        : "PDF, Word .docx, TXT, Markdown, CSV ou JSON"}
+                    </p>
+                  </div>
+                </div>
+                {selectedVolet === "conciliation" && (
+                  <div className="conciliation-import-toggle">
+                    <button
+                      type="button"
+                      onClick={() => setConciliationImportTarget("entry")}
+                      className={cn(
+                        "conciliation-import-option",
+                        conciliationImportTarget === "entry" && "is-active"
+                      )}
+                      aria-pressed={conciliationImportTarget === "entry"}
+                    >
+                      Entrée
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConciliationImportTarget("exit")}
+                      className={cn(
+                        "conciliation-import-option",
+                        conciliationImportTarget === "exit" && "is-active"
+                      )}
+                      aria-pressed={conciliationImportTarget === "exit"}
+                    >
+                      Sortie
+                    </button>
+                  </div>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 self-start sm:self-auto"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isExtractingFile}
+                >
+                  {isExtractingFile ? "Extraction…" : "Parcourir"}
+                </Button>
+              </div>
+            </div>
+
+            <div className="step-foot">
+              <Button
+                variant="outline"
+                onClick={() => setStep(1)}
+                className={cn(
+                  selectedVolet === "conciliation" &&
+                    "conciliation-previous-button"
+                )}
+              >
+                <ArrowLeft className="w-4 h-4 mr-1.5" />
+                {selectedVolet === "conciliation" ? "Précédent" : "Retour"}
+              </Button>
+              <span className="spacer" />
+              <Button
+                onClick={() => { setStep(3); handleGenerate(); }}
+                disabled={!canGenerate}
+                className={cn(
+                  "gap-2 redaction-primary-button",
+                  selectedVolet === "conciliation" &&
+                    "conciliation-continue-button"
+                )}
+              >
+                {selectedVolet === "conciliation"
+                  ? "Continuer"
+                  : "Générer le document"}
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Étape 2 : Observation Médicale (Interface dédiée) ─── */}
+        {step === 2 && selectedVolet === "observation" && (
+          <div className="redaction-panel animate-fade-in">
+            <div className="redaction-back-heading">
+              <Button variant="ghost" size="icon" onClick={() => setStep(1)} aria-label="Retour">
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <div>
+                <h2 className="redaction-step-title">Observation Médicale</h2>
+                <p className="redaction-step-subtitle">Saisissez ou dictez vos notes libres.</p>
+              </div>
+            </div>
+
+            <div className="redaction-confidentiality" role="alert">
+              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-semibold">Consigne de confidentialité obligatoire</p>
+                <p>
+                  Ne saisissez <strong>aucun identifiant direct</strong> du patient : ni nom, ni prénom,
+                  ni numéro de sécurité sociale, ni date de naissance, ni adresse, ni numéro de téléphone.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Le filtre de pseudonymisation détectera et masquera automatiquement les identifiants structurés avant copie ou export.
+                </p>
+              </div>
+            </div>
+
+            <div className="redaction-field-group redaction-module-card observation-accent">
+              <div className="redaction-label-row">
+                <label htmlFor="observation-text" className="redaction-field-label">
+                  Contenu de l'observation
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground hidden sm:inline">Dictée vocale</span>
+                  <VoiceRecorderWithPreview
+                    onInsert={(text) => {
+                      setObservationText((prev) => {
+                        if (!prev.trim()) return text;
+                        return `${prev}${prev.endsWith("\n") ? "" : "\n"}${text}`.slice(0, RAW_DATA_MAX_CHARS);
+                      });
+                    }}
+                    fieldLabel="Observation médicale"
+                    insertMode="append"
+                  />
+                </div>
+              </div>
+              <MedicalAutocomplete
+                id="observation-text"
+                value={observationText}
+                onChange={setObservationText}
+                placeholder="Saisissez ou dictez vos notes ici..."
+                className="redaction-module-textarea redaction-observation-textarea"
+                rows={14}
+                maxLength={RAW_DATA_MAX_CHARS}
+              />
+              <p className="redaction-charcount">
+                {observationText.length}/{RAW_DATA_MAX_CHARS.toLocaleString("fr-FR")} caractères
+              </p>
+              <p className="redaction-hint">
+                Les fichiers déposés sont analysés avant insertion : résultats d'examen uniquement, données administratives supprimées.
+              </p>
+              {observationText.length > 0 && (
+                <Badge variant="secondary" className="w-fit text-xs">
+                  Pseudonymisation automatique activée avant export
+                </Badge>
+              )}
+            </div>
+
+            <div
+              className={cn("redaction-dropzone redaction-module-dropzone observation-accent", isFileDragOver ? "is-over" : "")}
+              onDragEnter={handleFileDrag}
+              onDragOver={handleFileDrag}
+              onDragLeave={handleFileDrag}
+              onDrop={handleFileDrop}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept=".txt,.md,.csv,.json,.xml,.html,.rtf,.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/*"
+                onChange={(event) => handleFileUpload(event.target.files?.[0] ?? null)}
+              />
+              <div className="flex items-center gap-3">
+                <div className="redaction-dropzone-icon">
+                  {isExtractingFile ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileUp className="h-4 w-4" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    {isExtractingFile ? "Extraction des données de l'examen en cours..." : "Glissez-déposez un fichier ici"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Les informations administratives et identitaires seront automatiquement supprimées.
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2 self-start sm:self-auto"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isExtractingFile}
+              >
+                {isExtractingFile ? "Extraction…" : "Parcourir"}
+              </Button>
+            </div>
+
+            <div className="step-foot">
+              <Button variant="outline" onClick={() => setStep(1)}>
+                <ArrowLeft className="w-4 h-4 mr-1.5" />
+                Retour
+              </Button>
+              <span className="spacer" />
+              <Button onClick={handleSecureObservation} disabled={!observationText.trim() || isSecuringObservation} className="gap-2 redaction-primary-button">
+                {isSecuringObservation ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Sécurisation…
+                  </>
+                ) : (
+                  <>
+                    Continuer
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </Button>
+            </div>
+
+          </div>
+        )}
+
+        {/* ─── Étape 3 : Génération en cours ─── */}
+        {step === 3 && selectedVolet !== "observation" && (
+          <div className="redaction-panel animate-fade-in">
+            <div className="redaction-generation">
+              <div className="flex items-center justify-center">
+                <div className="redaction-spinner-ring">
+                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-lg font-semibold text-foreground">Génération en cours…</h2>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                  Le moteur IA rédige votre document à partir des données pseudonymisées.
+                  Cela prend généralement quelques secondes.
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Pseudonymisation appliquée — contenu filtré avant envoi au moteur</span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancelGeneration}
+                className="gap-2"
+              >
+                <X className="w-4 h-4" />
+                Annuler
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Étape 4 : Relecture et édition ─── */}
+        {step === 4 && (
+          <div className="redaction-panel animate-fade-in">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="redaction-step-title">Relecture et édition</h2>
+                <p className="redaction-step-subtitle">
+                  Relisez, corrigez et complétez le document avant validation.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setStep(2); setGeneratedDoc(""); setEditedDocumentHtml(""); }}
+                className="gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Régénérer
+              </Button>
+            </div>
+
+            {/* Informations de pseudonymisation */}
+            {pseudoInfo && pseudoInfo.maskCount > 0 && (
+              <div className="flex flex-wrap items-center gap-2 p-3 rounded-lg bg-muted/50 border border-border">
+                <span className="text-xs text-muted-foreground font-medium">Masquages appliqués :</span>
+                <span className="mask-badge">
+                  {pseudoInfo.maskCount} identifiant{pseudoInfo.maskCount > 1 ? "s" : ""} masqué{pseudoInfo.maskCount > 1 ? "s" : ""}
+                </span>
+                {pseudoInfo.detectedCategories.map((cat) => (
+                  <span key={cat} className="mask-badge">{cat.replace(/_/g, " ")}</span>
                 ))}
+                {pseudoInfo.hasPotentialOvermasking && (
+                  <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    Sur-masquage possible — vérifiez le document
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Légende des balises */}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="tag-a-completer text-xs">[À COMPLÉTER PAR LE MÉDECIN]</span>
+              <span>= zones à compléter obligatoirement avant export</span>
+            </div>
+
+            {/* Éditeur riche */}
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/30">
+                <span className="text-xs text-muted-foreground font-medium">
+                  Éditeur de document — {selectedVolet && VOLETS[selectedVolet].label}
+                </span>
+              </div>
+              <div
+                ref={documentEditorRef}
+                className="tiptap-editor"
+                contentEditable
+                suppressContentEditableWarning
+                role="textbox"
+                aria-label="Éditeur de document médical"
+                aria-multiline="true"
+                dangerouslySetInnerHTML={{ __html: editedDocumentHtml || renderedDocumentHtml }}
+              />
+            </div>
+
+            {/* Validation */}
+            {!validated ? (
+              <Card className="border-amber-200 dark:border-amber-800">
+                <CardContent className="pt-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div className="space-y-3 flex-1">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">Validation requise avant export</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          En validant ce document, vous confirmez l'avoir relu, corrigé et complété toutes les
+                          balises <strong>[À COMPLÉTER PAR LE MÉDECIN]</strong>. Vous assumez la responsabilité
+                          médicale du contenu.
+                        </p>
+                      </div>
+                      <Button
+                        onClick={handleValidateDocument}
+                        className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                      >
+                        <Check className="w-4 h-4" />
+                        Je valide ce document
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="flex justify-end">
+                <Button onClick={() => setStep(5)} className="gap-2">
+                  Continuer vers l'export
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── Étape 3 : Export pour Observation Médicale ─── */}
+        {step === 3 && selectedVolet === "observation" && (
+          <div className="redaction-panel animate-fade-in">
+            <div className="text-center space-y-2">
+              <div className="flex items-center justify-center">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/30 flex items-center justify-center">
+                  <CheckCircle className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                </div>
+              </div>
+              <h2 className="text-lg font-semibold text-foreground">Observation prête pour l'export</h2>
+              <p className="text-sm text-muted-foreground">
+                Vous pouvez maintenant copier ou télécharger vos notes pseudonymisées.
+              </p>
+            </div>
+
+            {observationPseudoInfo && (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-3 text-sm">
+                    <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    <div>
+                      <p className="font-medium text-foreground">
+                        Pseudonymisation appliquée avant export
+                      </p>
+                      <p className="text-muted-foreground">
+                        {observationPseudoInfo.maskCount} identifiant{observationPseudoInfo.maskCount > 1 ? "s" : ""} masqué{observationPseudoInfo.maskCount > 1 ? "s" : ""}.
+                        {observationPseudoInfo.detectedCategories.length > 0 && (
+                          <> Catégories : {observationPseudoInfo.detectedCategories.join(", ")}.</>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Options d'export</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button
+                  className="w-full gap-2"
+                  variant="outline"
+                  onClick={handleCopyObservation}
+                >
+                  <Copy className="w-4 h-4" />
+                  Copier le texte
+                </Button>
+                <Button
+                  className="w-full gap-2"
+                  variant="outline"
+                  onClick={handleDownloadTxt}
+                >
+                  <Download className="w-4 h-4" />
+                  Télécharger en texte (.txt)
+                </Button>
+                <Button
+                  className="w-full gap-2"
+                  variant="outline"
+                  onClick={handleDownloadObservationWord}
+                >
+                  <Download className="w-4 h-4" />
+                  Télécharger en Word (.docx)
+                </Button>
+
+              </CardContent>
+            </Card>
+
+            <div className="flex justify-center">
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button variant="outline" onClick={() => setStep(4)} className="gap-2">
+                  <ArrowLeft className="w-4 h-4" />
+                  Revenir à la relecture
+                </Button>
+                <Button variant="outline" onClick={handleReset} className="gap-2">
+                  <RotateCcw className="w-4 h-4" />
+                  Nouvelle rédaction
+                </Button>
               </div>
             </div>
           </div>
+        )}
 
-          <DictationLabel
-            label="Type de chirurgie (geste + matériel)"
-            fieldLabel="Type de chirurgie"
-            onInsert={(text) => insertDictation(setGeste, "Type de chirurgie", text)}
-            disabled={isGenerating}
-          />
-          <textarea value={geste} onChange={(event) => setGeste(event.target.value)} placeholder="Saisie libre. Ex. arthroplastie totale du genou ; ostéosynthèse par clou gamma ; plaque antérieure du radius distal..." />
-          <p className="ortho-hint">Zone de texte libre : modifiable même après un preset.</p>
 
-          <div className="ortho-row">
-            <div>
-              <label>Anesthésie</label>
-              <select value={anesth} onChange={(event) => setAnesth(event.target.value)}>
-                <option>anesthésie générale</option>
-                <option>anesthésie loco-régionale</option>
-                <option>rachianesthésie</option>
-                <option>[à préciser]</option>
-              </select>
+        {/* ─── Étape 5 : Export ─── */}
+        {step === 5 && validated && (
+          <div className="redaction-panel animate-fade-in">
+            <div className="text-center space-y-2">
+              <div className="flex items-center justify-center">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/30 flex items-center justify-center">
+                  <CheckCircle className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                </div>
+              </div>
+              <h2 className="text-lg font-semibold text-foreground">Document validé</h2>
+              <p className="text-sm text-muted-foreground">
+                Vous pouvez maintenant copier ou télécharger le document.
+              </p>
             </div>
-            <div>
-              <label>Déroulement per-opératoire</label>
-              <select value={perop} onChange={(event) => setPerop(event.target.value)}>
-                <option>sans particularité</option>
-                <option>sans incident</option>
-                <option>geste en bonnes conditions</option>
-                <option value="__">à préciser…</option>
-              </select>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Options d'export</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button
+                  className="w-full gap-2"
+                  variant="outline"
+                  onClick={handleCopy}
+                >
+                  <Copy className="w-4 h-4" />
+                  Copier dans le presse-papier
+                </Button>
+                <Button
+                  className="w-full gap-2"
+                  onClick={handleDownloadWord}
+                >
+                  <Download className="w-4 h-4" />
+                  Télécharger en Word (.docx)
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="border-primary/20 bg-primary/5">
+              <CardContent className="pt-4">
+                <p className="text-xs text-primary">
+                  <strong>Rappel :</strong> Ce document sera purgé de la mémoire à la fermeture de la session.
+                  Aucune donnée médicale n'est conservée sur la plateforme.
+                </p>
+              </CardContent>
+            </Card>
+
+            <div className="flex justify-center">
+              <Button variant="outline" onClick={handleReset} className="gap-2">
+                <RotateCcw className="w-4 h-4" />
+                Nouvelle rédaction
+              </Button>
             </div>
           </div>
-          {perop === "__" && (
-            <div className="ortho-dictation-field">
-              <DictationLabel
-                label="Précisions sur le déroulement per-opératoire"
-                fieldLabel="Déroulement per-opératoire"
-                onInsert={(text) => insertDictation(setPeropText, "Déroulement per-opératoire", text)}
-                disabled={isGenerating}
-              />
-              <textarea
-                value={peropText}
-                onChange={(event) => setPeropText(event.target.value)}
-                placeholder="Décrire le déroulement per-opératoire (saignement, difficulté technique, incident...)"
-                className="ortho-inline-input"
-              />
-            </div>
-          )}
-
-          <h2>3 · Dates</h2>
-          <div className="ortho-row">
-            <div><label>Entrée</label><input type="date" value={dateEntree} onChange={(event) => setDateEntree(event.target.value)} /></div>
-            <div><label>Chirurgie</label><input type="date" value={dateChirurgie} onChange={(event) => handleDateChirurgieChange(event.target.value)} /></div>
-            <div><label>Sortie / transfert</label><input type="date" value={dateSortie} onChange={(event) => setDateSortie(event.target.value)} /></div>
-          </div>
-          <p className="ortho-hint">Les dates saisies sont recopiées telles quelles dans le courrier. Une date laissée vide devient « [à préciser par l'opérateur] ».</p>
-          <label className="ortho-check"><input type="checkbox" checked={isTransfert} onChange={(event) => setIsTransfert(event.target.checked)} /> Sortie = transfert</label>
-          {isTransfert && <input value={structureAval} onChange={(event) => setStructureAval(event.target.value)} placeholder="structure d'aval (SMR, service...)" className="ortho-inline-input" />}
-
-          <h2>4 · Clinique</h2>
-          <DictationLabel
-            label="Antécédents (+ allergies)"
-            fieldLabel="Antécédents et allergies"
-            onInsert={(text) => insertDictation(setAntecedents, "Antécédents et allergies", text)}
-            disabled={isGenerating}
-          />
-          <textarea value={antecedents} onChange={(event) => setAntecedents(event.target.value)} />
-          <label>Suites post-opératoires</label>
-          <select value={suites} onChange={(event) => setSuites(event.target.value as "simples" | "compliquees")}>
-            <option value="simples">simples</option>
-            <option value="compliquees">compliquées → à décrire</option>
-          </select>
-          {suites === "compliquees" && (
-            <div className="ortho-dictation-field">
-              <DictationLabel
-                label="Description des suites compliquées"
-                fieldLabel="Suites post-opératoires compliquées"
-                onInsert={(text) => insertDictation(setSuitesText, "Suites post-opératoires compliquées", text)}
-                disabled={isGenerating}
-              />
-              <textarea
-                value={suitesText}
-                onChange={(event) => setSuitesText(event.target.value)}
-                placeholder="Décrire les suites compliquées (ex. escarre talonnière ; anémie post-op ayant nécessité VENOFER ; sigmoïdite ; confusion post-op...)"
-                className="ortho-inline-input"
-              />
-            </div>
-          )}
-          <label className="ortho-check"><input type="checkbox" checked={orthoGeriatrie} onChange={(event) => setOrthoGeriatrie(event.target.checked)} /> Prise en charge ortho-gériatrique conjointe</label>
-
-          <h2>5 · Consignes de suivi</h2>
-          <DictationLabel
-            label="Consignes de suivi et de sortie"
-            fieldLabel="Consignes de suivi"
-            onInsert={(text) => insertDictation(setConsignes, "Consignes de suivi", text)}
-            disabled={isGenerating}
-          />
-          <textarea className="ortho-consignes" value={consignes} onChange={(event) => setConsignes(event.target.value)} />
-          <div className="ortho-flag">Trame à valider et compléter : les éléments entre [ ] relèvent de l'opérateur. L'outil n'en propose aucune valeur.</div>
-          <button type="button" className="ortho-reset" onClick={() => setConsignes(bulletList(preset.consignes))}><RefreshCw size={14} /> Recharger la trame du geste</button>
-
-          <div className="ortho-row">
-            <div><label>RDV de contrôle</label><input type="date" value={dateRdv} onChange={(event) => setDateRdv(event.target.value)} /></div>
-            <div><label>Heure</label><input type="time" value={heureRdv} onChange={(event) => setHeureRdv(event.target.value)} /></div>
-          </div>
-          <div className="ortho-encadre">
-            <DictationLabel
-              label={<>Radiographies de contrôle <span className="ortho-badge">saisie libre</span></>}
-              fieldLabel="Radiographies de contrôle"
-              onInsert={(text) => insertDictation(setRadios, "Radiographies de contrôle", text)}
-              disabled={isGenerating}
-            />
-            <input value={radios} onChange={(event) => setRadios(event.target.value)} placeholder={preset.radios ? `Suggestion : ${preset.radios} — à valider / compléter` : "À remplir par le médecin"} />
-            <p className="ortho-hint">Champ libre : non rempli automatiquement. Le preset propose seulement une suggestion en placeholder — c'est à vous de saisir la valeur retenue.</p>
-          </div>
-        </section>
-
-        <section className="ortho-card">
-          <h2>Courrier</h2>
-          <div className="ortho-actions">
-            <Button type="button" className="ortho-main-btn" onClick={handleGenerate} disabled={isGenerating || blocText.length < 10}>
-              <FileText size={17} /> {isGenerating ? "Génération..." : "Générer le courrier"}
-            </Button>
-            <Button type="button" variant="outline" onClick={handleCopy}><Copy size={16} /> Copier</Button>
-            <Button type="button" variant="outline" onClick={() => window.location.reload()}><RefreshCw size={16} /> Réinitialiser</Button>
-          </div>
-
-          {missingCount > 0 && (
-            <div className="ortho-flag">{missingCount} champ(s) [ ] restent à compléter avant l'envoi définitif.</div>
-          )}
-          {pseudoInfo && (
-            <div className="ortho-mask">Masquages appliqués : {pseudoInfo.maskCount} {pseudoInfo.detectedCategories.join(" · ")}</div>
-          )}
-
-          <div className="ortho-letter">
-            {generatedText || streamingText || "Le courrier généré s'affichera ici après un clic sur « Générer le courrier »."}
-          </div>
-
-          <div className="ortho-flag">
-            Aide rédactionnelle : l'outil met en forme ce que vous saisissez et ne recommande aucune valeur.
-            Complétez les [ ] et vérifiez côté, dates et consignes. Le protocole de l'opérateur prime.
-          </div>
-        </section>
-      </main>
-    </div>
+        )}
+      </div>
+    </RedactioLayout>
   );
 }
 
-const orthoStyles = `
-@import url('https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700&family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
-.ortho-page{--bg:#EEF3F5;--card:#fff;--ink:#0B1B29;--muted:#5A6B78;--line:#D9E2E7;--brand:#0E6BA8;--brand-d:#0A4D78;--accent:#E8F2FA;--seal:#C58A12;--seal-bg:#FBF3DE;min-height:100vh;background:var(--bg);color:var(--ink);font-family:'Hanken Grotesk',system-ui,sans-serif;line-height:1.5}
-.ortho-page *{box-sizing:border-box}
-.ortho-top{background:linear-gradient(135deg,var(--brand),var(--brand-d));color:#fff;padding:22px 30px}
-.ortho-back{display:inline-flex;align-items:center;gap:8px;color:#DDECF6;font-size:.9rem;font-weight:700;margin-bottom:14px;text-decoration:none}
-.ortho-top h1{display:flex;align-items:center;gap:12px;margin:0;font-family:'Spectral',Georgia,serif;font-size:1.75rem;line-height:1.1}
-.ortho-top p{margin:8px 0 0;color:#DDECF6;max-width:980px}
-.ortho-cbar{display:flex;align-items:center;justify-content:center;gap:1rem;flex-wrap:wrap;background:#0B1B29;color:#CFE0DA;padding:.62rem 24px;font-family:'JetBrains Mono',monospace;font-size:.72rem}
-.ortho-cbar span{display:inline-flex;align-items:center;gap:.4rem}.ortho-cbar span:first-child{font-family:'Hanken Grotesk',system-ui,sans-serif;font-weight:700;color:#fff;font-size:.84rem}
-.ortho-wrap{max-width:1180px;margin:0 auto;padding:22px;display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
-.ortho-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:0 18px 44px -34px rgba(11,27,41,.35)}
-.ortho-card h2{margin:18px 0 12px;font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--brand-d);font-weight:800}.ortho-card h2:first-child{margin-top:0}
-.ortho-presets{display:flex;flex-wrap:wrap;gap:8px}.ortho-preset{border:1px solid var(--line);background:#EEF3F5;border-radius:999px;padding:7px 13px;font-size:.82rem;font-weight:700;cursor:pointer;color:var(--brand-d);transition:.15s}.ortho-preset:hover{background:var(--accent);border-color:var(--brand)}.ortho-preset.active{background:var(--brand);color:#fff;border-color:var(--brand)}
-.ortho-hint{font-size:.78rem;color:var(--muted);margin:10px 0 0}
-.ortho-badge{display:inline-block;background:var(--accent);color:var(--brand-d);border-radius:6px;padding:2px 8px;font-size:.72rem;font-weight:800;margin-left:6px}
-.ortho-encadre{border:1.5px dashed var(--brand);background:var(--accent);border-radius:12px;padding:12px 14px;margin-top:12px}
-.ortho-encadre b{display:block;color:var(--brand-d);margin-bottom:4px}.ortho-encadre p{margin:0;color:var(--muted);font-size:.84rem;line-height:1.45}.ortho-encadre label{margin-top:0!important}
-.ortho-card label{display:block;font-weight:700;font-size:.82rem;color:var(--muted);margin:12px 0 5px}
-.ortho-label-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}.ortho-label-row>label{margin:0!important}.ortho-dictation{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.76rem;font-weight:700;flex:none}.ortho-dictation-field{margin-top:8px}.ortho-dictation-notice{margin:0 0 12px;padding:10px 12px;border:1px solid #BFE6E0;border-radius:10px;background:#E7F4F2;color:#0A7B70;font-size:.82rem;font-weight:600;line-height:1.45}
-.ortho-card input[type=text],.ortho-card input[type=number],.ortho-card input[type=date],.ortho-card input[type=time],.ortho-card select,.ortho-card textarea{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:10px;font-size:.92rem;font-family:inherit;background:#fff;color:var(--ink)}
-.ortho-card textarea{resize:vertical;min-height:72px}.ortho-consignes{min-height:170px!important}
-.ortho-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.ortho-row:has(> div:nth-child(3)){grid-template-columns:repeat(3,minmax(0,1fr))}
-.ortho-seg{display:flex;gap:7px;flex-wrap:wrap}.ortho-seg button{flex:1;min-width:76px;padding:9px;border:1px solid var(--line);background:#fff;border-radius:9px;cursor:pointer;font-size:.84rem;font-weight:700;color:var(--muted)}.ortho-seg button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
-.ortho-check{display:flex!important;align-items:center;gap:8px;margin-top:11px!important;color:var(--ink)!important}.ortho-check input{width:auto}
-.ortho-inline-input{margin-top:7px}
-.ortho-flag{background:var(--seal-bg);border:1px solid #EBD9A8;color:#7A5A0E;border-radius:10px;padding:10px 12px;font-size:.84rem;margin-top:12px}
-.ortho-reset{display:inline-flex;align-items:center;gap:7px;margin-top:10px;border:1px solid var(--brand);background:#fff;color:var(--brand-d);border-radius:9px;padding:8px 12px;font-weight:800;cursor:pointer}
-.ortho-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}.ortho-main-btn{background:#0E9C8E!important}
-.ortho-mask{border:1px solid #BFE6E0;background:#E7F4F2;color:#0A7B70;border-radius:999px;display:inline-flex;padding:6px 11px;font-size:.8rem;font-weight:700;margin:10px 0}
-.ortho-letter{background:#fff;border:1px dashed var(--line);border-radius:12px;padding:18px;min-height:360px;white-space:pre-wrap;font-size:.94rem;color:var(--ink)}
-.ortho-details{border-top:1px solid var(--line);margin-top:16px;padding-top:12px}.ortho-details summary{cursor:pointer;font-size:.85rem;font-weight:800;color:var(--muted)}.ortho-details pre{background:#0f1b26;color:#e7eef5;border-radius:10px;padding:14px;overflow:auto;font-size:.78rem;white-space:pre-wrap;margin:12px 0 0;font-family:'JetBrains Mono',monospace}
-.ortho-tabbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.ortho-tabbar button{padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:.82rem;font-weight:800;color:var(--muted)}.ortho-tabbar button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
-.ortho-copy-preview{margin-top:10px}
-.ortho-page :focus-visible{outline:2px solid #0E9C8E;outline-offset:2px;border-radius:5px}
-@media(max-width:900px){.ortho-wrap{grid-template-columns:1fr;padding:18px}.ortho-row,.ortho-row:has(> div:nth-child(3)){grid-template-columns:1fr}.ortho-top{padding:20px}.ortho-top h1{font-size:1.45rem}.ortho-label-row{align-items:flex-start;flex-direction:column}.ortho-dictation{width:100%;justify-content:flex-end}}
+const newRedactionStyles = `
+@import url("https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,500;0,600;0,700&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap");
+
+:root{
+  --ink:#0b1b29;
+  --ink-soft:#5a6b78;
+  --ink-faint:#8a99a4;
+  --teal:#0e9c8e;
+  --teal-deep:#0a7b70;
+  --line:#e6edf0;
+  --field:#f6f9f9;
+  --mint:#eef6f4;
+  --navy:#1e3a5f;
+  --gold:#c58a17;
+  --purple:#6d5bd0;
+  --blue:#2f6fb0;
+  --bg:#f3f6f7;
+}
+
+.redaction-shell,
+.redaction-shell *{
+  box-sizing:border-box;
+}
+
+.redaction-shell{
+  width:100%;
+  max-width:1180px;
+  min-height:calc(100vh - 40px);
+  margin:0 auto;
+  padding:34px 44px 40px;
+  display:flex;
+  flex-direction:column;
+  color:var(--ink);
+  font-family:"Hanken Grotesk",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+
+.redaction-compliance-bar{
+  max-width:1180px;
+  margin:0 auto 14px;
+  padding:10px 16px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:#fff;
+  color:var(--ink-soft);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  font-family:"Hanken Grotesk",system-ui,sans-serif;
+  box-shadow:0 2px 8px rgba(11,27,41,.04);
+}
+
+.redaction-compliance-lead,
+.redaction-compliance-items,
+.redaction-compliance-items span{
+  display:flex;
+  align-items:center;
+  gap:7px;
+}
+
+.redaction-compliance-lead{
+  font-weight:700;
+  color:var(--ink);
+  font-size:13px;
+}
+
+.redaction-compliance-items{
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  font-size:12px;
+  font-weight:600;
+  color:var(--ink-soft);
+}
+
+.redaction-header{
+  margin-bottom:8px;
+}
+
+.redaction-title-row{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:20px;
+  margin-bottom:22px;
+}
+
+.redaction-page-title{
+  font-family:"Spectral",Georgia,serif;
+  font-weight:600;
+  font-size:29px;
+  line-height:1.1;
+  letter-spacing:-.2px;
+  margin:0;
+  color:var(--ink);
+}
+
+.redaction-restart{
+  display:inline-flex !important;
+  align-items:center;
+  gap:8px;
+  height:auto !important;
+  min-height:40px;
+  background:#fff !important;
+  border:1px solid var(--line) !important;
+  border-radius:11px !important;
+  padding:10px 16px !important;
+  font-weight:600 !important;
+  font-size:13.5px !important;
+  color:var(--ink-soft) !important;
+  box-shadow:none !important;
+  transition:.15s ease;
+}
+
+.redaction-restart:hover{
+  color:var(--ink) !important;
+  border-color:#d3dde2 !important;
+  background:#fff !important;
+}
+
+.redaction-restart svg{
+  width:15px;
+  height:15px;
+}
+
+/* ---------- PROGRESSION ---------- */
+.redaction-stepper{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:40px;
+  flex-wrap:wrap;
+}
+
+.step-wrap{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.step-indicator{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.step-dot{
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:700;
+  font-size:13px;
+  line-height:1;
+  flex:none;
+  border:1.5px solid var(--line);
+  color:var(--ink-faint);
+  background:#fff;
+  transition:.18s ease;
+}
+
+.step-indicator.done .step-dot,
+.step-indicator.current .step-dot{
+  border-color:var(--navy);
+  background:var(--navy);
+  color:#fff;
+}
+
+.step-dot svg{
+  width:14px;
+  height:14px;
+}
+
+.step-label{
+  font-weight:600;
+  font-size:14px;
+  color:var(--ink-faint);
+}
+
+.step-indicator.current .step-label{
+  color:var(--ink);
+}
+
+.step-sep{
+  width:46px;
+  height:1.5px;
+  background:var(--line);
+  display:inline-flex;
+}
+
+/* ---------- PANELS ---------- */
+.redaction-panel{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  flex:1;
+}
+
+.redaction-section-title,
+.h2,
+.redaction-step-title{
+  font-family:"Spectral",Georgia,serif;
+  font-weight:600;
+  font-size:22px;
+  line-height:1.2;
+  margin:0 0 6px;
+  color:var(--ink);
+}
+
+.redaction-step-subtitle{
+  color:var(--ink-soft);
+  font-size:14.5px;
+  line-height:1.5;
+  margin:0 0 24px;
+}
+
+.redaction-back-heading{
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  margin-bottom:20px;
+}
+
+.redaction-back-heading > button{
+  border-radius:10px !important;
+  color:var(--ink-soft) !important;
+}
+
+/* ---------- BLOC SÉLECTION ---------- */
+.redaction-volets{
+  display:flex;
+  flex-wrap:wrap;
+  gap:20px;
+  justify-content:center;
+}
+
+.volet{
+  appearance:none;
+  -webkit-appearance:none;
+  position:relative;
+  flex:1 1 300px;
+  max-width:344px;
+  min-width:272px;
+  min-height:210px;
+  background:#fff;
+  border:1.5px solid var(--line);
+  border-radius:16px;
+  padding:24px 24px 22px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  text-align:left;
+  color:var(--ink);
+  box-shadow:0 2px 6px rgba(11,27,41,.04);
+  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  cursor:pointer;
+  font:inherit;
+}
+
+.volet:hover{
+  transform:translateY(-3px);
+  box-shadow:0 20px 40px -22px rgba(11,27,41,.32);
+  border-color:color-mix(in srgb,var(--accent) 45%,var(--line));
+}
+
+.volet.sel{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent),0 18px 38px -22px rgba(11,27,41,.35);
+}
+
+.volet .ic{
+  width:52px;
+  height:52px;
+  border-radius:13px;
+  background:var(--accent);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin-bottom:18px;
+}
+
+.volet .ic svg{
+  width:25px;
+  height:25px;
+}
+
+.volet h3{
+  font-family:"Spectral",Georgia,serif;
+  font-weight:600;
+  font-size:20px;
+  line-height:1.2;
+  margin:0 0 9px;
+  color:var(--ink);
+}
+
+.volet p{
+  color:var(--ink-soft);
+  font-size:13.7px;
+  line-height:1.5;
+  margin:0;
+}
+
+.volet .check{
+  position:absolute;
+  top:18px;
+  right:18px;
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  border:1.5px solid var(--line);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#fff;
+  transition:.15s ease;
+}
+
+.volet .check svg{
+  width:14px;
+  height:14px;
+  opacity:0;
+  transition:.15s ease;
+  stroke-width:3px;
+}
+
+.volet.sel .check{
+  background:var(--accent);
+  border-color:var(--accent);
+}
+
+.volet.sel .check svg{
+  opacity:1;
+}
+
+/* ---------- FORMULAIRES ---------- */
+.redaction-confidentiality{
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  margin:0 0 22px;
+  padding:16px 18px;
+  border:1px solid rgba(197,138,23,.28);
+  border-radius:14px;
+  background:#fff8ed;
+  color:#6f4a08;
+}
+
+.redaction-confidentiality p{
+  margin:0;
+  line-height:1.45;
+}
+
+.redaction-field-group{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:20px;
+  box-shadow:0 2px 6px rgba(11,27,41,.04);
+  margin-bottom:18px;
+}
+
+.redaction-module-card{
+  --accent:var(--teal);
+  --accent-deep:var(--teal-deep);
+  --accent-tint:var(--mint);
+  padding:24px;
+  border-radius:18px;
+}
+
+.redaction-module-card.observation-accent,
+.observation-accent{
+  --accent:var(--purple);
+  --accent-deep:#4c3aa0;
+  --accent-tint:#f2effc;
+}
+
+.redaction-module-card-title{
+  display:block;
+  margin:0 0 6px;
+  color:var(--ink);
+  font-family:"Spectral",Georgia,serif;
+  font-size:19px;
+  font-weight:600;
+  line-height:1.2;
+}
+
+.redaction-module-card-hint,
+.redaction-hint{
+  margin:0;
+  color:var(--ink-soft);
+  font-size:13.2px;
+  line-height:1.5;
+}
+
+.redaction-module-card-hint{
+  margin-bottom:16px;
+}
+
+.redaction-field-label{
+  display:block;
+  color:var(--ink);
+  font-size:13.5px;
+  font-weight:700;
+  margin-bottom:8px;
+}
+
+.redaction-label-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:10px;
+}
+
+.redaction-label-row .redaction-field-label{
+  margin-bottom:0;
+}
+
+.redaction-pillgrid{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+
+.redaction-pill{
+  appearance:none;
+  -webkit-appearance:none;
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
+  min-height:46px;
+  border:1.5px solid var(--line);
+  border-radius:999px;
+  background:#fff;
+  color:var(--ink-soft);
+  padding:10px 16px 10px 14px;
+  font:inherit;
+  font-size:14px;
+  font-weight:700;
+  line-height:1.2;
+  cursor:pointer;
+  transition:background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+
+.redaction-pill:hover{
+  border-color:color-mix(in srgb,var(--accent) 45%,var(--line));
+  background:var(--accent-tint);
+  color:var(--ink);
+}
+
+.redaction-pill.on{
+  border-color:var(--accent);
+  background:var(--accent);
+  color:#fff;
+  box-shadow:0 10px 22px -12px color-mix(in srgb,var(--accent) 80%,#000);
+}
+
+.redaction-pill-check{
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:1.5px solid currentColor;
+  color:var(--ink-faint);
+  flex:none;
+}
+
+.redaction-pill-check svg{
+  opacity:0;
+  stroke-width:3px;
+}
+
+.redaction-pill.on .redaction-pill-check{
+  color:#fff;
+}
+
+.redaction-pill.on .redaction-pill-check svg{
+  opacity:1;
+}
+
+.redaction-module-textarea{
+  min-height:210px !important;
+  width:100%;
+  border:1.5px solid var(--line) !important;
+  border-radius:14px !important;
+  background:#fff !important;
+  color:var(--ink) !important;
+  padding:14px 16px !important;
+  font-size:15px !important;
+  line-height:1.55 !important;
+  box-shadow:none !important;
+  resize:vertical;
+}
+
+.redaction-module-textarea::placeholder{
+  color:var(--ink-faint) !important;
+}
+
+.redaction-module-textarea:focus{
+  outline:none !important;
+  border-color:var(--accent) !important;
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 14%,transparent) !important;
+}
+
+.redaction-observation-textarea{
+  min-height:320px !important;
+}
+
+.redaction-charcount{
+  margin:8px 0 0;
+  color:var(--ink-faint);
+  font-size:12.5px;
+  font-weight:600;
+}
+
+.redaction-module-card .redaction-hint{
+  margin-top:8px;
+}
+
+.redaction-dropzone{
+  border:1.5px dashed #cbd6dc;
+  border-radius:15px;
+  background:var(--field);
+  padding:16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  flex-wrap:wrap;
+  transition:.15s ease;
+}
+
+.redaction-dropzone.is-over{
+  border-color:var(--teal);
+  background:var(--mint);
+}
+
+.redaction-dropzone-icon{
+  width:38px;
+  height:38px;
+  border-radius:11px;
+  background:#fff;
+  color:var(--teal-deep);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid var(--line);
+}
+
+.redaction-module-dropzone{
+  --accent:var(--teal);
+  --accent-deep:var(--teal-deep);
+  --accent-tint:var(--mint);
+  border-color:color-mix(in srgb,var(--accent) 30%,#cbd6dc);
+  background:#fff;
+}
+
+.redaction-module-dropzone.is-over{
+  border-color:var(--accent);
+  background:var(--accent-tint);
+}
+
+.redaction-module-dropzone .redaction-dropzone-icon{
+  background:var(--accent-tint);
+  color:var(--accent-deep);
+  border-color:color-mix(in srgb,var(--accent) 22%,var(--line));
+}
+
+.mask-badge,
+.tag-a-completer{
+  display:inline-flex;
+  align-items:center;
+  border-radius:999px;
+  padding:3px 8px;
+  font-size:11px;
+  font-weight:700;
+}
+
+.mask-badge{
+  color:var(--teal-deep);
+  background:var(--mint);
+  border:1px solid rgba(14,156,142,.18);
+}
+
+.tag-a-completer{
+  color:#7a4a00;
+  background:#fff1c2;
+  border:1px solid #ffd56b;
+}
+
+.tableWrapper{
+  width:100%;
+  overflow-x:auto;
+  margin:14px 0;
+  border:1px solid var(--line);
+  border-radius:12px;
+}
+
+.tableWrapper table{
+  width:100%;
+  border-collapse:collapse;
+  background:#fff;
+}
+
+.tableWrapper th,
+.tableWrapper td{
+  padding:10px 12px;
+  border-bottom:1px solid var(--line);
+  text-align:left;
+  vertical-align:top;
+  font-size:13px;
+  cursor:text;
+}
+
+.tableWrapper th{
+  background:var(--field);
+  color:var(--ink);
+  font-weight:800;
+}
+
+.tiptap-editor{
+  min-height:420px;
+  background:#fff;
+  padding:22px;
+  color:var(--ink);
+  line-height:1.65;
+  outline:none;
+}
+
+.tiptap-editor h2,
+.tiptap-editor h3,
+.tiptap-editor h4{
+  font-family:"Spectral",Georgia,serif;
+  color:var(--ink);
+  margin:18px 0 8px;
+}
+
+.tiptap-editor p{
+  margin:0 0 8px;
+}
+
+/* ---------- GÉNÉRATION / EXPORT ---------- */
+.redaction-generation{
+  min-height:420px;
+  border:1px solid var(--line);
+  border-radius:18px;
+  background:#fff;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:20px;
+  text-align:center;
+  box-shadow:0 2px 6px rgba(11,27,41,.04);
+}
+
+.redaction-spinner-ring{
+  width:72px;
+  height:72px;
+  border-radius:50%;
+  background:var(--mint);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* ---------- BARRE ACTIONS ---------- */
+.step-foot{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:14px;
+  margin-top:40px;
+  padding-top:34px;
+  border-top:1px solid var(--line);
+}
+
+.spacer{
+  flex:1;
+}
+
+.hint{
+  margin-right:auto;
+  font-size:13px;
+  color:var(--ink-faint);
+}
+
+.redaction-primary-button{
+  display:inline-flex !important;
+  align-items:center;
+  gap:9px;
+  min-height:46px;
+  background:var(--teal) !important;
+  color:#fff !important;
+  border:none !important;
+  border-radius:12px !important;
+  padding:13px 24px !important;
+  font-weight:700 !important;
+  font-size:14.5px !important;
+  box-shadow:0 12px 24px -12px rgba(14,156,142,.9);
+  transition:.15s ease;
+}
+
+.redaction-primary-button:hover:not(:disabled){
+  background:var(--teal-deep) !important;
+}
+
+.redaction-primary-button:disabled{
+  background:#a8d8d2 !important;
+  box-shadow:none !important;
+  cursor:not-allowed;
+  opacity:.85;
+}
+
+
+/* ============================================================
+   MODULE CONCILIATION MÉDICAMENTEUSE
+   ============================================================ */
+.redaction-warning-bar{
+  width:100%;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:9px 22px;
+  border-bottom:1px solid #f0dcae;
+  background:#fff6e6;
+  color:#8a5a00;
+  font-family:"Hanken Grotesk",system-ui,sans-serif;
+  font-size:13px;
+  font-weight:600;
+}
+
+
+.conciliation-module{
+  --conciliation-accent:var(--navy);
+  --conciliation-accent-deep:#14293f;
+  --conciliation-accent-tint:#eaeff5;
+}
+
+.conciliation-heading{
+  align-items:flex-start;
+  margin-bottom:20px;
+}
+
+.conciliation-back-button{
+  margin-top:1px;
+  border-radius:9px !important;
+}
+
+.conciliation-back-label{
+  display:block;
+  margin-bottom:8px;
+  color:var(--ink-soft);
+  font-size:13.5px;
+  font-weight:600;
+}
+
+.conciliation-module .redaction-step-title{
+  font-size:24px;
+}
+
+.conciliation-module .redaction-confidentiality{
+  margin-bottom:26px;
+  border-color:#f0dcae;
+  background:#fff9ec;
+}
+
+.conciliation-card{
+  padding:22px 24px;
+  margin-bottom:20px;
+  border-radius:16px;
+}
+
+.conciliation-card-title{
+  margin:0 0 4px;
+  color:var(--ink);
+  font-family:"Spectral",Georgia,serif;
+  font-size:17px;
+  font-weight:600;
+}
+
+.conciliation-card-hint{
+  margin:0 0 14px;
+  color:var(--ink-faint);
+  font-size:13px;
+}
+
+.conciliation-pill-grid{
+  display:flex !important;
+  flex-wrap:wrap;
+  gap:10px;
+}
+
+.conciliation-pill{
+  flex:1 1 auto;
+  min-width:170px;
+  min-height:44px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:11px 14px;
+  border:1.5px solid var(--line);
+  border-radius:11px;
+  background:#fff;
+  color:var(--ink-soft);
+  cursor:pointer;
+  font-family:inherit;
+  font-size:13.8px;
+  font-weight:600;
+  text-align:left;
+  transition:.15s ease;
+}
+
+.conciliation-pill:hover{
+  border-color:rgba(30,58,95,.48);
+}
+
+.conciliation-pill.is-selected{
+  border-color:var(--conciliation-accent);
+  background:var(--conciliation-accent-tint);
+  color:var(--conciliation-accent-deep);
+}
+
+.conciliation-pill-check{
+  width:18px;
+  height:18px;
+  flex:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1.5px solid var(--line);
+  border-radius:50%;
+  color:#fff;
+}
+
+.conciliation-pill.is-selected .conciliation-pill-check{
+  border-color:var(--conciliation-accent);
+  background:var(--conciliation-accent);
+}
+
+.conciliation-form{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+
+.conciliation-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:20px;
+}
+
+.conciliation-column{
+  min-width:0;
+}
+
+.conciliation-label-row{
+  min-height:34px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:8px;
+}
+
+.conciliation-field-label{
+  display:block;
+  margin:0;
+  color:var(--ink-soft);
+  font-size:12.8px;
+  font-weight:700;
+}
+
+.conciliation-field-label span{
+  color:var(--ink-faint);
+  font-weight:600;
+}
+
+.conciliation-dictation{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  color:var(--ink-faint);
+  font-size:12px;
+  font-weight:600;
+}
+
+.conciliation-empty-toggle{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  margin:0 0 10px;
+  padding:7px 14px;
+  border:1.5px solid var(--line);
+  border-radius:999px;
+  background:#fff;
+  color:var(--ink-soft);
+  cursor:pointer;
+  font-family:inherit;
+  font-size:12.8px;
+  font-weight:700;
+  transition:.15s ease;
+}
+
+.conciliation-empty-toggle:hover{
+  border-color:rgba(30,58,95,.48);
+}
+
+.conciliation-empty-toggle.is-active{
+  border-color:var(--conciliation-accent);
+  background:var(--conciliation-accent-tint);
+  color:var(--conciliation-accent-deep);
+}
+
+.conciliation-empty-check{
+  width:16px;
+  height:16px;
+  flex:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1.5px solid var(--line);
+  border-radius:50%;
+  color:#fff;
+}
+
+.conciliation-empty-toggle.is-active .conciliation-empty-check{
+  border-color:var(--conciliation-accent);
+  background:var(--conciliation-accent);
+}
+
+.conciliation-textarea{
+  min-height:190px !important;
+  border-color:var(--line) !important;
+  border-radius:10px !important;
+  background:var(--field) !important;
+  font-size:14.5px !important;
+  line-height:1.55 !important;
+}
+
+.conciliation-textarea:focus{
+  border-color:var(--conciliation-accent) !important;
+  background:#fff !important;
+  box-shadow:0 0 0 3px rgba(30,58,95,.14) !important;
+}
+
+.conciliation-charcount{
+  margin-top:6px;
+  color:var(--ink-faint);
+  font-size:11.5px;
+  text-align:right;
+}
+
+.conciliation-hint{
+  margin:6px 0 0;
+  color:var(--ink-faint);
+  font-size:12px;
+  line-height:1.5;
+}
+
+.conciliation-date-block{
+  margin-top:2px;
+}
+
+.conciliation-date-input{
+  width:220px;
+  max-width:100%;
+  height:42px;
+  padding:10px 13px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  outline:none;
+  background:var(--field);
+  color:var(--ink);
+  font-family:inherit;
+  font-size:14.5px;
+  transition:.15s ease;
+}
+
+.conciliation-date-input:focus{
+  border-color:var(--conciliation-accent);
+  background:#fff;
+  box-shadow:0 0 0 3px rgba(30,58,95,.14);
+}
+
+.conciliation-security-status{
+  display:inline-flex;
+  width:max-content;
+  max-width:100%;
+  align-items:center;
+  gap:7px;
+  color:var(--ink-faint);
+  font-size:12px;
+  font-weight:600;
+}
+
+.conciliation-dropzone{
+  margin-top:16px;
+  padding:14px 16px;
+  border-radius:12px;
+  background:var(--field);
+}
+
+.conciliation-dropzone .redaction-dropzone-icon{
+  background:var(--conciliation-accent-tint);
+  color:var(--conciliation-accent-deep);
+}
+
+.conciliation-import-toggle{
+  flex:none;
+  display:flex;
+  overflow:hidden;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:#fff;
+}
+
+.conciliation-import-option{
+  height:36px;
+  padding:0 13px;
+  border:0;
+  background:#fff;
+  color:var(--ink-soft);
+  cursor:pointer;
+  font-family:inherit;
+  font-size:12.5px;
+  font-weight:700;
+  transition:.15s ease;
+}
+
+.conciliation-import-option.is-active{
+  background:var(--conciliation-accent);
+  color:#fff;
+}
+
+.conciliation-module .step-foot{
+  margin-top:auto;
+  padding-top:26px;
+}
+
+.conciliation-previous-button{
+  min-height:46px !important;
+  border-radius:12px !important;
+  padding:12px 20px !important;
+  font-weight:700 !important;
+}
+
+.conciliation-continue-button{
+  background:var(--conciliation-accent) !important;
+  box-shadow:0 12px 24px -12px rgba(30,58,95,.85) !important;
+}
+
+.conciliation-continue-button:hover:not(:disabled){
+  background:var(--conciliation-accent-deep) !important;
+}
+
+.conciliation-continue-button:disabled{
+  background:#aab8c7 !important;
+}
+
+@media(max-width:880px){
+  .conciliation-row{
+    grid-template-columns:1fr;
+  }
+}
+
+@media(max-width:860px){
+  .redaction-warning-bar{
+    padding:10px 20px;
+    align-items:flex-start;
+  }
+
+  .redaction-shell{
+    padding:26px 20px 34px;
+  }
+  .redaction-compliance-bar{
+    margin:0 20px 12px;
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .step-label{
+    display:none;
+  }
+  .step-sep{
+    width:20px;
+  }
+  .redaction-volets{
+    justify-content:stretch;
+  }
+  .volet{
+    max-width:none;
+    min-width:100%;
+  }
+}
+
+@media(max-width:560px){
+  .conciliation-label-row{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .conciliation-import-toggle{
+    width:100%;
+  }
+
+  .conciliation-import-option{
+    flex:1;
+  }
+
+  .redaction-title-row,
+  .step-foot{
+    align-items:stretch;
+    flex-direction:column;
+  }
+  .hint,
+  .spacer{
+    margin-right:0;
+  }
+  .redaction-restart,
+  .redaction-primary-button{
+    width:100%;
+    justify-content:center;
+  }
+  .redaction-dropzone{
+    align-items:stretch;
+    flex-direction:column;
+  }
+}
 `;
