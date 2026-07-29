@@ -62,8 +62,8 @@ export default function Profil() {
 
   const role = (user as { role?: string })?.role ?? "praticien";
   const organisationId = (user as { organisationId?: number | null })?.organisationId ?? null;
-  const isOrganisationPractitioner = role === "praticien" && Boolean(organisationId);
-  const canDeleteOwnAccount = role !== "org_admin" && !isOrganisationPractitioner;
+  const canDeactivateOwnAccount = role === "praticien" || role === "org_admin";
+  const canDeleteOwnAccount = role !== "praticien" && role !== "org_admin";
   const isConventionAccount = role === "org_admin" || Boolean(organisationId);
   const stripeStatus = (user as { stripeSubscriptionStatus?: string | null })?.stripeSubscriptionStatus ?? null;
   const hasStripeCustomer = Boolean((user as { stripeCustomerId?: string | null })?.stripeCustomerId);
@@ -278,7 +278,7 @@ export default function Profil() {
           </section>
         )}
 
-        {role === "praticien" && (
+        {canDeactivateOwnAccount && (
           <section className="profile-card">
             <h2>Désactiver temporairement mon compte</h2>
 
