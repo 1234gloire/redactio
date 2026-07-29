@@ -31,4 +31,5 @@ export const ENV = {
   stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? "",
   stripePriceId: process.env.STRIPE_PRICE_ID ?? "",
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
+  smtApiKey: process.env.SMT_API_KEY ?? "",
 };

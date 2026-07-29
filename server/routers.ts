@@ -57,6 +57,7 @@ import { getLocalOpenId, sdk } from "./_core/sdk";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { analyzeText, invalidateDictCache } from "./medicalAnalyzer";
+import { searchSmtConcepts, SmtNotConfiguredError } from "./smtTerminology";
 import { createAnthropicMessage } from "./_core/anthropic";
 import { notifySignupCreated } from "./makeWebhooks";
 import { createStripeBillingPortalSession, createStripeCheckoutSession, getStripeBillingPlan } from "./stripeBilling";
@@ -1394,6 +1395,27 @@ export const appRouter = router({
         await deactivateMedicalTerm(input.id);
         invalidateDictCache();
         return { success: true };
+      }),
+    // ─── Enrichissement via le SMT (ANS) : SNOMED CT, CIM-10, ATC... ─────────
+    searchExternal: adminProcedure
+      .input(
+        z.object({
+          query: z.string().min(2).max(100),
+          terminology: z.string().max(50).default("SNOMED CT"),
+        })
+      )
+      .query(async ({ input }) => {
+        try {
+          return await searchSmtConcepts(input.query, input.terminology);
+        } catch (error) {
+          if (error instanceof SmtNotConfiguredError) {
+            throw new TRPCError({ code: "PRECONDITION_FAILED", message: error.message });
+          }
+          throw new TRPCError({
+            code: "BAD_GATEWAY",
+            message: error instanceof Error ? error.message : "Le SMT n'a pas répondu.",
+          });
+        }
       }),
     // ─── Analyse de texte : surlignage + auto-correction ─────────────────────
     analyzeText: protectedProcedure
