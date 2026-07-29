@@ -8,6 +8,7 @@ import {
   Clock3,
   FileText,
   Lock,
+  LogOut,
   ShieldCheck,
 } from "lucide-react";
 import { useEffect, useMemo } from "react";
@@ -19,9 +20,8 @@ function BrandLockup({ inverted = false }: { inverted?: boolean }) {
   return (
     <div className="flex items-center gap-3">
       <div
-        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
-          inverted ? "bg-white text-[#0b1b29]" : "bg-[#0b1b29] text-white"
-        } shadow-[0_8px_20px_-8px_rgba(11,27,41,.55)]`}
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${inverted ? "bg-white text-[#0b1b29]" : "bg-[#0b1b29] text-white"
+          } shadow-[0_8px_20px_-8px_rgba(11,27,41,.55)]`}
       >
         <FileText className="h-[22px] w-[22px]" />
       </div>
@@ -56,7 +56,7 @@ function formatStripeAmount(amount: number | undefined, currency: string | undef
 }
 
 export default function Paiement() {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading, logout } = useAuth();
   const [location, setLocation] = useLocation();
   const trialEnd = useMemo(() => formatTrialEndDate(), []);
   const planQuery = trpc.billing.getPlan.useQuery(undefined, {
@@ -74,6 +74,15 @@ export default function Paiement() {
       toast.error(error.message);
     },
   });
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setLocation("/login");
+    } catch {
+      toast.error("Impossible de vous déconnecter pour le moment.");
+    }
+  };
 
   useEffect(() => {
     document.title = "MEDACTIO — Activez votre essai gratuit";
@@ -139,18 +148,16 @@ export default function Paiement() {
             ].map((step) => (
               <div
                 key={step.label}
-                className={`flex items-center gap-3 text-[14px] ${
-                  step.state === "current" ? "font-bold text-white" : step.state === "todo" ? "text-[#dbe6ec]/65" : "text-[#dbe6ec]"
-                }`}
+                className={`flex items-center gap-3 text-[14px] ${step.state === "current" ? "font-bold text-white" : step.state === "todo" ? "text-[#dbe6ec]/65" : "text-[#dbe6ec]"
+                  }`}
               >
                 <span
-                  className={`flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-extrabold ${
-                    step.state === "done"
-                      ? "bg-[#5fd6c6] text-[#0b1b29]"
-                      : step.state === "current"
-                        ? "bg-white text-[#0b1b29]"
-                        : "bg-white/25 text-white"
-                  }`}
+                  className={`flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-extrabold ${step.state === "done"
+                    ? "bg-[#5fd6c6] text-[#0b1b29]"
+                    : step.state === "current"
+                      ? "bg-white text-[#0b1b29]"
+                      : "bg-white/25 text-white"
+                    }`}
                 >
                   {step.marker}
                 </span>
@@ -165,8 +172,19 @@ export default function Paiement() {
         </section>
 
         <main className="flex flex-1 flex-col justify-center overflow-y-auto px-6 py-8 lg:max-w-[560px] lg:flex-[0_0_560px] lg:px-14 lg:py-12">
-          <div className="mb-7">
+          <div className="mb-7 flex items-center justify-between gap-4">
             <BrandLockup />
+
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleLogout}
+              disabled={loading}
+              className="gap-2 text-[#5a6b78] hover:text-[#0b1b29]"
+            >
+              <LogOut className="h-4 w-4" />
+              {loading ? "Déconnexion..." : "Se déconnecter"}
+            </Button>
           </div>
 
           <h1 className="font-serif text-[29px] font-semibold leading-tight tracking-[-.01em]">

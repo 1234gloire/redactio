@@ -427,6 +427,37 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    deactivateOwnAccount: protectedProcedure.mutation(async ({ ctx }) => {
+      if (ctx.user.role !== "praticien") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Seul un praticien peut désactiver son propre compte.",
+        });
+      }
+
+      await deactivateUser(ctx.user.id);
+
+      await createAuditLog({
+        userId: ctx.user.id,
+        action: "user.deactivate_own_account",
+        resource: "user",
+        resourceId: String(ctx.user.id),
+        metadata: {
+          role: ctx.user.role,
+          organisationId: ctx.user.organisationId,
+        },
+      });
+
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+
+      ctx.res.clearCookie(COOKIE_NAME, {
+        ...cookieOptions,
+        maxAge: -1,
+      });
+
+      return { success: true };
+    }),
+
     list: adminOrOrgAdminProcedure.query(async ({ ctx }) => {
       if (ctx.user.role === "org_admin") {
         if (!ctx.user.organisationId) {
@@ -474,95 +505,95 @@ export const appRouter = router({
       }),
 
     createOrgAdmin: adminProcedure
-  .input(
-    z.object({
-      organisationId: z.number().int().positive(),
-      name: z.string().trim().min(2).max(128),
-      email: z.string().trim().email(),
-      password: z.string().min(8).max(128),
-    })
-  )
-  .mutation(async ({ ctx, input }) => {
-    const org = await getOrganisationById(input.organisationId);
+      .input(
+        z.object({
+          organisationId: z.number().int().positive(),
+          name: z.string().trim().min(2).max(128),
+          email: z.string().trim().email(),
+          password: z.string().min(8).max(128),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const org = await getOrganisationById(input.organisationId);
 
-    if (!org) {
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: "Organisation introuvable.",
-      });
-    }
+        if (!org) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Organisation introuvable.",
+          });
+        }
 
-    if (!org.active) {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "Cette organisation est inactive.",
-      });
-    }
+        if (!org.active) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Cette organisation est inactive.",
+          });
+        }
 
-    const email = input.email.trim().toLowerCase();
-    const existingUser = await getUserByEmail(email);
+        const email = input.email.trim().toLowerCase();
+        const existingUser = await getUserByEmail(email);
 
-    if (existingUser) {
-      throw new TRPCError({
-        code: "CONFLICT",
-        message: "Un compte existe déjà avec cette adresse email.",
-      });
-    }
+        if (existingUser) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Un compte existe déjà avec cette adresse email.",
+          });
+        }
 
-    const passwordHash = await hashPassword(input.password);
-    const openId = getLocalOpenId(email);
-    const now = new Date();
+        const passwordHash = await hashPassword(input.password);
+        const openId = getLocalOpenId(email);
+        const now = new Date();
 
-    await upsertUser({
-      openId,
-      role: "org_admin",
-      organisationId: input.organisationId,
-      name: input.name.trim(),
-      email,
-      passwordHash,
-      passwordUpdatedAt: null,
-      loginMethod: "password",
-      termsAcceptedAt: now,
-      privacyAcceptedAt: now,
-      stripeSubscriptionStatus: "active",
-      active: true,
-    });
+        await upsertUser({
+          openId,
+          role: "org_admin",
+          organisationId: input.organisationId,
+          name: input.name.trim(),
+          email,
+          passwordHash,
+          passwordUpdatedAt: null,
+          loginMethod: "password",
+          termsAcceptedAt: now,
+          privacyAcceptedAt: now,
+          stripeSubscriptionStatus: "active",
+          active: true,
+        });
 
-    const finalUser = await getUserByEmail(email);
+        const finalUser = await getUserByEmail(email);
 
-    if (!finalUser) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Création de l'administrateur organisme impossible.",
-      });
-    }
+        if (!finalUser) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Création de l'administrateur organisme impossible.",
+          });
+        }
 
-    if (finalUser.organisationId !== input.organisationId) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message:
-          "Le compte a été créé, mais son rattachement à l'organisation a échoué.",
-      });
-    }
+        if (finalUser.organisationId !== input.organisationId) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message:
+              "Le compte a été créé, mais son rattachement à l'organisation a échoué.",
+          });
+        }
 
-    await createAuditLog({
-      userId: ctx.user.id,
-      action: "admin.create_org_admin",
-      resource: "user",
-      resourceId: String(finalUser.id),
-      metadata: {
-        organisationId: input.organisationId,
-        organisationName: org.name,
-        role: "org_admin",
-      },
-    });
+        await createAuditLog({
+          userId: ctx.user.id,
+          action: "admin.create_org_admin",
+          resource: "user",
+          resourceId: String(finalUser.id),
+          metadata: {
+            organisationId: input.organisationId,
+            organisationName: org.name,
+            role: "org_admin",
+          },
+        });
 
-    return {
-      id: finalUser.id,
-      organisationId: finalUser.organisationId,
-      success: true,
-    };
-  }),
+        return {
+          id: finalUser.id,
+          organisationId: finalUser.organisationId,
+          success: true,
+        };
+      }),
 
     createPractitioner: adminOrOrgAdminProcedure
       .input(
@@ -1067,15 +1098,15 @@ export const appRouter = router({
         const updateData =
           input.type === "clinical"
             ? {
-                validatedClinical: true,
-                validatedClinicalBy: ctx.user.id,
-                validatedClinicalAt: new Date(),
-              }
+              validatedClinical: true,
+              validatedClinicalBy: ctx.user.id,
+              validatedClinicalAt: new Date(),
+            }
             : {
-                validatedConformite: true,
-                validatedConformiteBy: ctx.user.id,
-                validatedConformiteAt: new Date(),
-              };
+              validatedConformite: true,
+              validatedConformiteBy: ctx.user.id,
+              validatedConformiteAt: new Date(),
+            };
         await updatePromptBase(input.id, updateData);
         await createAuditLog({
           userId: ctx.user.id,
@@ -1196,15 +1227,15 @@ export const appRouter = router({
         const updateData =
           input.type === "clinical"
             ? {
-                validatedClinical: true,
-                validatedClinicalBy: ctx.user.id,
-                validatedClinicalAt: new Date(),
-              }
+              validatedClinical: true,
+              validatedClinicalBy: ctx.user.id,
+              validatedClinicalAt: new Date(),
+            }
             : {
-                validatedConformite: true,
-                validatedConformiteBy: ctx.user.id,
-                validatedConformiteAt: new Date(),
-              };
+              validatedConformite: true,
+              validatedConformiteBy: ctx.user.id,
+              validatedConformiteAt: new Date(),
+            };
         await updatePromptTemplate(input.id, updateData);
         await createAuditLog({
           userId: ctx.user.id,
@@ -1428,7 +1459,7 @@ export const appRouter = router({
         return result;
       }),
   }),
-    audit: router({
+  audit: router({
     list: adminProcedure
       .input(z.object({ limit: z.number().min(1).max(500).default(100) }))
       .query(async ({ input }) => {
