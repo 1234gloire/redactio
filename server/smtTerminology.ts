@@ -1,19 +1,37 @@
 /**
  * SMT (Serveur Multi-Terminologies, ANS) — recherche de concepts officiels
- * (SNOMED CT, CIM-10, ATC...) pour enrichir le dictionnaire médical local.
+ * (ATC, CIM-10, CCAM, LOINC...) pour enrichir le dictionnaire médical local.
  *
- * Documentation : https://smt.esante.gouv.fr/assistance/utilisation-des-api/
- * Swagger interactif (JS, non indexable) : https://smt.esante.gouv.fr/api-docs/
+ * Contrat vérifié empiriquement le 2026-07-29 (aucune doc publique en clair
+ * ne le documente ; le Swagger interactif à /api/swagger-ui n'expose pas son
+ * spec JSON sur ce déploiement) :
  *
- * Les schémas exacts de requête/réponse ne sont pas publiés en texte brut ;
- * ce module a été écrit à partir de la documentation disponible mais n'a pas
- * encore été testé avec une vraie clé API. `SMT_HEADER_MODE` ci-dessous liste
- * les deux façons courantes d'authentifier une clé API sur les API de l'ANS —
- * n'hésite pas à ajuster une fois la première réponse réelle observée.
+ *   POST https://smt.esante.gouv.fr/api/concepts/search
+ *     ?searchedText=<query>&pagination=<page 1-indexé>&size=<n>&adv=false
+ *     &terminologyFilters=<terminologyId>&lang=fr&isBrowserSnomedLicence=false
+ *   body: {"facets":[],"terminologySpecifiqueFacets":[]}
+ *   -> { concepts: [{ code, prefLabel, terminologyLabel, ... }], numberOfConcepts }
+ *
+ * Les terminologies non protégées (ATC, CIM-10, CCAM, LOINC) répondent sans
+ * aucune authentification. SNOMED CT ("terminologie-snomed-ct-fr") est
+ * marquée `forProtected` côté SMT et attend un vrai JWT en
+ * `Authorization: Bearer` — envoyer la clé API brute échoue ("jeton JWT non
+ * valide"). Le mécanisme d'échange clé -> JWT n'est pas documenté
+ * publiquement ; contacter ans-terminologies@esante.gouv.fr si SNOMED CT
+ * devient nécessaire. En attendant, SNOMED CT n'est pas proposée ici.
  */
-import { ENV } from "./_core/env";
 
 const SMT_API_BASE = "https://smt.esante.gouv.fr/api";
+
+/** terminologyId vérifiés via GET /api/terminologies/list/with-concepts. */
+export const SMT_TERMINOLOGIES = {
+  "ATC": "terminologie-atc",
+  "CIM-10": "terminologie-cim-10",
+  "CCAM": "terminologie-ccam",
+  "LOINC": "terminologie-loinc-international",
+} as const;
+
+export type SmtTerminologyName = keyof typeof SMT_TERMINOLOGIES;
 
 export interface SmtConcept {
   code: string;
@@ -21,90 +39,49 @@ export interface SmtConcept {
   terminology: string;
 }
 
-export class SmtNotConfiguredError extends Error {
-  constructor() {
-    super("Clé API SMT non configurée (SMT_API_KEY manquant).");
-    this.name = "SmtNotConfiguredError";
+interface SmtSearchResponse {
+  numberOfConcepts: number;
+  concepts: Array<{
+    code: string;
+    prefLabel: string;
+    terminologyLabel: string;
+  }> | null;
+}
+
+/**
+ * Recherche des concepts médicaux officiels dans une terminologie publique du SMT.
+ */
+export async function searchSmtConcepts(query: string, terminologyName: SmtTerminologyName): Promise<SmtConcept[]> {
+  const terminologyId = SMT_TERMINOLOGIES[terminologyName];
+  if (!terminologyId) {
+    throw new Error(`Terminologie "${terminologyName}" non prise en charge.`);
   }
-}
 
-function authHeaders(): Record<string, string> {
-  // D'après la doc ANS, l'en-tête attendu pour une clé API est `esante-api-key`.
-  // Si le SMT répond 401, essayer `Authorization: Bearer ${ENV.smtApiKey}` à la place.
-  return {
-    "esante-api-key": ENV.smtApiKey,
-    Accept: "application/json",
-  };
-}
+  const params = new URLSearchParams({
+    searchedText: query,
+    pagination: "1",
+    size: "15",
+    adv: "false",
+    terminologyFilters: terminologyId,
+    lang: "fr",
+    isBrowserSnomedLicence: "false",
+  });
 
-async function smtFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  if (!ENV.smtApiKey) throw new SmtNotConfiguredError();
-
-  const response = await fetch(`${SMT_API_BASE}${path}`, {
-    ...init,
-    headers: { ...authHeaders(), ...init?.headers },
+  const response = await fetch(`${SMT_API_BASE}/concepts/search?${params.toString()}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ facets: [], terminologySpecifiqueFacets: [] }),
   });
 
   if (!response.ok) {
     const body = await response.text().catch(() => "");
-    throw new Error(`SMT a répondu ${response.status} ${response.statusText}: ${body.slice(0, 300)}`);
+    throw new Error(`Le SMT a répondu ${response.status}: ${body.slice(0, 300)}`);
   }
 
-  return response.json() as Promise<T>;
-}
-
-/** Cache mémoire des terminologyId (ex: SNOMED CT, CIM-10, ATC) résolus par nom. */
-const terminologyIdCache = new Map<string, string>();
-
-async function resolveTerminologyId(name: string): Promise<string | null> {
-  if (terminologyIdCache.has(name)) return terminologyIdCache.get(name)!;
-
-  const results = await smtFetch<Array<Record<string, unknown>>>(
-    `/terminologies/search?text=${encodeURIComponent(name)}`
-  );
-  const first = Array.isArray(results) ? results[0] : undefined;
-  const id =
-    (first?.terminologyId as string | undefined) ??
-    (first?.id as string | undefined) ??
-    null;
-  if (id) terminologyIdCache.set(name, id);
-  return id;
-}
-
-function normalizeConcept(raw: Record<string, unknown>, fallbackTerminology: string): SmtConcept {
-  const code = (raw.code as string) ?? (raw.conceptId as string) ?? (raw.id as string) ?? "";
-  const label =
-    (raw.label as string) ??
-    (raw.preferredTerm as string) ??
-    (raw.display as string) ??
-    (raw.term as string) ??
-    "";
-  const terminology = (raw.terminology as string) ?? (raw.terminologyId as string) ?? fallbackTerminology;
-  return { code, label, terminology };
-}
-
-/**
- * Recherche des concepts médicaux officiels dans une terminologie du SMT.
- * `terminologyName` accepte un nom lisible ("SNOMED CT", "CIM-10", "ATC"...).
- */
-export async function searchSmtConcepts(query: string, terminologyName = "SNOMED CT"): Promise<SmtConcept[]> {
-  const terminologyId = await resolveTerminologyId(terminologyName);
-  if (!terminologyId) {
-    throw new Error(`Terminologie "${terminologyName}" introuvable sur le SMT.`);
-  }
-
-  const results = await smtFetch<Array<Record<string, unknown>>>("/concepts/search", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      terminologyId,
-      searchedText: query,
-      lang: "fr",
-      exact: false,
-      size: 15,
-    }),
-  });
-
-  const list = Array.isArray(results) ? results : ((results as { items?: unknown[] })?.items ?? []);
-  return (list as Array<Record<string, unknown>>).map((item) => normalizeConcept(item, terminologyName));
+  const data = (await response.json()) as SmtSearchResponse;
+  return (data.concepts ?? []).map((c) => ({
+    code: c.code,
+    label: c.prefLabel,
+    terminology: c.terminologyLabel,
+  }));
 }

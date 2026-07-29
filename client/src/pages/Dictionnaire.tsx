@@ -578,7 +578,7 @@ function TermFormFields({
   );
 }
 
-const SMT_TERMINOLOGIES = ["SNOMED CT", "CIM-10", "ATC"] as const;
+const SMT_TERMINOLOGIES = ["ATC", "CIM-10", "CCAM", "LOINC"] as const;
 
 function SmtSearchBox({
   setForm,
@@ -586,7 +586,7 @@ function SmtSearchBox({
   setForm: React.Dispatch<React.SetStateAction<TermForm>>;
 }) {
   const [query, setQuery] = useState("");
-  const [terminology, setTerminology] = useState<(typeof SMT_TERMINOLOGIES)[number]>("SNOMED CT");
+  const [terminology, setTerminology] = useState<(typeof SMT_TERMINOLOGIES)[number]>("ATC");
 
   const { data, isFetching, error, refetch } = trpc.medical.searchExternal.useQuery(
     { query, terminology },
