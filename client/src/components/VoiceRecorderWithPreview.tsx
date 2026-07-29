@@ -149,7 +149,8 @@ export function VoiceRecorderWithPreview({
       const res = await fetch("/api/voice/transcribe", { method: "POST", body: formData, credentials: "include" });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Erreur réseau" }));
-        throw new Error(err.error || `HTTP ${res.status}`);
+        const message = [err.error, err.details].filter(Boolean).join(" — ");
+        throw new Error(message || `HTTP ${res.status}`);
       }
       const data = await res.json();
       const text: string = data.text?.trim() || "";

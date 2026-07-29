@@ -201,18 +201,22 @@ export async function transcribeAudio(
  * Helper function to get file extension from MIME type
  */
 function getFileExtension(mimeType: string): string {
+  const normalizedMimeType = mimeType.split(";")[0]?.trim().toLowerCase() || mimeType.toLowerCase();
   const mimeToExt: Record<string, string> = {
     'audio/webm': 'webm',
     'audio/mp3': 'mp3',
     'audio/mpeg': 'mp3',
+    'audio/mpga': 'mpga',
     'audio/wav': 'wav',
+    'audio/x-wav': 'wav',
     'audio/wave': 'wav',
     'audio/ogg': 'ogg',
     'audio/m4a': 'm4a',
+    'audio/x-m4a': 'm4a',
     'audio/mp4': 'm4a',
   };
   
-  return mimeToExt[mimeType] || 'audio';
+  return mimeToExt[normalizedMimeType] || 'webm';
 }
 
 /**

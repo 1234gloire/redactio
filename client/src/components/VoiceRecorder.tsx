@@ -161,7 +161,8 @@ export default function VoiceRecorder({
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({ error: "Erreur réseau" }));
-        throw new Error(err.error || `HTTP ${response.status}`);
+        const message = [err.error, err.details].filter(Boolean).join(" — ");
+        throw new Error(message || `HTTP ${response.status}`);
       }
 
       const data = await response.json();
