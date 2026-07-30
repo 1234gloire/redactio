@@ -708,6 +708,108 @@ export const appRouter = router({
         return { id: finalUser.id };
       }),
 
+    setPractitionerActive: adminOrOrgAdminProcedure
+      .input(
+        z.object({
+          userId: z.number().int().positive(),
+          active: z.boolean(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const target = await getUserById(input.userId);
+
+        if (!target) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Praticien introuvable.",
+          });
+        }
+
+        if (target.role !== "praticien") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Cette action est réservée aux comptes praticiens.",
+          });
+        }
+
+        // L’Admin organisme ne peut gérer que les praticiens de son organisme.
+        if (ctx.user.role === "org_admin") {
+          if (
+            !ctx.user.organisationId ||
+            target.organisationId !== ctx.user.organisationId
+          ) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message:
+                "Vous pouvez gérer uniquement les praticiens de votre organisme.",
+            });
+          }
+        }
+
+        if (target.active === input.active) {
+          return {
+            success: true,
+            active: target.active,
+          };
+        }
+
+        // Lors d’une réactivation, contrôler la convention et le quota.
+        if (input.active && target.organisationId) {
+          const [organisation, subscription, activePractitioners] =
+            await Promise.all([
+              getOrganisationById(target.organisationId),
+              getSubscriptionByOrg(target.organisationId),
+              countActivePractitionersByOrg(target.organisationId),
+            ]);
+
+          if (!organisation || !organisation.active) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "L’organisation est inactive ou introuvable.",
+            });
+          }
+
+          if (!subscription || subscription.status !== "actif") {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message:
+                "Une convention active est nécessaire pour réactiver ce praticien.",
+            });
+          }
+
+          if (activePractitioners >= subscription.seats) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: `Limite contractuelle atteinte : ${activePractitioners}/${subscription.seats} praticiens actifs.`,
+            });
+          }
+        }
+
+        await updateUser(target.id, {
+          active: input.active,
+        });
+
+        await createAuditLog({
+          userId: ctx.user.id,
+          action: input.active
+            ? "org.activate_practitioner"
+            : "org.deactivate_practitioner",
+          resource: "user",
+          resourceId: String(target.id),
+          metadata: {
+            email: target.email,
+            organisationId: target.organisationId,
+            active: input.active,
+            actorRole: ctx.user.role,
+          },
+        });
+
+        return {
+          success: true,
+          active: input.active,
+        };
+      }),
+      
     deactivate: adminProcedure
       .input(z.object({ userId: z.number() }))
       .mutation(async ({ ctx, input }) => {
