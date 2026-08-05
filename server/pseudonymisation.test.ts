@@ -122,6 +122,23 @@ describe("pseudonymisation — documents de sortie", () => {
     expect(result.filteredText).not.toContain("[NOM_MASQUÉ]");
     expect(result.maskCount).toBe(0);
   });
+
+  it("conserve les titres de rubriques hospitalisation et séjour", () => {
+    const text = "MOTIF D'HOSPITALISATION : gonarthrose invalidante droite.\n\nSÉJOUR HOSPITALIER : admission le 05/08/2026.";
+    const result = pseudonymise(text);
+
+    expect(result.filteredText).toContain("MOTIF D'HOSPITALISATION");
+    expect(result.filteredText).toContain("SÉJOUR HOSPITALIER");
+    expect(result.filteredText).not.toContain("[SEJOUR_MASQUÉ]");
+    expect(result.detectedCategories).not.toContain("SEJOUR");
+  });
+
+  it("masque toujours les vrais numéros de séjour", () => {
+    const result = pseudonymise("N° séjour : ABC123456");
+
+    expect(result.filteredText).toContain("[SEJOUR_MASQUÉ]");
+    expect(result.detectedCategories).toContain("SEJOUR");
+  });
 });
 
 describe("containsDirectIdentifier", () => {
