@@ -582,6 +582,17 @@ Bien confraternellement,
           }
         }
       }
+
+      if (accumulated.trim()) {
+        if (isNonCourrierResponse(accumulated)) {
+          setStreamingText("");
+          setGeneratedText(buildLocalCourrier());
+          toast.warning("Le moteur a renvoyé une réponse hors courrier : courrier local généré à partir des données saisies.");
+        } else {
+          setStreamingText("");
+          setGeneratedText(accumulated);
+        }
+      }
     } catch (error) {
       const fallback = buildLocalCourrier();
       setGeneratedText(fallback);
@@ -608,6 +619,8 @@ Bien confraternellement,
       </div>
     );
   }
+
+  const resultText = generatedText || streamingText;
 
   return (
     <div className="ortho-page">
@@ -852,15 +865,16 @@ Bien confraternellement,
             <div className="ortho-mask">Masquages appliqués : {pseudoInfo.maskCount} {pseudoInfo.detectedCategories.join(" · ")}</div>
           )}
 
-          {generatedText ? (
+          {resultText ? (
             <>
               <textarea
                 className="ortho-letter ortho-letter-editor"
-                value={generatedText}
+                value={resultText}
                 onChange={(event) => setGeneratedText(event.target.value)}
                 aria-label="Courrier généré modifiable"
+                readOnly={isGenerating && !generatedText}
               />
-              <p className="ortho-hint">Le courrier généré est modifiable avant copie.</p>
+              <p className="ortho-hint">{isGenerating && !generatedText ? "Génération en cours..." : "Le courrier généré est modifiable avant copie."}</p>
             </>
           ) : (
             <div className="ortho-letter">
