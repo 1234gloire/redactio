@@ -929,7 +929,7 @@ const orthoStyles = `
 .ortho-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}.ortho-main-btn{background:#0E9C8E!important}
 .ortho-mask{border:1px solid #BFE6E0;background:#E7F4F2;color:#0A7B70;border-radius:999px;display:inline-flex;padding:6px 11px;font-size:.8rem;font-weight:700;margin:10px 0}
 .ortho-letter{background:#fff;border:1px dashed var(--line);border-radius:12px;padding:18px;min-height:360px;white-space:pre-wrap;font-size:.94rem;color:var(--ink)}
-.ortho-letter-editor{display:block;width:100%;resize:vertical;border-style:solid!important;border-color:#B8D5E9!important;line-height:1.55;font-family:'Hanken Grotesk',system-ui,sans-serif}
+.ortho-card textarea.ortho-letter-editor{display:block;width:100%;min-height:360px!important;height:58vh;max-height:720px;resize:vertical;border-style:solid!important;border-color:#B8D5E9!important;line-height:1.55;font-family:'Hanken Grotesk',system-ui,sans-serif;overflow:auto}
 .ortho-letter-editor:focus{border-color:#0E9C8E!important;box-shadow:0 0 0 4px rgba(14,156,142,.13);outline:none}
 .ortho-details{border-top:1px solid var(--line);margin-top:16px;padding-top:12px}.ortho-details summary{cursor:pointer;font-size:.85rem;font-weight:800;color:var(--muted)}.ortho-details pre{background:#0f1b26;color:#e7eef5;border-radius:10px;padding:14px;overflow:auto;font-size:.78rem;white-space:pre-wrap;margin:12px 0 0;font-family:'JetBrains Mono',monospace}
 .ortho-tabbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.ortho-tabbar button{padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:.82rem;font-weight:800;color:var(--muted)}.ortho-tabbar button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
