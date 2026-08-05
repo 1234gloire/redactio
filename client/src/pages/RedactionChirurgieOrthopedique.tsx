@@ -642,13 +642,43 @@ Bien confraternellement,
           <p className="ortho-hint">Un clic pré-remplit le motif probable, le geste et les rubriques de consignes. La radio reste libre : le preset propose seulement une suggestion.</p>
 
           {presetKey === "AUTRE" && (
-            <div className="ortho-encadre">
+            <div className="ortho-encadre ortho-free-mode">
               <b>Mode « Autre / libre »</b>
               <p>
                 Aucun geste n'est prérempli. Saisissez vous-même ci-dessous le motif d'entrée
                 (pathologie causale) et le type de chirurgie (geste + matériel). L'outil ne
                 suggère aucune valeur clinique dans ce mode.
               </p>
+              <div className="ortho-free-grid">
+                <div>
+                  <DictationLabel
+                    label="Motif d'entrée libre"
+                    fieldLabel="Motif d'entrée"
+                    onInsert={(text) => insertDictation(setMotif, "Motif d'entrée", text)}
+                    disabled={isGenerating}
+                  />
+                  <textarea
+                    value={motif}
+                    onChange={(event) => setMotif(event.target.value)}
+                    placeholder="Ex. fracture complexe du calcanéum ; reprise de matériel ; plaie traumatique..."
+                    className="ortho-free-textarea"
+                  />
+                </div>
+                <div>
+                  <DictationLabel
+                    label="Type de chirurgie libre"
+                    fieldLabel="Type de chirurgie"
+                    onInsert={(text) => insertDictation(setGeste, "Type de chirurgie", text)}
+                    disabled={isGenerating}
+                  />
+                  <textarea
+                    value={geste}
+                    onChange={(event) => setGeste(event.target.value)}
+                    placeholder="Ex. ostéosynthèse par plaque verrouillée ; lavage, parage et suture ; ablation de matériel..."
+                    className="ortho-free-textarea"
+                  />
+                </div>
+              </div>
             </div>
           )}
 
@@ -794,7 +824,12 @@ Bien confraternellement,
               onInsert={(text) => insertDictation(setRadios, "Radiographies de contrôle", text)}
               disabled={isGenerating}
             />
-            <input value={radios} onChange={(event) => setRadios(event.target.value)} placeholder={preset.radios ? `Suggestion : ${preset.radios} — à valider / compléter` : "À remplir par le médecin"} />
+            <input
+              className="ortho-radios-input"
+              value={radios}
+              onChange={(event) => setRadios(event.target.value)}
+              placeholder={preset.radios ? `Suggestion : ${preset.radios} — à valider / compléter` : "À remplir par le médecin"}
+            />
             <p className="ortho-hint">Champ libre : non rempli automatiquement. Le preset propose seulement une suggestion en placeholder — c'est à vous de saisir la valeur retenue.</p>
           </div>
         </section>
@@ -848,6 +883,12 @@ const orthoStyles = `
 .ortho-badge{display:inline-block;background:var(--accent);color:var(--brand-d);border-radius:6px;padding:2px 8px;font-size:.72rem;font-weight:800;margin-left:6px}
 .ortho-encadre{border:1.5px dashed var(--brand);background:var(--accent);border-radius:12px;padding:12px 14px;margin-top:12px}
 .ortho-encadre b{display:block;color:var(--brand-d);margin-bottom:4px}.ortho-encadre p{margin:0;color:var(--muted);font-size:.84rem;line-height:1.45}.ortho-encadre label{margin-top:0!important}
+.ortho-free-mode{background:#EAF4FB;border-color:#0E6BA8}
+.ortho-free-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px}
+.ortho-free-grid .ortho-label-row{margin-top:0}
+.ortho-free-textarea{min-height:92px!important;background:#fff!important;border-color:#B8D5E9!important}
+.ortho-radios-input{min-height:46px;border:2px solid #8FCBC3!important;background:#fff!important;font-weight:700;color:var(--ink)!important}
+.ortho-radios-input::placeholder{color:#5A6B78!important;opacity:1;font-weight:700}
 .ortho-card label{display:block;font-weight:700;font-size:.82rem;color:var(--muted);margin:12px 0 5px}
 .ortho-label-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}.ortho-label-row>label{margin:0!important}.ortho-dictation{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.76rem;font-weight:700;flex:none}.ortho-dictation-field{margin-top:8px}.ortho-dictation-notice{margin:0 0 12px;padding:10px 12px;border:1px solid #BFE6E0;border-radius:10px;background:#E7F4F2;color:#0A7B70;font-size:.82rem;font-weight:600;line-height:1.45}
 .ortho-card input[type=text],.ortho-card input[type=number],.ortho-card input[type=date],.ortho-card input[type=time],.ortho-card select,.ortho-card textarea{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:10px;font-size:.92rem;font-family:inherit;background:#fff;color:var(--ink)}
