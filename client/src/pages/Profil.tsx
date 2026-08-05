@@ -52,6 +52,8 @@ export default function Profil() {
   const [specialite, setSpecialite] = useState((user as { specialite?: string })?.specialite ?? "");
   const [rpps, setRpps] = useState((user as { rpps?: string })?.rpps ?? "");
 
+  const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
+
   useEffect(() => {
     setName(user?.name ?? "");
     setSpecialite((user as { specialite?: string })?.specialite ?? "");
@@ -60,6 +62,8 @@ export default function Profil() {
 
   const role = (user as { role?: string })?.role ?? "praticien";
   const organisationId = (user as { organisationId?: number | null })?.organisationId ?? null;
+  const canDeactivateOwnAccount = role === "praticien" || role === "org_admin";
+  const canDeleteOwnAccount = role !== "praticien" && role !== "org_admin";
   const isConventionAccount = role === "org_admin" || Boolean(organisationId);
   const stripeStatus = (user as { stripeSubscriptionStatus?: string | null })?.stripeSubscriptionStatus ?? null;
   const hasStripeCustomer = Boolean((user as { stripeCustomerId?: string | null })?.stripeCustomerId);
@@ -109,6 +113,17 @@ export default function Profil() {
     },
     onError: (e) => toast.error(e.message),
   });
+
+  const deactivateOwnAccount =
+    trpc.user.deactivateOwnAccount.useMutation({
+      onSuccess: () => {
+        toast.success("Votre compte a été désactivé.");
+        window.location.href = "/login";
+      },
+      onError: (error) => {
+        toast.error(error.message);
+      },
+    });
 
   return (
     <RedactioLayout>
@@ -263,7 +278,62 @@ export default function Profil() {
           </section>
         )}
 
-        {role !== "org_admin" && (
+        {canDeactivateOwnAccount && (
+          <section className="profile-card">
+            <h2>Désactiver temporairement mon compte</h2>
+
+            <p className="intro">
+              Votre compte sera conservé, mais vous ne pourrez plus accéder à MEDACTIO.
+              Cette action ne supprime pas vos données.
+            </p>
+
+            {!showDeactivateConfirm ? (
+              <button
+                type="button"
+                className="profile-btn danger-outline"
+                onClick={() => setShowDeactivateConfirm(true)}
+              >
+                <AlertTriangle aria-hidden="true" />
+                Désactiver mon compte
+              </button>
+            ) : (
+              <div className="confirm-box">
+                <h3>Confirmer la désactivation</h3>
+
+                <p>
+                  Votre session sera fermée immédiatement et votre compte deviendra
+                  inaccessible.
+                </p>
+
+                <div className="confirm-actions">
+                  <button
+                    type="button"
+                    className="profile-btn ghost"
+                    onClick={() => setShowDeactivateConfirm(false)}
+                    disabled={deactivateOwnAccount.isPending}
+                  >
+                    Annuler
+                  </button>
+
+                  <button
+                    type="button"
+                    className="profile-btn danger"
+                    onClick={() => deactivateOwnAccount.mutate()}
+                    disabled={deactivateOwnAccount.isPending}
+                  >
+                    <AlertTriangle aria-hidden="true" />
+
+                    {deactivateOwnAccount.isPending
+                      ? "Désactivation..."
+                      : "Confirmer la désactivation"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {canDeleteOwnAccount && (
           <section className="danger-zone">
             <h2>Fermer mon compte</h2>
 

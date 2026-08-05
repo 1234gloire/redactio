@@ -32,7 +32,9 @@ import {
   Loader2,
   Plus,
   Trash2,
+  UserCheck,
   UserRound,
+  UserX,
   Users,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -76,6 +78,8 @@ export default function Utilisateurs() {
   const [expandedOrgs, setExpandedOrgs] = useState<Set<number>>(new Set());
 
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string | null; email: string | null } | null>(null);
+  const [deactivateTarget, setDeactivateTarget] = useState<{ id: number; name: string | null; email: string | null; } | null>(null);
+  const [practitionerStatusTarget, setPractitionerStatusTarget] = useState<{ id: number; name: string | null; email: string | null; nextActive: boolean; } | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState({
     organisationId: "",
@@ -85,6 +89,25 @@ export default function Utilisateurs() {
     specialite: "",
     rpps: "",
   });
+
+  // Gestion de l’activation et de la désactivation des praticiens par l’admin organisme
+  const setPractitionerActive =
+    trpc.user.setPractitionerActive.useMutation({
+      onSuccess: (_data, variables) => {
+        toast.success(
+          variables.active
+            ? "Compte praticien activé."
+            : "Compte praticien désactivé."
+        );
+
+        setPractitionerStatusTarget(null);
+        refetch();
+      },
+
+      onError: (error) => {
+        toast.error(error.message);
+      },
+    });
 
   const showOrgSelect = isRedactioAdmin && pathView === "conventions";
 
@@ -122,9 +145,9 @@ export default function Utilisateurs() {
   const orgPractitionerCount = selectedOrg?.practitionerCount ?? null;
   const selectedOrgFull = Boolean(
     selectedOrg &&
-      selectedOrg.subscription &&
-      selectedOrg.subscription.status === "actif" &&
-      selectedOrg.practitionerCount >= selectedOrg.subscription.seats
+    selectedOrg.subscription &&
+    selectedOrg.subscription.status === "actif" &&
+    selectedOrg.practitionerCount >= selectedOrg.subscription.seats
   );
 
   const getOrganisationName = (orgId?: number | null) => {
@@ -149,6 +172,14 @@ export default function Utilisateurs() {
       refetch();
     },
     onError: (e) => toast.error(e.message),
+  });
+  const deactivateUserMutation = trpc.user.deactivate.useMutation({
+    onSuccess: () => {
+      toast.success("Utilisateur désactivé.");
+      setDeactivateTarget(null);
+      refetch();
+    },
+    onError: (error) => toast.error(error.message),
   });
   const deleteUser = trpc.user.delete.useMutation({
     onSuccess: () => {
@@ -218,39 +249,78 @@ export default function Utilisateurs() {
           <Badge variant={item.active ? "secondary" : "outline"} className="text-[11px]">
             {item.active ? "Actif" : "Inactif"}
           </Badge>
-          {isRedactioAdmin ? (
-            <Select
-              value={item.role}
-              onValueChange={(role) => setRole.mutate({ userId: item.id, role: role as "praticien" | "org_admin" | "editeur_medical" | "relecteur_clinique" | "responsable_conformite" | "admin" })}
+          {isOrgAdmin && item.role === "praticien" && (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className={
+                item.active
+                  ? "h-7 w-7 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
+                  : "h-7 w-7 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+              }
+              onClick={() =>
+                setPractitionerStatusTarget({
+                  id: item.id,
+                  name: item.name,
+                  email: item.email,
+                  nextActive: !item.active,
+                })
+              }
+              aria-label={
+                item.active
+                  ? "Désactiver le praticien"
+                  : "Activer le praticien"
+              }
+              title={item.active ? "Désactiver" : "Activer"}
             >
-              <SelectTrigger className="h-7 w-40 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(ROLE_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <Badge variant="outline" className="text-[11px]">
-              {ROLE_LABELS[item.role] ?? item.role}
-            </Badge>
+              {item.active ? (
+                <UserX className="h-3.5 w-3.5" />
+              ) : (
+                <UserCheck className="h-3.5 w-3.5" />
+              )}
+            </Button>
           )}
-          <span className="text-[11px] text-muted-foreground hidden md:inline">
-            {new Date(item.lastSignedIn).toLocaleDateString("fr-FR")}
-          </span>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-7 w-7 text-destructive hover:text-destructive"
-            disabled={isOrgAdmin && item.role !== "praticien"}
-            onClick={() => setDeleteTarget({ id: item.id, name: item.name, email: item.email })}
-            aria-label="Supprimer l'utilisateur"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          {isRedactioAdmin && (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-7 w-7 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
+                disabled={!item.active}
+                onClick={() =>
+                  setDeactivateTarget({
+                    id: item.id,
+                    name: item.name,
+                    email: item.email,
+                  })
+                }
+                aria-label="Désactiver l'utilisateur"
+                title={item.active ? "Désactiver" : "Utilisateur déjà inactif"}
+              >
+                <UserX className="h-3.5 w-3.5" />
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-7 w-7 text-destructive hover:text-destructive"
+                onClick={() =>
+                  setDeleteTarget({
+                    id: item.id,
+                    name: item.name,
+                    email: item.email,
+                  })
+                }
+                aria-label="Supprimer définitivement l'utilisateur"
+                title="Supprimer définitivement"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </>
+          )}
         </div>
       </div>
     );
@@ -334,6 +404,118 @@ export default function Utilisateurs() {
     </Dialog>
   );
 
+  const deactivateDialog = (
+    <AlertDialog
+      open={Boolean(deactivateTarget)}
+      onOpenChange={(open) => !open && setDeactivateTarget(null)}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Désactiver cet utilisateur ?</AlertDialogTitle>
+
+          <AlertDialogDescription>
+            Le compte{" "}
+            {deactivateTarget?.name ||
+              deactivateTarget?.email ||
+              "sélectionné"}{" "}
+            sera conservé, mais l’utilisateur ne pourra plus accéder à MEDACTIO.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+
+        <AlertDialogFooter>
+          <AlertDialogCancel>Annuler</AlertDialogCancel>
+
+          <AlertDialogAction
+            className="bg-amber-600 text-white hover:bg-amber-700"
+            onClick={() =>
+              deactivateTarget &&
+              deactivateUserMutation.mutate({
+                userId: deactivateTarget.id,
+              })
+            }
+            disabled={deactivateUserMutation.isPending}
+          >
+            {deactivateUserMutation.isPending && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
+
+            Désactiver
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
+  const practitionerStatusDialog = (
+    <AlertDialog
+      open={Boolean(practitionerStatusTarget)}
+      onOpenChange={(open) => {
+        if (!open) {
+          setPractitionerStatusTarget(null);
+        }
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {practitionerStatusTarget?.nextActive
+              ? "Activer ce praticien ?"
+              : "Désactiver ce praticien ?"}
+          </AlertDialogTitle>
+
+          <AlertDialogDescription>
+            {practitionerStatusTarget?.nextActive ? (
+              <>
+                Le compte{" "}
+                {practitionerStatusTarget?.name ||
+                  practitionerStatusTarget?.email ||
+                  "sélectionné"}{" "}
+                pourra de nouveau accéder à MEDACTIO.
+              </>
+            ) : (
+              <>
+                Le compte{" "}
+                {practitionerStatusTarget?.name ||
+                  practitionerStatusTarget?.email ||
+                  "sélectionné"}{" "}
+                sera conservé, mais le praticien ne pourra plus accéder à
+                MEDACTIO.
+              </>
+            )}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+
+        <AlertDialogFooter>
+          <AlertDialogCancel>Annuler</AlertDialogCancel>
+
+          <AlertDialogAction
+            className={
+              practitionerStatusTarget?.nextActive
+                ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                : "bg-amber-600 text-white hover:bg-amber-700"
+            }
+            onClick={() => {
+              if (!practitionerStatusTarget) return;
+
+              setPractitionerActive.mutate({
+                userId: practitionerStatusTarget.id,
+                active: practitionerStatusTarget.nextActive,
+              });
+            }}
+            disabled={setPractitionerActive.isPending}
+          >
+            {setPractitionerActive.isPending && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
+
+            {practitionerStatusTarget?.nextActive
+              ? "Activer"
+              : "Désactiver"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
   const deleteDialog = (
     <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
       <AlertDialogContent>
@@ -341,7 +523,7 @@ export default function Utilisateurs() {
           <AlertDialogTitle>Supprimer cet utilisateur ?</AlertDialogTitle>
           <AlertDialogDescription>
             Le compte {deleteTarget?.name || deleteTarget?.email || "sélectionné"} sera supprimé de MEDACTIO.
-            Cette action retire son accès à l'application.
+            Cette action est définitive : le compte et ses données associées seront supprimés de MEDACTIO.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -396,6 +578,8 @@ export default function Utilisateurs() {
           </div>
         </div>
         {createDialog}
+        {practitionerStatusDialog}
+        {deactivateDialog}
         {deleteDialog}
       </RedactioLayout>
     );
@@ -460,6 +644,8 @@ export default function Utilisateurs() {
           </div>
         </div>
         {createDialog}
+        {practitionerStatusDialog}
+        {deactivateDialog}
         {deleteDialog}
       </RedactioLayout>
     );
@@ -564,6 +750,8 @@ export default function Utilisateurs() {
           )}
         </div>
         {createDialog}
+        {practitionerStatusDialog}
+        {deactivateDialog}
         {deleteDialog}
       </RedactioLayout>
     );
@@ -615,6 +803,8 @@ export default function Utilisateurs() {
         </div>
       </div>
       {createDialog}
+      {practitionerStatusDialog}
+      {deactivateDialog}
       {deleteDialog}
     </RedactioLayout>
   );

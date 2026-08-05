@@ -514,6 +514,7 @@ function TermFormFields({
 }) {
   return (
     <div className="space-y-4">
+      <SmtSearchBox setForm={setForm} />
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2 space-y-1.5">
           <Label>Terme <span className="text-destructive">*</span></Label>
@@ -573,6 +574,89 @@ function TermFormFields({
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+const SMT_TERMINOLOGIES = ["ATC", "CIM-10", "CCAM", "LOINC"] as const;
+
+function SmtSearchBox({
+  setForm,
+}: {
+  setForm: React.Dispatch<React.SetStateAction<TermForm>>;
+}) {
+  const [query, setQuery] = useState("");
+  const [terminology, setTerminology] = useState<(typeof SMT_TERMINOLOGIES)[number]>("ATC");
+
+  const { data, isFetching, error, refetch } = trpc.medical.searchExternal.useQuery(
+    { query, terminology },
+    { enabled: false }
+  );
+
+  const handleSearch = () => {
+    if (query.trim().length < 2) return;
+    refetch();
+  };
+
+  const applyConcept = (concept: { code: string; label: string; terminology: string }) => {
+    setForm((f) => ({
+      ...f,
+      term: f.term.trim() ? f.term : concept.label,
+      code: concept.code,
+      source: concept.terminology,
+    }));
+  };
+
+  return (
+    <div className="col-span-2 space-y-2 rounded-lg border border-dashed border-border bg-muted/30 p-3">
+      <Label className="text-xs text-muted-foreground">
+        Rechercher un terme officiel (SMT — ANS)
+      </Label>
+      <div className="flex gap-2">
+        <Select value={terminology} onValueChange={(v) => setTerminology(v as (typeof SMT_TERMINOLOGIES)[number])}>
+          <SelectTrigger className="w-40 shrink-0">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SMT_TERMINOLOGIES.map((t) => (
+              <SelectItem key={t} value={t}>{t}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleSearch();
+            }
+          }}
+          placeholder="Ex : amoxicilline"
+        />
+        <Button type="button" variant="secondary" onClick={handleSearch} disabled={isFetching} className="shrink-0">
+          {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+        </Button>
+      </div>
+      {error && <p className="text-xs text-destructive">{error.message}</p>}
+      {data && data.length === 0 && !isFetching && (
+        <p className="text-xs text-muted-foreground">Aucun résultat sur le SMT pour cette recherche.</p>
+      )}
+      {!!data?.length && (
+        <div className="max-h-40 divide-y divide-border overflow-y-auto rounded-md border border-border bg-background">
+          {data.map((concept, i) => (
+            <button
+              key={`${concept.code}-${i}`}
+              type="button"
+              onClick={() => applyConcept(concept)}
+              className="block w-full px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
+            >
+              <span className="font-medium">{concept.label}</span>
+              <span className="ml-2 font-mono text-xs text-muted-foreground">{concept.code}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

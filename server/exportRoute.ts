@@ -36,7 +36,7 @@ const HEADING_LEVEL_BY_TAG: Record<string, (typeof HeadingLevel)[keyof typeof He
 
 function decodeHtmlEntities(value: string): string {
   return value
-    .replace(/&nbsp;/g, " ")
+    .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
@@ -44,15 +44,42 @@ function decodeHtmlEntities(value: string): string {
     .replace(/&#39;/g, "'");
 }
 
+function normalizeInlineHtml(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/?(?:span|font)[^>]*>/gi, "")
+    .replace(/<b\b[^>]*>/gi, "<strong>")
+    .replace(/<\/b>/gi, "</strong>")
+    .replace(/<i\b[^>]*>/gi, "<em>")
+    .replace(/<\/i>/gi, "</em>")
+    .replace(/<mark\b[^>]*>/gi, "<mark>")
+    .replace(/<\/mark>/gi, "</mark>");
+}
+
+function cleanTextNode(value: string): string {
+  return decodeHtmlEntities(value)
+    // Browser contenteditable can re-emit rich fragments as escaped HTML text.
+    // Strip those fragments after decoding so exports never contain
+    // "font color=... span style=... b>..." artifacts in table cells.
+    .replace(/<\/?[^>]+>/g, "")
+    .replace(/\b(?:font|span)\b\s+[^>]*>/gi, "")
+    .replace(/\b\/(?:font|span|strong|em|mark|b|i)>/gi, "")
+    .replace(/\b(?:strong|em|mark|b|i)>/gi, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n[ \t]+/g, "\n")
+    .trim();
+}
+
 // Parse the constrained inline vocabulary produced by the client's renderInlineMarkdown().
 function parseInlineRuns(html: string): TextRun[] {
-  const inlineRegex = /<strong>([\s\S]*?)<\/strong>|<em>([\s\S]*?)<\/em>|<mark[^>]*>([\s\S]*?)<\/mark>|([^<]+)/g;
+  const normalizedHtml = normalizeInlineHtml(html);
+  const inlineRegex = /<strong>([\s\S]*?)<\/strong>|<em>([\s\S]*?)<\/em>|<mark>([\s\S]*?)<\/mark>|([^<]+)/g;
   const runs: TextRun[] = [];
   let match: RegExpExecArray | null;
-  while ((match = inlineRegex.exec(html)) !== null) {
+  while ((match = inlineRegex.exec(normalizedHtml)) !== null) {
     const [, bold, italic, marked, plain] = match;
     const rawText = bold ?? italic ?? marked ?? plain ?? "";
-    const text = decodeHtmlEntities(rawText.replace(/<[^>]+>/g, ""));
+    const text = cleanTextNode(rawText);
     if (!text) continue;
     runs.push(
       new TextRun({
@@ -64,7 +91,7 @@ function parseInlineRuns(html: string): TextRun[] {
     );
   }
   if (runs.length === 0) {
-    const fallbackText = decodeHtmlEntities(html.replace(/<[^>]+>/g, ""));
+    const fallbackText = cleanTextNode(normalizedHtml);
     return [new TextRun({ text: fallbackText })];
   }
   return runs;
@@ -138,7 +165,7 @@ function buildDocxContentFromHtml(html: string): (Paragraph | Table)[] {
   return content;
 }
 
-function buildDocxContent(content: string): (Paragraph | Table)[] {
+export function buildDocxContent(content: string): (Paragraph | Table)[] {
   const looksLikeRenderedHtml = /<(h[2-4]|p|table)[ >]/.test(content);
   if (!looksLikeRenderedHtml) {
     return content.split("\n").map((textLine) => new Paragraph({ children: [new TextRun(textLine)] }));

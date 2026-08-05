@@ -266,6 +266,7 @@ Respecte STRICTEMENT la trame du prompt "Prompt_Courrier_Sortie_Chirurgie_Ortho.
 - CONSIGNES DE SORTIE : reconstruis la liste UNIQUEMENT à partir du champ 8, dans l'ordre des rubriques habituelles du §4 pour ce geste ; ne remplace ni n'invente aucune valeur.
 - N'inclus AUCUNE section traitement ni tableau de médicaments (transmis séparément).
 - Aucun nom de professionnel ni donnée d'identité (cryptés en entrée). Conserve dates, âge, latéralité, matériel, antécédents complets, noms des structures.
+- Ordre final strict des rubriques : MOTIF D'HOSPITALISATION, ANTÉCÉDENTS, SÉJOUR HOSPITALIER, ÉVOLUTION POST-OPÉRATOIRE, CONSIGNES DE SORTIE, SUIVI.
 - Sortie en TEXTE BRUT (pas de markdown : pas de **gras**, pas de #titres). Titres de rubriques en MAJUSCULES suivis de « : », comme dans la structure §5.
 - Ton confraternel, 3e personne, synthétique. L'outil met en forme, il ne décide pas.`;
 
@@ -294,6 +295,10 @@ function appendDictatedText(current: string, dictatedText: string) {
   if (!current.trim()) return normalizedText.slice(0, ORTHO_FIELD_MAX_CHARS);
   const separator = current.endsWith("\n") ? "" : "\n";
   return `${current}${separator}${normalizedText}`.slice(0, ORTHO_FIELD_MAX_CHARS);
+}
+
+function isNonCourrierResponse(text: string) {
+  return /coller ci-dessous le bloc|coller ici le bloc|pour générer le courrier|medactio\.fr\/redaction\/chirurgie-orthopedique|\[\*\*?Chirurgie orthopédique\*\*?\]|Compte rendu opératoire et courrier de sortie/i.test(text);
 }
 
 type DictationLabelProps = {
@@ -471,12 +476,12 @@ Votre patient(e) ([sexe à préciser] ; ${ageValue}) a été hospitalisé(e) du 
 MOTIF D'HOSPITALISATION :
 ${motifValue} ayant conduit à ${gesteValue}, pour ${finalite}.
 
-SÉJOUR HOSPITALIER :
-Le/la patient(e) a été admis(e) le ${formatDate(dateEntree)}. L'intervention, réalisée le ${formatDate(dateChirurgie)} sous ${anesth}, a consisté en une ${gesteValue} ; elle s'est déroulée ${peropValue}. Le/la patient(e) a ensuite été ${sortieVerbe} le ${formatDate(dateSortie)}${avalPhrase}.
-
 ANTÉCÉDENTS :
 ${antecedents.trim() || "sans particularité"}
 Allergies : ${MISS}.
+
+SÉJOUR HOSPITALIER :
+Le/la patient(e) a été admis(e) le ${formatDate(dateEntree)}. L'intervention, réalisée le ${formatDate(dateChirurgie)} sous ${anesth}, a consisté en une ${gesteValue} ; elle s'est déroulée ${peropValue}. Le/la patient(e) a ensuite été ${sortieVerbe} le ${formatDate(dateSortie)}${avalPhrase}.
 
 ÉVOLUTION POST-OPÉRATOIRE :
 ${evolution}
@@ -564,10 +569,10 @@ Bien confraternellement,
             accumulated += String(parsed.content ?? "");
             setStreamingText(accumulated);
           } else if (parsed.type === "done") {
-            if (/coller ci-dessous le bloc|coller ici le bloc|pour générer le courrier/i.test(accumulated)) {
+            if (isNonCourrierResponse(accumulated)) {
               setStreamingText("");
               setGeneratedText(buildLocalCourrier());
-              toast.warning("Le moteur a demandé le bloc au lieu de rédiger : courrier local généré à partir des données saisies.");
+              toast.warning("Le moteur a renvoyé une réponse hors courrier : courrier local généré à partir des données saisies.");
             } else {
               setGeneratedText(accumulated);
               toast.success("Courrier généré.");
@@ -575,6 +580,17 @@ Bien confraternellement,
           } else if (parsed.type === "error") {
             throw new Error(parsed.message || "Erreur de génération.");
           }
+        }
+      }
+
+      if (accumulated.trim()) {
+        if (isNonCourrierResponse(accumulated)) {
+          setStreamingText("");
+          setGeneratedText(buildLocalCourrier());
+          toast.warning("Le moteur a renvoyé une réponse hors courrier : courrier local généré à partir des données saisies.");
+        } else {
+          setStreamingText("");
+          setGeneratedText(accumulated);
         }
       }
     } catch (error) {
@@ -603,6 +619,8 @@ Bien confraternellement,
       </div>
     );
   }
+
+  const resultText = generatedText || streamingText;
 
   return (
     <div className="ortho-page">
@@ -638,13 +656,43 @@ Bien confraternellement,
           <p className="ortho-hint">Un clic pré-remplit le motif probable, le geste et les rubriques de consignes. La radio reste libre : le preset propose seulement une suggestion.</p>
 
           {presetKey === "AUTRE" && (
-            <div className="ortho-encadre">
+            <div className="ortho-encadre ortho-free-mode">
               <b>Mode « Autre / libre »</b>
               <p>
                 Aucun geste n'est prérempli. Saisissez vous-même ci-dessous le motif d'entrée
                 (pathologie causale) et le type de chirurgie (geste + matériel). L'outil ne
                 suggère aucune valeur clinique dans ce mode.
               </p>
+              <div className="ortho-free-grid">
+                <div>
+                  <DictationLabel
+                    label="Motif d'entrée libre"
+                    fieldLabel="Motif d'entrée"
+                    onInsert={(text) => insertDictation(setMotif, "Motif d'entrée", text)}
+                    disabled={isGenerating}
+                  />
+                  <textarea
+                    value={motif}
+                    onChange={(event) => setMotif(event.target.value)}
+                    placeholder="Ex. fracture complexe du calcanéum ; reprise de matériel ; plaie traumatique..."
+                    className="ortho-free-textarea"
+                  />
+                </div>
+                <div>
+                  <DictationLabel
+                    label="Type de chirurgie libre"
+                    fieldLabel="Type de chirurgie"
+                    onInsert={(text) => insertDictation(setGeste, "Type de chirurgie", text)}
+                    disabled={isGenerating}
+                  />
+                  <textarea
+                    value={geste}
+                    onChange={(event) => setGeste(event.target.value)}
+                    placeholder="Ex. ostéosynthèse par plaque verrouillée ; lavage, parage et suture ; ablation de matériel..."
+                    className="ortho-free-textarea"
+                  />
+                </div>
+              </div>
             </div>
           )}
 
@@ -790,7 +838,12 @@ Bien confraternellement,
               onInsert={(text) => insertDictation(setRadios, "Radiographies de contrôle", text)}
               disabled={isGenerating}
             />
-            <input value={radios} onChange={(event) => setRadios(event.target.value)} placeholder={preset.radios ? `Suggestion : ${preset.radios} — à valider / compléter` : "À remplir par le médecin"} />
+            <input
+              className="ortho-radios-input"
+              value={radios}
+              onChange={(event) => setRadios(event.target.value)}
+              placeholder={preset.radios ? `Suggestion : ${preset.radios} — à valider / compléter` : "À remplir par le médecin"}
+            />
             <p className="ortho-hint">Champ libre : non rempli automatiquement. Le preset propose seulement une suggestion en placeholder — c'est à vous de saisir la valeur retenue.</p>
           </div>
         </section>
@@ -812,9 +865,22 @@ Bien confraternellement,
             <div className="ortho-mask">Masquages appliqués : {pseudoInfo.maskCount} {pseudoInfo.detectedCategories.join(" · ")}</div>
           )}
 
-          <div className="ortho-letter">
-            {generatedText || streamingText || "Le courrier généré s'affichera ici après un clic sur « Générer le courrier »."}
-          </div>
+          {resultText ? (
+            <>
+              <textarea
+                className="ortho-letter ortho-letter-editor"
+                value={resultText}
+                onChange={(event) => setGeneratedText(event.target.value)}
+                aria-label="Courrier généré modifiable"
+                readOnly={isGenerating && !generatedText}
+              />
+              <p className="ortho-hint">{isGenerating && !generatedText ? "Génération en cours..." : "Le courrier généré est modifiable avant copie."}</p>
+            </>
+          ) : (
+            <div className="ortho-letter">
+              {streamingText || "Le courrier généré s'affichera ici après un clic sur « Générer le courrier »."}
+            </div>
+          )}
 
           <div className="ortho-flag">
             Aide rédactionnelle : l'outil met en forme ce que vous saisissez et ne recommande aucune valeur.
@@ -844,6 +910,12 @@ const orthoStyles = `
 .ortho-badge{display:inline-block;background:var(--accent);color:var(--brand-d);border-radius:6px;padding:2px 8px;font-size:.72rem;font-weight:800;margin-left:6px}
 .ortho-encadre{border:1.5px dashed var(--brand);background:var(--accent);border-radius:12px;padding:12px 14px;margin-top:12px}
 .ortho-encadre b{display:block;color:var(--brand-d);margin-bottom:4px}.ortho-encadre p{margin:0;color:var(--muted);font-size:.84rem;line-height:1.45}.ortho-encadre label{margin-top:0!important}
+.ortho-free-mode{background:#EAF4FB;border-color:#0E6BA8}
+.ortho-free-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px}
+.ortho-free-grid .ortho-label-row{margin-top:0}
+.ortho-free-textarea{min-height:92px!important;background:#fff!important;border-color:#B8D5E9!important}
+.ortho-radios-input{min-height:46px;border:2px solid #8FCBC3!important;background:#fff!important;font-weight:700;color:var(--ink)!important}
+.ortho-radios-input::placeholder{color:#5A6B78!important;opacity:1;font-weight:700}
 .ortho-card label{display:block;font-weight:700;font-size:.82rem;color:var(--muted);margin:12px 0 5px}
 .ortho-label-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}.ortho-label-row>label{margin:0!important}.ortho-dictation{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.76rem;font-weight:700;flex:none}.ortho-dictation-field{margin-top:8px}.ortho-dictation-notice{margin:0 0 12px;padding:10px 12px;border:1px solid #BFE6E0;border-radius:10px;background:#E7F4F2;color:#0A7B70;font-size:.82rem;font-weight:600;line-height:1.45}
 .ortho-card input[type=text],.ortho-card input[type=number],.ortho-card input[type=date],.ortho-card input[type=time],.ortho-card select,.ortho-card textarea{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:10px;font-size:.92rem;font-family:inherit;background:#fff;color:var(--ink)}
@@ -857,6 +929,8 @@ const orthoStyles = `
 .ortho-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}.ortho-main-btn{background:#0E9C8E!important}
 .ortho-mask{border:1px solid #BFE6E0;background:#E7F4F2;color:#0A7B70;border-radius:999px;display:inline-flex;padding:6px 11px;font-size:.8rem;font-weight:700;margin:10px 0}
 .ortho-letter{background:#fff;border:1px dashed var(--line);border-radius:12px;padding:18px;min-height:360px;white-space:pre-wrap;font-size:.94rem;color:var(--ink)}
+.ortho-card textarea.ortho-letter-editor{display:block;width:100%;min-height:360px!important;height:58vh;max-height:720px;resize:vertical;border-style:solid!important;border-color:#B8D5E9!important;line-height:1.55;font-family:'Hanken Grotesk',system-ui,sans-serif;overflow:auto}
+.ortho-letter-editor:focus{border-color:#0E9C8E!important;box-shadow:0 0 0 4px rgba(14,156,142,.13);outline:none}
 .ortho-details{border-top:1px solid var(--line);margin-top:16px;padding-top:12px}.ortho-details summary{cursor:pointer;font-size:.85rem;font-weight:800;color:var(--muted)}.ortho-details pre{background:#0f1b26;color:#e7eef5;border-radius:10px;padding:14px;overflow:auto;font-size:.78rem;white-space:pre-wrap;margin:12px 0 0;font-family:'JetBrains Mono',monospace}
 .ortho-tabbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.ortho-tabbar button{padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:.82rem;font-weight:800;color:var(--muted)}.ortho-tabbar button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
 .ortho-copy-preview{margin-top:10px}

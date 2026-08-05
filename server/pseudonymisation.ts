@@ -38,7 +38,8 @@ const RULES: Array<{ name: string; pattern: RegExp; replacement: string }> = [
   // Numéro de séjour
   {
     name: "SEJOUR",
-    pattern: /\b(?:séjour|n°\s?séjour|hospitalisation)\s*:?\s*[A-Z0-9]{6,14}\b/gi,
+    pattern:
+      /\b(?:(?:n°|no|num[ée]ro)\s*(?:de\s*)?(?:séjour|hospitalisation)|(?:séjour|hospitalisation)\s*(?::|(?:n°|no|num[ée]ro|id)\s*:))\s*(?=[A-Z0-9-]*\d)[A-Z0-9-]{6,18}\b/gi,
     replacement: "[SEJOUR_MASQUÉ]",
   },
   // Date de naissance complète (JJ/MM/AAAA, JJ-MM-AAAA, AAAA-MM-JJ).
