@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /redaction/
+Disallow: /organisations
+Disallow: /utilisateurs
+Disallow: /profil
+Disallow: /paiement
