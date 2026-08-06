@@ -124,7 +124,7 @@ export default function Paiement() {
               Paiement sécurisé — aucune donnée bancaire stockée par MEDACTIO
             </span>
             <span className="flex flex-wrap gap-x-4 gap-y-1">
-              {["PCI-DSS", "RGPD", "Hébergement HDS"].map((label) => (
+              {["PCI-DSS", "RGPD"].map((label) => (
                 <span key={label} className="inline-flex items-center gap-1">
                   <span className="font-bold text-[#5fd6c6]">✓</span>
                   {label}

@@ -11,7 +11,7 @@ import {
 
 const toc = [
   ["engagements", "Nos engagements"],
-  ["hebergement", "Hébergement (HDS)"],
+  ["hebergement", "Hébergement"],
   ["donnees", "Données & finalités"],
   ["conservation", "Conservation"],
   ["roles", "Rôles & base légale"],
@@ -36,7 +36,7 @@ export default function Conformite() {
       <div className="cbar">
         <div className="wrap cbar-in">
           <span><Shield size={14} /> Conforme aux exigences de protection des données de santé</span>
-          <b>RGPD</b><b>Hébergement HDS</b><b>Secret médical</b><b>Pseudonymisation</b>
+          <b>RGPD</b><b>Secret médical</b><b>Pseudonymisation</b>
         </div>
       </div>
 
@@ -71,22 +71,21 @@ export default function Conformite() {
             <div className="commit">
               <Commit icon={Shield} title="Aucune donnée patient stockée" text="Les saisies et documents vivent en mémoire de session, puis sont purgés à la déconnexion." />
               <Commit icon={EyeOff} title="Pseudonymisation automatique" text="Appliquée au texte comme à la dictée, avant tout envoi au moteur d'IA." />
-              <Commit icon={Lock} title="Hébergement HDS" text="Aucun hébergement de données de santé sur la plateforme." />
+              <Commit icon={Lock} title="Hébergement" text="Aucun hébergement de données de santé sur la plateforme." />
               <Commit icon={Shield} title="Secret médical" text="Respect du secret professionnel et de la confidentialité des soins." />
               <Commit icon={RefreshCw} title="Pas d'entraînement sur vos données" text="Vos contenus ne servent jamais à entraîner les modèles d'IA." />
               <Commit icon={Check} title="Le praticien reste l'auteur" text="Aide à la rédaction, jamais à la décision : aucun diagnostic, aucun acte automatisé." />
             </div>
           </DocSection>
 
-          <DocSection id="hebergement" n="02" title="Hébergement des données (HDS)">
-            <p>Les données traitées par MEDACTIO susceptibles de relever des données de santé à caractère personnel sont hébergées auprès d'un hébergeur certifié <strong>Hébergeur de Données de Santé (HDS)</strong>, conformément à l'article L.1111-8 du Code de la santé publique.</p>
+          <DocSection id="hebergement" n="02" title="Hébergement des données">
+            <p>MEDACTIO n'héberge pas de données de santé sur la plateforme. Les saisies et documents vivent en mémoire de session, puis sont purgés à la déconnexion.</p>
             <InfoTable rows={[
-              ["Hébergeur", <Tag>[À COMPLÉTER : raison sociale de l'hébergeur]</Tag>],
-              ["Certification HDS", <Tag>[À COMPLÉTER : périmètre & n° / organisme certificateur]</Tag>],
+              ["Hébergeur technique", <Tag>[À COMPLÉTER : raison sociale de l'hébergeur]</Tag>],
               ["Localisation des données", <Tag>[À COMPLÉTER : France / Union européenne]</Tag>],
               ["Transferts hors UE", <Tag>[À COMPLÉTER : aucun / encadrés par …]</Tag>],
             ]} />
-            <div className="callout"><strong>À vérifier :</strong> ne mentionnez la certification HDS que si votre hébergement en bénéficie effectivement pour le périmètre concerné.</div>
+            <div className="callout"><strong>Point de vigilance :</strong> ne saisissez aucun identifiant direct patient et ne déposez pas de document contenant des données patient non pseudonymisées.</div>
           </DocSection>
 
           <DocSection id="donnees" n="03" title="Données traitées & finalités">
@@ -116,7 +115,7 @@ export default function Conformite() {
 
           <DocSection id="sous-traitants" n="06" title="Sous-traitants & moteur d'IA">
             <InfoTable rows={[
-              [<Tag>[Hébergeur]</Tag>, "Hébergement HDS"],
+              [<Tag>[Hébergeur]</Tag>, "Hébergement technique de la plateforme"],
               [<Tag>[Fournisseur d'IA]</Tag>, "Structuration des textes"],
             ]} />
             <Checklist items={[<>Les contenus transmis au moteur d'IA sont <strong>pseudonymisés au préalable</strong> et <strong>ne sont pas utilisés pour entraîner les modèles</strong> <Tag>[À VÉRIFIER]</Tag>.</>]} />
