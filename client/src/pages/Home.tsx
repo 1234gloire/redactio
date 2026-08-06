@@ -402,7 +402,7 @@ footer{background:var(--sand);padding:60px 0 0}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       Conforme aux exigences de protection des données de santé
     </span>
-    <span class="checks"><span>RGPD</span><span>Hébergement HDS</span><span>Secret médical</span><span>Pseudonymisation</span></span>
+    <span class="checks"><span>RGPD</span><span>Secret médical</span><span>Pseudonymisation</span></span>
   </div>
 </div>
 
@@ -451,7 +451,6 @@ footer{background:var(--sand);padding:60px 0 0}
       </div>
       <div class="chips">
         <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>RGPD</span>
-        <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Hébergement HDS</span>
         <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 2l7 4v6c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z"/></svg>Secret médical</span>
         <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg>Pseudonymisation</span>
       </div>
@@ -486,7 +485,7 @@ footer{background:var(--sand);padding:60px 0 0}
     <div class="strip-item"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div><div><h4>4 documents couverts</h4><p>Sortie · conciliation · courrier · observation</p></div></div>
     <div class="strip-item"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></div><div><h4>Structuration par IA</h4><p>Des notes brutes au document propre</p></div></div>
     <div class="strip-item"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div><div><h4>Format lettre de liaison</h4><p>Aligné sur le décret 2016-995</p></div></div>
-    <div class="strip-item"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div><div><h4>Conformité données de santé</h4><p>RGPD · HDS · pseudonymisation</p></div></div>
+    <div class="strip-item"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div><div><h4>Conformité données de santé</h4><p>RGPD · pseudonymisation · aucune donnée conservée</p></div></div>
   </div>
 </section>
 
@@ -659,7 +658,7 @@ footer{background:var(--sand);padding:60px 0 0}
   <p class="lede2">Ce n'est pas une option : c'est le socle de MEDACTIO. Du praticien isolé à la DSI d'un CHU, chaque garantie est intégrée au fonctionnement même de la plateforme.</p>
   <div class="secu-grid">
     <div class="secu-card reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><h4>RGPD</h4><p>Traitement conforme au Règlement Général sur la Protection des Données.</p></div>
-    <div class="secu-card reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><h4>Hébergement HDS</h4><p>Hébergement agréé Données de Santé pour les traitements concernés.</p></div>
+    <div class="secu-card reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><h4>Hébergement HDS</h4><p>Aucun hébergement de données de santé sur la plateforme.</p></div>
     <div class="secu-card reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l7 4v6c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z"/></svg><h4>Secret médical</h4><p>Respect du secret professionnel et de la confidentialité des soins.</p></div>
   </div>
   <a class="btn outline" href="/conformite.html" style="background:#fff">Consulter la page conformité &amp; sécurité <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
@@ -779,7 +778,7 @@ footer{background:var(--sand);padding:60px 0 0}
 </div>
 <div class="footer-bottom">
   <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Conforme aux exigences de protection des données de santé</span>
-  <span>RGPD</span><span>Hébergement HDS</span><span>Secret médical</span><span>Pseudonymisation</span><span>Aucune donnée conservée</span>
+  <span>RGPD</span><span>Secret médical</span><span>Pseudonymisation</span><span>Aucune donnée conservée</span>
 </div>
 <div class="footer-legal">
   <span>© <span id="yr"></span> MEDACTIO — Aide à la rédaction, jamais à la décision médicale.</span>

@@ -636,7 +636,6 @@ Bien confraternellement,
       <div className="ortho-cbar">
         <span><Shield size={14} /> Conforme aux exigences de protection des données de santé</span>
         <span><Check size={12} /> RGPD</span>
-        <span><Check size={12} /> HDS</span>
         <span><Check size={12} /> Pseudonymisation</span>
       </div>
 

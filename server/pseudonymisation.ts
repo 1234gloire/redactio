@@ -80,7 +80,7 @@ const RULES: Array<{ name: string; pattern: RegExp; replacement: string }> = [
 ];
 
 // ─── NER simplifié pour noms propres (heuristique) ────────────────────────────
-// En production HDS, ce moteur serait remplacé par un modèle NER souverain.
+// En production certifiée, ce moteur serait remplacé par un modèle NER souverain.
 // Cette implémentation heuristique couvre les cas les plus courants.
 
 const FRENCH_TITLES = [

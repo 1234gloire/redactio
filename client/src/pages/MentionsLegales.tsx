@@ -144,10 +144,7 @@ export default function MentionsLegales() {
                 Directeur de la publication : Monsieur Benjamin Revcolevschi
               </li>
 
-              <li>
-                Certification : hébergeur agréé pour l&apos;hébergement de
-                données de santé à caractère personnel (HDS)
-              </li>
+              <li>Certification : aucune certification d&apos;hébergement de données de santé revendiquée pour la plateforme.</li>
             </ul>
 
             <p className="legal-muted">
@@ -162,6 +159,7 @@ export default function MentionsLegales() {
               préalablement à tout traitement, d&apos;une pseudonymisation
               intégrale au moyen du filtre technique dédié de MEDACTIO, avant
               toute transmission au moteur d&apos;intelligence artificielle.
+
             </p>
           </section>
 

@@ -14,7 +14,6 @@ import { Link, useLocation } from "wouter";
 
 const TRUST_CHIPS = [
   "RGPD",
-  "Hébergement HDS",
   "Secret médical",
   "Pseudonymisation",
 ];
