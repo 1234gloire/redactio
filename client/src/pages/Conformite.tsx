@@ -71,7 +71,7 @@ export default function Conformite() {
             <div className="commit">
               <Commit icon={Shield} title="Aucune donnée patient stockée" text="Les saisies et documents vivent en mémoire de session, puis sont purgés à la déconnexion." />
               <Commit icon={EyeOff} title="Pseudonymisation automatique" text="Appliquée au texte comme à la dictée, avant tout envoi au moteur d'IA." />
-              <Commit icon={Lock} title="Hébergement HDS" text="Hébergement agréé Données de Santé pour les traitements concernés." />
+              <Commit icon={Lock} title="Hébergement HDS" text="Aucun hébergement de données de santé sur la plateforme." />
               <Commit icon={Shield} title="Secret médical" text="Respect du secret professionnel et de la confidentialité des soins." />
               <Commit icon={RefreshCw} title="Pas d'entraînement sur vos données" text="Vos contenus ne servent jamais à entraîner les modèles d'IA." />
               <Commit icon={Check} title="Le praticien reste l'auteur" text="Aide à la rédaction, jamais à la décision : aucun diagnostic, aucun acte automatisé." />
