@@ -151,11 +151,17 @@ export default function MentionsLegales() {
             </ul>
 
             <p className="legal-muted">
-              Conformément à l&apos;article L.1111-8 du Code de la santé
-              publique, les données de santé à caractère personnel traitées
-              dans le cadre de l&apos;utilisation de l&apos;application
-              MEDACTIO sont hébergées auprès d&apos;OVH, hébergeur certifié
-              HDS.
+              MEDACTIO n&apos;a pas vocation à héberger de données de santé à
+              caractère directement identifiant. L&apos;Utilisateur s&apos;interdit
+              de saisir dans le Service tout identifiant direct du Patient
+              (nom, prénom, date de naissance, numéro de sécurité sociale ou
+              tout autre élément permettant une identification directe) et de
+              déposer tout Document contenant de telles données non
+              pseudonymisées. Dans l&apos;hypothèse où de telles données seraient
+              néanmoins saisies ou déposées, elles font l&apos;objet,
+              préalablement à tout traitement, d&apos;une pseudonymisation
+              intégrale au moyen du filtre technique dédié de MEDACTIO, avant
+              toute transmission au moteur d&apos;intelligence artificielle.
             </p>
           </section>
 
