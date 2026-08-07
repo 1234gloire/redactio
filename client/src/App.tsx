@@ -23,6 +23,7 @@ import RedactionCorrespondanceMedicale from "./pages/RedactionCorrespondanceMedi
 import ResetPassword from "./pages/ResetPassword";
 import Tutoriels from "./pages/Tutoriels";
 import Utilisateurs from "./pages/Utilisateurs";
+import CGV from "./pages/CGV";
 
 function Router() {
   return (
@@ -44,6 +45,10 @@ function Router() {
       <Route
         path="/mentions-legales"
         component={MentionsLegales}
+      />
+      <Route
+        path="/cgv"
+        component={CGV}
       />
 
       <Route path="/paiement" component={Paiement} />
