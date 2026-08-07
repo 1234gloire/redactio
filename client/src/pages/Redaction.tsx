@@ -682,6 +682,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
         </span>
         <span className="redaction-compliance-items">
           <span><Check className="h-3 w-3" /> RGPD</span>
+          <span><Check className="h-3 w-3" /> HDS</span>
           <span><Check className="h-3 w-3" /> Secret médical</span>
           <span><Check className="h-3 w-3" /> Pseudonymisation</span>
         </span>

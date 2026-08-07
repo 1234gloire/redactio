@@ -177,6 +177,7 @@ export default function Dashboard() {
             </p>
             <div className="dashboard-chips">
               <span>RGPD</span>
+              <span>HDS</span>
               <span>Secret médical</span>
               <span>Pseudonymisation</span>
             </div>

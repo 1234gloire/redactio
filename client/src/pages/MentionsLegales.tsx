@@ -144,10 +144,19 @@ export default function MentionsLegales() {
                 Directeur de la publication : Monsieur Benjamin Revcolevschi
               </li>
 
-              <li>Certification : aucune certification d&apos;hébergement de données de santé revendiquée pour la plateforme.</li>
+              <li>
+                Certification : hébergeur agréé pour l&apos;hébergement de
+                données de santé à caractère personnel (HDS)
+              </li>
             </ul>
 
             <p className="legal-muted">
+              Conformément à l&apos;article L.1111-8 du Code de la santé
+              publique, les données de santé à caractère personnel traitées
+              dans le cadre de l&apos;utilisation de l&apos;application
+              MEDACTIO sont hébergées auprès d&apos;OVH, hébergeur certifié
+              HDS.
+              {" "}
               MEDACTIO n&apos;a pas vocation à héberger de données de santé à
               caractère directement identifiant. L&apos;Utilisateur s&apos;interdit
               de saisir dans le Service tout identifiant direct du Patient
@@ -159,7 +168,6 @@ export default function MentionsLegales() {
               préalablement à tout traitement, d&apos;une pseudonymisation
               intégrale au moyen du filtre technique dédié de MEDACTIO, avant
               toute transmission au moteur d&apos;intelligence artificielle.
-
             </p>
           </section>
 
