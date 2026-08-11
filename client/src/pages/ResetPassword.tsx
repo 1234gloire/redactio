@@ -77,19 +77,34 @@ export default function ResetPassword() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const email =
-    new URLSearchParams(window.location.search).get("email") ?? "";
+  const searchParams = new URLSearchParams(window.location.search);
+  const token = searchParams.get("token") ?? "";
+  const isInitialPasswordChange = searchParams.get("mode") === "change";
 
   useEffect(() => {
     document.title = "MEDACTIO — Réinitialisation du mot de passe";
   }, []);
 
-  const resetMutation = trpc.auth.resetPasswordSimple.useMutation({
+  const resetMutation = trpc.auth.resetPassword.useMutation({
     onSuccess: () => {
       setSuccess(true);
 
       window.setTimeout(() => {
         setLocation("/login");
+      }, 1500);
+    },
+
+    onError: mutationError => {
+      setError(mutationError.message);
+    },
+  });
+
+  const changePasswordMutation = trpc.auth.changePassword.useMutation({
+    onSuccess: () => {
+      setSuccess(true);
+
+      window.setTimeout(() => {
+        setLocation("/dashboard");
       }, 1500);
     },
 
@@ -114,17 +129,22 @@ export default function ResetPassword() {
       return;
     }
 
-    if (!email) {
+    if (!token && !isInitialPasswordChange) {
       setError(
-        "Retournez à la page de connexion et saisissez votre adresse email avant de cliquer sur « Mot de passe oublié ».",
+        "Lien de réinitialisation invalide ou incomplet. Demandez un nouveau lien depuis la page de connexion.",
       );
       return;
     }
 
-    resetMutation.mutate({
-      email,
-      password,
-    });
+    if (token) {
+      resetMutation.mutate({
+        token,
+        password,
+      });
+      return;
+    }
+
+    changePasswordMutation.mutate({ password });
   };
 
   const inputClass =
@@ -224,14 +244,14 @@ export default function ResetPassword() {
               compte MEDACTIO.
             </p>
 
-            {email && (
+            {isInitialPasswordChange && (
               <div className="mb-5 rounded-xl border border-[#dce7e9] bg-[#f7fafa] px-4 py-3">
                 <p className="text-xs font-semibold uppercase tracking-[.08em] text-[#8a99a4]">
-                  Compte concerné
+                  Première connexion
                 </p>
 
-                <p className="mt-1 break-all text-sm font-semibold text-[#0b1b29]">
-                  {email}
+                <p className="mt-1 text-sm font-semibold text-[#0b1b29]">
+                  Définissez votre mot de passe personnel pour continuer.
                 </p>
               </div>
             )}
@@ -337,19 +357,18 @@ export default function ResetPassword() {
                   role="status"
                   className="mb-4 rounded-xl border border-[#0e9c8e]/20 bg-[#eef6f4] px-3.5 py-3 text-sm font-semibold text-[#0a7b70]"
                 >
-                  Mot de passe réinitialisé avec succès. Redirection vers
-                  la connexion…
+                  Mot de passe modifié avec succès. Redirection en cours…
                 </p>
               )}
 
               <Button
                 type="submit"
-                disabled={success || resetMutation.isPending}
+                disabled={success || resetMutation.isPending || changePasswordMutation.isPending}
                 className="h-auto w-full gap-2 rounded-full bg-[#0e9c8e] py-3.5 font-bold shadow-[0_12px_25px_-12px_rgba(14,156,142,.75)] hover:bg-[#0c8a7d]"
               >
                 <Lock className="h-4 w-4" />
 
-                {resetMutation.isPending
+                {resetMutation.isPending || changePasswordMutation.isPending
                   ? "Modification…"
                   : "Modifier le mot de passe"}
               </Button>

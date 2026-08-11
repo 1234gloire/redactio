@@ -25,8 +25,43 @@ type MakePostResult =
   | { status: "skipped"; reason: "missing_webhook_url" }
   | { status: "failed"; error: string };
 
+type RateLimitBucket = {
+  count: number;
+  windowStart: number;
+};
+
+const demoRequestBuckets = new Map<string, RateLimitBucket>();
+
 function cleanString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function getClientIp(req: Request) {
+  const forwardedFor = req.headers["x-forwarded-for"];
+  if (typeof forwardedFor === "string" && forwardedFor.trim()) {
+    return forwardedFor.split(",")[0].trim();
+  }
+  return req.ip || "unknown";
+}
+
+function isDemoRequestRateLimited(req: Request) {
+  const key = getClientIp(req);
+  const now = Date.now();
+  const windowMs = 60 * 60 * 1000;
+  const maxRequests = 10;
+  const bucket = demoRequestBuckets.get(key);
+
+  if (!bucket || now - bucket.windowStart > windowMs) {
+    demoRequestBuckets.set(key, { count: 1, windowStart: now });
+    return false;
+  }
+
+  if (bucket.count >= maxRequests) {
+    return true;
+  }
+
+  bucket.count += 1;
+  return false;
 }
 
 async function postToMake(webhookUrl: string, payload: Record<string, unknown>): Promise<MakePostResult> {
@@ -94,6 +129,11 @@ export async function notifySignupCreated(payload: SignupPayload) {
 export function registerMakeWebhookRoutes(app: Express) {
   app.post("/api/demo-request", async (req: Request, res: Response) => {
     try {
+      if (isDemoRequestRateLimited(req)) {
+        res.status(429).json({ error: "Trop de demandes. Réessayez dans quelques instants." });
+        return;
+      }
+
       if (!ENV.makeDemoWebhookUrl) {
         res.status(503).json({ error: "Le webhook de démonstration n'est pas configuré." });
         return;

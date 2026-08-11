@@ -72,6 +72,45 @@ import {
 const RAW_DATA_MAX_CHARS = 200_000;
 const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000;
 
+type RateLimitBucket = {
+  count: number;
+  windowStart: number;
+};
+
+const rateLimitBuckets = new Map<string, RateLimitBucket>();
+
+function getClientIp(req: { headers: Record<string, unknown>; ip?: string }) {
+  const forwardedFor = req.headers["x-forwarded-for"];
+  if (typeof forwardedFor === "string" && forwardedFor.trim()) {
+    return forwardedFor.split(",")[0].trim();
+  }
+  return req.ip || "unknown";
+}
+
+function enforceRateLimit(options: {
+  key: string;
+  max: number;
+  windowMs: number;
+  message?: string;
+}) {
+  const now = Date.now();
+  const bucket = rateLimitBuckets.get(options.key);
+
+  if (!bucket || now - bucket.windowStart > options.windowMs) {
+    rateLimitBuckets.set(options.key, { count: 1, windowStart: now });
+    return;
+  }
+
+  if (bucket.count >= options.max) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: options.message ?? "Trop de tentatives. Réessayez dans quelques instants.",
+    });
+  }
+
+  bucket.count += 1;
+}
+
 function hashResetToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
@@ -163,6 +202,13 @@ export const appRouter = router({
       )
       .mutation(async ({ ctx, input }) => {
         const email = input.email.trim().toLowerCase();
+        const ip = getClientIp(ctx.req);
+        enforceRateLimit({
+          key: `auth:login:${ip}:${email}`,
+          max: 8,
+          windowMs: 15 * 60 * 1000,
+          message: "Trop de tentatives de connexion. Réessayez dans quelques minutes.",
+        });
         const expectedBootstrapEmail = ENV.localAdminEmail.trim().toLowerCase();
         const isBootstrapAdmin =
           Boolean(ENV.localAdminEmail && ENV.localAdminPassword) &&
@@ -209,12 +255,18 @@ export const appRouter = router({
       }),
     requestPasswordReset: publicProcedure
       .input(z.object({ email: z.string().email() }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
         const genericResponse = {
           success: true,
           message: "Si un compte correspond à cette adresse, un lien de réinitialisation va être envoyé.",
         };
         const email = input.email.trim().toLowerCase();
+        const ip = getClientIp(ctx.req);
+        enforceRateLimit({
+          key: `auth:reset-request:${ip}:${email}`,
+          max: 5,
+          windowMs: 60 * 60 * 1000,
+        });
         const user = await getUserByEmail(email);
         const isBootstrapAdmin =
           Boolean(ENV.localAdminEmail) &&
@@ -240,7 +292,13 @@ export const appRouter = router({
           password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères.").max(128),
         }),
       )
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
+        const ip = getClientIp(ctx.req);
+        enforceRateLimit({
+          key: `auth:reset-token:${ip}`,
+          max: 10,
+          windowMs: 60 * 60 * 1000,
+        });
         const resetToken = await getValidPasswordResetToken(hashResetToken(input.token));
         if (!resetToken) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Ce lien est invalide ou expiré." });
@@ -250,27 +308,31 @@ export const appRouter = router({
         await consumePasswordResetToken(resetToken.id);
         return { success: true };
       }),
-    resetPasswordSimple: publicProcedure
+    changePassword: protectedProcedure
       .input(
         z.object({
-          email: z.string().email(),
           password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères.").max(128),
         }),
       )
-      .mutation(async ({ input }) => {
-        const email = input.email.trim().toLowerCase();
-        const isBootstrapAdmin =
-          Boolean(ENV.localAdminEmail) &&
-          email === ENV.localAdminEmail.trim().toLowerCase();
-        const user = await getUserByEmail(email);
-        if (isBootstrapAdmin || !user || !user.active || !user.passwordHash) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Impossible de réinitialiser ce compte." });
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.passwordUpdatedAt !== null) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Le changement direct du mot de passe est réservé à la première connexion.",
+          });
         }
 
-        await updateUser(user.id, {
+        await updateUser(ctx.user.id, {
           passwordHash: await hashPassword(input.password),
           passwordUpdatedAt: new Date(),
           loginMethod: "password",
+        });
+        await createAuditLog({
+          userId: ctx.user.id,
+          action: "auth.change_initial_password",
+          resource: "user",
+          resourceId: String(ctx.user.id),
+          metadata: { reason: "first_login" },
         });
         return { success: true };
       }),
@@ -295,6 +357,12 @@ export const appRouter = router({
       )
       .mutation(async ({ ctx, input }) => {
         const email = input.email.trim().toLowerCase();
+        const ip = getClientIp(ctx.req);
+        enforceRateLimit({
+          key: `auth:register:${ip}`,
+          max: 5,
+          windowMs: 60 * 60 * 1000,
+        });
         const existingUser = await getUserByEmail(email);
         if (existingUser) {
           throw new TRPCError({

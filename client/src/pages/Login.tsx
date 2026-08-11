@@ -125,11 +125,7 @@ export default function Login() {
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: (data) => {
       if (data?.requiresPasswordChange) {
-        setLocation(
-          `/reinitialiser-mot-de-passe?email=${encodeURIComponent(
-            email.trim(),
-          )}`,
-        );
+        setLocation("/reinitialiser-mot-de-passe?mode=change");
         window.location.reload();
         return;
       }
@@ -201,22 +197,7 @@ export default function Login() {
   ) => {
     event.preventDefault();
 
-    const normalizedEmail = email.trim();
-
-    if (!normalizedEmail) {
-      setError(
-        "Veuillez renseigner votre adresse email avant de réinitialiser votre mot de passe.",
-      );
-      return;
-    }
-
-    const query = `?email=${encodeURIComponent(
-      normalizedEmail,
-    )}`;
-
-    setLocation(
-      `/reinitialiser-mot-de-passe${query}`,
-    );
+    setLocation("/mot-de-passe-oublie");
   };
 
   const handleSignup = (
@@ -439,7 +420,7 @@ export default function Login() {
                     </Label>
 
                     <a
-                      href="/reinitialiser-mot-de-passe"
+                      href="/mot-de-passe-oublie"
                       onClick={
                         handlePasswordResetNavigation
                       }
@@ -519,7 +500,7 @@ export default function Login() {
 
                 <nav className="mt-[26px] overflow-hidden rounded-2xl border border-[#e4ebee] bg-white">
                   <a
-                    href="/reinitialiser-mot-de-passe"
+                    href="/mot-de-passe-oublie"
                     onClick={
                       handlePasswordResetNavigation
                     }
