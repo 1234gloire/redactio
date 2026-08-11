@@ -7,7 +7,6 @@ import {
   CreditCard,
   RotateCw,
   Save,
-  Trash2,
   User,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -62,9 +61,12 @@ export default function Profil() {
 
   const role = (user as { role?: string })?.role ?? "praticien";
   const organisationId = (user as { organisationId?: number | null })?.organisationId ?? null;
-  const canDeactivateOwnAccount = role === "praticien" || role === "org_admin";
-  const canDeleteOwnAccount = role !== "praticien" && role !== "org_admin";
-  const isConventionAccount = role === "org_admin" || Boolean(organisationId);
+  const isPractitioner = role === "praticien";
+  const isOrgAdmin = role === "org_admin";
+  const canDeactivateOwnAccount = isPractitioner || isOrgAdmin;
+  const isConventionAccount = isOrgAdmin || Boolean(organisationId);
+  const showIndividualBilling = isPractitioner && !isConventionAccount;
+  const showAdminAccessNotice = !showIndividualBilling && !isConventionAccount;
   const stripeStatus = (user as { stripeSubscriptionStatus?: string | null })?.stripeSubscriptionStatus ?? null;
   const hasStripeCustomer = Boolean((user as { stripeCustomerId?: string | null })?.stripeCustomerId);
   const stripeCurrentPeriodEnd = (user as { stripeCurrentPeriodEnd?: unknown })?.stripeCurrentPeriodEnd;
@@ -80,7 +82,7 @@ export default function Profil() {
   const organisationExpired = Boolean(orgEndDate && orgEndDate <= new Date());
   const showConventionAlert = isConventionAccount && orgQuery.isSuccess && orgSubscription && organisationExpired;
   const planQuery = trpc.billing.getPlan.useQuery(undefined, {
-    enabled: Boolean(user) && !isConventionAccount,
+    enabled: Boolean(user) && showIndividualBilling,
     staleTime: 5 * 60 * 1000,
   });
   const plan = planQuery.data;
@@ -133,7 +135,7 @@ export default function Profil() {
           <User aria-hidden="true" />
           <div>
             <h1>Profil &amp; paramètres</h1>
-            <p>Gérez vos informations professionnelles et votre abonnement.</p>
+            <p>Gérez vos informations professionnelles et votre accès.</p>
           </div>
         </header>
 
@@ -193,7 +195,7 @@ export default function Profil() {
           </div>
         </section>
 
-        {isConventionAccount ? (
+        {isConventionAccount && (
           <section className="profile-card">
             <div className="subscription-head">
               <div>
@@ -222,7 +224,9 @@ export default function Profil() {
               </div>
             )}
           </section>
-        ) : (
+        )}
+
+        {showIndividualBilling && (
           <section className="profile-card">
             <div className="subscription-head">
               <div>
@@ -274,6 +278,20 @@ export default function Profil() {
                   {createCheckoutSession.isPending ? "Ouverture..." : "Activer mon abonnement"}
                 </button>
               )}
+            </div>
+          </section>
+        )}
+
+        {showAdminAccessNotice && (
+          <section className="profile-card">
+            <h2>Accès administrateur</h2>
+            <div className="notice info">
+              <Clock aria-hidden="true" />
+              <span>
+                Ce compte admin n&apos;est rattaché à aucun abonnement individuel.
+                Les abonnements praticiens et les conventions hospitalières se
+                gèrent depuis le back-office.
+              </span>
             </div>
           </section>
         )}
@@ -330,28 +348,6 @@ export default function Profil() {
                 </div>
               </div>
             )}
-          </section>
-        )}
-
-        {canDeleteOwnAccount && (
-          <section className="danger-zone">
-            <h2>Fermer mon compte</h2>
-
-            <p>
-              Action différente de la résiliation d&apos;abonnement : ceci supprime
-              définitivement votre compte, votre profil et l&apos;accès à MEDACTIO.
-            </p>
-
-            <button
-              type="button"
-              className="profile-btn danger-outline"
-              onClick={() =>
-                toast.info("Suppression de compte à brancher côté serveur.")
-              }
-            >
-              <Trash2 aria-hidden="true" />
-              Supprimer définitivement mon compte
-            </button>
           </section>
         )}
 
