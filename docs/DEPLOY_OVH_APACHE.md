@@ -36,8 +36,10 @@ returns the VPS IP.
 
 ```bash
 sudo apt update
-sudo apt install -y apache2 mysql-server curl git unzip
+sudo apt install -y apache2 mysql-server curl git unzip poppler-utils tesseract-ocr tesseract-ocr-fra
 ```
+
+`poppler-utils` (`pdftoppm`) and `tesseract-ocr` are required for scanned/image-only PDF uploads (Observation médicale, extraction de fichiers) — without them, those uploads fail with an OCR error instead of falling back to text extraction.
 
 Install Node.js 22 LTS or newer. Example with NodeSource:
 

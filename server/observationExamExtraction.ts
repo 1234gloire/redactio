@@ -151,7 +151,15 @@ export function registerObservationExamExtraction(app: Express) {
         return;
       }
 
-      const rawText = await extractText(req.file);
+      let rawText: string;
+      try {
+        rawText = await extractText(req.file);
+      } catch (extractError) {
+        const message = extractError instanceof Error ? extractError.message : "Extraction du fichier impossible.";
+        console.error("[ObservationExamExtraction] text extraction failed", { userId, message });
+        res.status(400).json({ error: message });
+        return;
+      }
       if (!rawText) {
         res.status(422).json({ error: "Aucun texte exploitable trouvé dans ce fichier." });
         return;
