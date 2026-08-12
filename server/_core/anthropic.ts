@@ -38,10 +38,13 @@ export async function createAnthropicStream(params: {
 }
 
 // Non-streaming completions with a large system prompt + several thousand output
-// tokens can legitimately take well over a minute. Keep this comfortably under the
-// Apache reverse-proxy timeout (300s, see deploy/apache/medactio.fr.conf) so a slow
-// but successful generation isn't cut off before Apache would time out anyway.
-const ANTHROPIC_REQUEST_TIMEOUT_MS = 280_000;
+// tokens can legitimately take several minutes on a big multi-page document. Keep
+// this comfortably under the Apache reverse-proxy timeout (600s, see
+// deploy/apache/medactio.fr.conf) so a slow but successful generation isn't cut off
+// by Apache before this timeout would even fire. Bounded on purpose (not infinite):
+// a genuinely stuck connection should still fail eventually instead of tying up a
+// server worker forever.
+const ANTHROPIC_REQUEST_TIMEOUT_MS = 540_000;
 
 export async function createAnthropicMessage(params: {
   system: string;

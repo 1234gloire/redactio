@@ -1377,7 +1377,9 @@ APIXABAN 5 mg cp : 1 matin et 1 soir`}
                     {isExtractingFile ? "Extraction des données de l'examen en cours..." : "Glissez-déposez un fichier ici"}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Les informations administratives et identitaires seront automatiquement supprimées.
+                    {isExtractingFile
+                      ? "Les documents de plusieurs pages peuvent prendre quelques minutes — laissez la page ouverte."
+                      : "Les informations administratives et identitaires seront automatiquement supprimées."}
                   </p>
                 </div>
               </div>
