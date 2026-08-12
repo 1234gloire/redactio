@@ -37,7 +37,11 @@ export async function createAnthropicStream(params: {
   });
 }
 
-const ANTHROPIC_REQUEST_TIMEOUT_MS = 120_000;
+// Non-streaming completions with a large system prompt + several thousand output
+// tokens can legitimately take well over a minute. Keep this comfortably under the
+// Apache reverse-proxy timeout (300s, see deploy/apache/medactio.fr.conf) so a slow
+// but successful generation isn't cut off before Apache would time out anyway.
+const ANTHROPIC_REQUEST_TIMEOUT_MS = 280_000;
 
 export async function createAnthropicMessage(params: {
   system: string;
