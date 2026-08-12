@@ -3,21 +3,16 @@
  * Le contenu médical n'est jamais journalisé.
  */
 import type { Express, Request, Response } from "express";
-import multer from "multer";
 import { createAnthropicMessage } from "./_core/anthropic";
 import { sdk } from "./_core/sdk";
 import { createAuditLog } from "./db";
 import { extractText } from "./fileExtraction";
+import { createMemoryFileUpload, runSingleFileUpload } from "./fileUpload";
 import { pseudonymiseExamExtractionOutput } from "./pseudonymisation";
 import { OBSERVATION_EXTRACTION_PROMPT } from "./prompts/observationExtraction";
 
-const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
 const RAW_DATA_MAX_CHARS = 200_000;
-
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_FILE_SIZE_BYTES, files: 1 },
-});
+const upload = createMemoryFileUpload();
 
 const SYSTEM_PROMPT = OBSERVATION_EXTRACTION_PROMPT;
 
@@ -138,8 +133,10 @@ export function formatObservationExamBlocks(text: string) {
 }
 
 export function registerObservationExamExtraction(app: Express) {
-  app.post("/api/observation/extract-exam", upload.single("file"), async (req: Request, res: Response) => {
+  app.post("/api/observation/extract-exam", async (req: Request, res: Response) => {
     let userId: number | null = null;
+    const uploadOk = await runSingleFileUpload(upload.single("file"), req, res, "ObservationExamExtraction");
+    if (!uploadOk) return;
 
     try {
       const user = await sdk.authenticateRequest(req);

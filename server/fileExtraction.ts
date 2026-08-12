@@ -5,17 +5,13 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import mammoth from "mammoth";
-import multer from "multer";
 import { PDFParse } from "pdf-parse";
 import { sdk } from "./_core/sdk";
+import { createMemoryFileUpload, runSingleFileUpload } from "./fileUpload";
 
 const execFileAsync = promisify(execFile);
-const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
 const TEXT_EXTENSIONS = new Set([".txt", ".md", ".csv", ".json", ".xml", ".html", ".rtf"]);
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_FILE_SIZE_BYTES, files: 1 },
-});
+const upload = createMemoryFileUpload();
 
 function getExtension(filename: string) {
   const dotIndex = filename.lastIndexOf(".");
@@ -198,7 +194,10 @@ export async function extractText(file: Express.Multer.File) {
 }
 
 export function registerFileExtraction(app: Express) {
-  app.post("/api/extract-file", upload.single("file"), async (req: Request, res: Response) => {
+  app.post("/api/extract-file", async (req: Request, res: Response) => {
+    const uploadOk = await runSingleFileUpload(upload.single("file"), req, res, "FileExtraction");
+    if (!uploadOk) return;
+
     try {
       const user = await sdk.authenticateRequest(req);
       if (!user) {
@@ -224,6 +223,7 @@ export function registerFileExtraction(app: Express) {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Extraction impossible.";
+      console.error("[FileExtraction] failed", { message });
       res.status(400).json({ error: message });
     }
   });
