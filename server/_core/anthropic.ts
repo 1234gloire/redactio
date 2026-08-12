@@ -37,6 +37,8 @@ export async function createAnthropicStream(params: {
   });
 }
 
+const ANTHROPIC_REQUEST_TIMEOUT_MS = 120_000;
+
 export async function createAnthropicMessage(params: {
   system: string;
   messages: AnthropicMessage[];
@@ -48,24 +50,33 @@ export async function createAnthropicMessage(params: {
     throw new Error("ANTHROPIC_API_KEY is not configured");
   }
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": ENV.anthropicApiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: ENV.anthropicModel,
-      max_tokens: params.maxTokens ?? (Number.isFinite(ENV.anthropicMaxTokens)
-        ? ENV.anthropicMaxTokens
-        : 12000),
-      ...(typeof params.temperature === "number" ? { temperature: params.temperature } : {}),
-      ...(typeof params.topP === "number" ? { top_p: params.topP } : {}),
-      system: params.system,
-      messages: params.messages,
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": ENV.anthropicApiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: ENV.anthropicModel,
+        max_tokens: params.maxTokens ?? (Number.isFinite(ENV.anthropicMaxTokens)
+          ? ENV.anthropicMaxTokens
+          : 12000),
+        ...(typeof params.temperature === "number" ? { temperature: params.temperature } : {}),
+        ...(typeof params.topP === "number" ? { top_p: params.topP } : {}),
+        system: params.system,
+        messages: params.messages,
+      }),
+      signal: AbortSignal.timeout(ANTHROPIC_REQUEST_TIMEOUT_MS),
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "TimeoutError") {
+      throw new Error(`Anthropic API timeout après ${ANTHROPIC_REQUEST_TIMEOUT_MS / 1000}s.`);
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     const body = await response.text().catch(() => "");

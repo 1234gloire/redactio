@@ -71,43 +71,40 @@ async function execTesseract(imagePath: string, args: string[]) {
 }
 
 async function runTesseract(imagePath: string) {
-  const pageSegmentationModes = ["4", "3", "6", "11"];
-  const attempts = pageSegmentationModes.map((psm) => [
-    "-l",
-    "fra+eng",
-    "--oem",
-    "1",
-    "--psm",
-    psm,
-    "-c",
-    "preserve_interword_spaces=1",
-  ]);
+  // PSM 6 (uniform block of text) covers the common case — a typed letter/report page.
+  // Other modes are only tried if 6 doesn't produce a usable result, to avoid running
+  // OCR up to 4x per page (very slow on multi-page documents).
+  const pageSegmentationModes = ["6", "4", "3", "11"];
   let languageError: unknown = null;
-  const candidates: string[] = [];
+  let best = "";
+  let bestScore = -1;
 
-  try {
-    for (const args of attempts) {
-      candidates.push(await execTesseract(imagePath, args));
-    }
-  } catch (error) {
-    if (isCommandMissing(error)) throw error;
-    languageError = error;
-  }
-
-  if (candidates.length === 0) {
+  for (const psm of pageSegmentationModes) {
+    let text: string | null = null;
     try {
-      for (const psm of pageSegmentationModes) {
-        candidates.push(await execTesseract(imagePath, ["--psm", psm]));
-      }
+      text = await execTesseract(imagePath, ["-l", "fra+eng", "--oem", "1", "--psm", psm, "-c", "preserve_interword_spaces=1"]);
     } catch (error) {
       if (isCommandMissing(error)) throw error;
-      throw languageError ?? error;
+      languageError = error;
+      try {
+        text = await execTesseract(imagePath, ["--psm", psm]);
+      } catch (fallbackError) {
+        if (isCommandMissing(fallbackError)) throw fallbackError;
+        continue;
+      }
     }
+
+    const cleaned = cleanOcrText(text ?? "");
+    const score = scoreOcrText(cleaned);
+    if (score > bestScore) {
+      best = cleaned;
+      bestScore = score;
+    }
+    if (bestScore >= 120) break; // usable text found, no need to try further modes
   }
 
-  return candidates
-    .map(cleanOcrText)
-    .sort((a, b) => scoreOcrText(b) - scoreOcrText(a))[0] ?? "";
+  if (bestScore < 0 && languageError) throw languageError;
+  return best;
 }
 
 async function extractScannedPdfText(buffer: Buffer) {
