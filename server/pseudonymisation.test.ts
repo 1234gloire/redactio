@@ -133,6 +133,15 @@ describe("pseudonymisation — documents de sortie", () => {
     expect(result.detectedCategories).not.toContain("SEJOUR");
   });
 
+  it("ne masque pas les mots cliniques après patient ou patiente", () => {
+    const text = "Sur le plan neurologique : patiente consciente, pas de signe de localisation.";
+    const result = pseudonymise(text);
+
+    expect(result.filteredText).toBe(text);
+    expect(result.filteredText).not.toContain("[NOM_MASQUÉ]");
+    expect(result.maskCount).toBe(0);
+  });
+
   it("masque toujours les vrais numéros de séjour", () => {
     const result = pseudonymise("N° séjour : ABC123456");
 
@@ -182,5 +191,51 @@ describe("pseudonymiseExamExtractionOutput", () => {
     expect(result.filteredText).not.toContain("[NOM_MASQUÉ]");
     expect(result.filteredText).not.toContain("[DATE_MASQUÉE]");
     expect(result.maskCount).toBe(0);
+  });
+
+  it("supprime silencieusement les identifiants en sortie d'extraction", () => {
+    const result = pseudonymiseExamExtractionOutput(
+      [
+        "N° séjour : ABC123456",
+        "Madame DENIS LOUISETTE, née le 19/04/1952",
+        "Dr SARRAZIN, RPPS 12345678",
+        "Une patiente DENIS LOUISETTE âgée de 88 ans a été hospitalisée du 07/07/2026 au 12/08/2026.",
+      ].join("\n")
+    );
+
+    expect(result.filteredText).not.toContain("ABC123456");
+    expect(result.filteredText).not.toContain("DENIS");
+    expect(result.filteredText).not.toContain("LOUISETTE");
+    expect(result.filteredText).not.toContain("19/04/1952");
+    expect(result.filteredText).not.toContain("SARRAZIN");
+    expect(result.filteredText).not.toContain("12345678");
+    expect(result.filteredText).not.toMatch(/\[[^\]]*_MASQU[ÉE]*\]/);
+    expect(result.filteredText).toContain("Une patiente âgée de 88 ans a été hospitalisée du 07/07/2026 au 12/08/2026.");
+  });
+
+  it("ne déforme pas les mots cliniques adjacents au mot patiente en sortie d'extraction", () => {
+    const text = [
+      "La patiente présente une altération de l'état général.",
+      "Sur le plan neurologique : patiente consciente, pas de signe de localisation, ni méningé.",
+    ].join("\n");
+    const result = pseudonymiseExamExtractionOutput(text);
+
+    expect(result.filteredText).toBe(text);
+    expect(result.maskCount).toBe(0);
+  });
+
+  it("borne le retrait du nom patient sans absorber le verbe adjacent", () => {
+    const result = pseudonymiseExamExtractionOutput("Patiente DENIS LOUISETTE présente une altération de l'état général.");
+
+    expect(result.filteredText).toBe("Patiente présente une altération de l'état général.");
+    expect(result.filteredText).not.toMatch(/\[[^\]]*_MASQU[ÉE]*\]/);
+  });
+
+  it("ne confond pas un titre hospitalisation avec un numéro de séjour en sortie d'extraction", () => {
+    const text = "MOTIF D'HOSPITALISATION : gonarthrose invalidante droite.\n\nSÉJOUR HOSPITALIER : admission le 05/08/2026.";
+    const result = pseudonymiseExamExtractionOutput(text);
+
+    expect(result.filteredText).toBe(text);
+    expect(result.detectedCategories).not.toContain("SEJOUR");
   });
 });

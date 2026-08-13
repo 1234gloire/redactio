@@ -39,7 +39,7 @@ const RULES: Array<{ name: string; pattern: RegExp; replacement: string }> = [
   {
     name: "SEJOUR",
     pattern:
-      /\b(?:(?:n°|no|num[ée]ro)\s*(?:de\s*)?(?:séjour|hospitalisation)|(?:séjour|hospitalisation)\s*(?::|(?:n°|no|num[ée]ro|id)\s*:))\s*(?=[A-Z0-9-]*\d)[A-Z0-9-]{6,18}\b/gi,
+      /\b(?:(?:n°|no|num[ée]ro)\s*(?:de\s*)?(?:séjour|hospitalisation)\s*:?|(?:séjour|hospitalisation)\s*(?:n°|no|num[ée]ro|id)\s*:)\s*(?=[A-Z0-9-]*\d)[A-Z0-9-]{6,18}\b/gi,
     replacement: "[SEJOUR_MASQUÉ]",
   },
   // Date de naissance complète (JJ/MM/AAAA, JJ-MM-AAAA, AAAA-MM-JJ).
@@ -118,6 +118,21 @@ const CONTEXT_KEYWORDS = [
 const NAME_TOKEN =
   "[A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ][A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇa-zàâäéèêëîïôùûüç\\-']+";
 const NAME_SEQUENCE = `${NAME_TOKEN}(?:\\s+${NAME_TOKEN}){0,3}`;
+const UPPER_NAME_TOKEN = "[A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ][A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ\\-']{1,}";
+const UPPER_NAME_SEQUENCE = `${UPPER_NAME_TOKEN}(?:\\s+${UPPER_NAME_TOKEN}){0,3}`;
+
+function cleanupSilentDeletion(text: string) {
+  return text
+    .replace(/[ \t]+([,.])/g, "$1")
+    .replace(/([(\[])[ \t]+/g, "$1")
+    .replace(/[ \t]+([)\]])/g, "$1")
+    .replace(/\(\s*\)/g, "")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/[ \t]+(\r?\n)/g, "$1")
+    .replace(/(\r?\n)[ \t]+/g, "$1")
+    .replace(/\n{4,}/g, "\n\n\n")
+    .trim();
+}
 
 /**
  * Détection NER heuristique des noms propres.
@@ -138,9 +153,22 @@ function applyNER(text: string): { result: string; count: number } {
     return `${title} [NOM_MASQUÉ]`;
   });
 
-  // Pattern 2 : Contexte "patient(e) : Prénom NOM" ou "nom : NOM"
+  // Pattern 2 : Contexte "patient(e) : NOM" issu d'OCR ou de copier-coller administratif.
+  // On exige ici un nom en majuscules pour ne pas masquer des mentions cliniques
+  // courantes comme "patiente consciente" ou "patient algique".
+  const patientContextPattern = new RegExp(
+    `\\b([Pp]atient|[Pp]atiente)\\s*:?\\s+(${UPPER_NAME_SEQUENCE})`,
+    "g"
+  );
+  result = result.replace(patientContextPattern, (_match, keyword) => {
+    count++;
+    return `${keyword} [NOM_MASQUÉ]`;
+  });
+
+  // Pattern 3 : Contexte administratif explicite "nom : Prénom NOM"
+  const identityKeywords = CONTEXT_KEYWORDS.filter((keyword) => !["patient", "patiente"].includes(keyword));
   const contextPattern = new RegExp(
-    `\\b(${CONTEXT_KEYWORDS.join("|")})\\s*:?\\s+(${NAME_SEQUENCE})`,
+    `\\b(${identityKeywords.join("|")})\\s*:?\\s+(${NAME_SEQUENCE})`,
     "gi"
   );
   result = result.replace(contextPattern, (_match, keyword) => {
@@ -161,28 +189,29 @@ function applyExamOutputNER(text: string): { result: string; count: number } {
   );
   result = result.replace(titlePattern, (_match, title) => {
     count++;
-    return `${title} [NOM_MASQUÉ]`;
+    return `${title}`;
   });
 
-  const identityKeywords = [
-    "patient",
-    "patiente",
-    "identité",
-    "nom",
-    "prénom",
-    "appelé",
-    "appelée",
-  ];
-  const contextPattern = new RegExp(
+  const patientContextPattern = new RegExp(
+    `\\b([Pp]atient|[Pp]atiente)\\s*:?\\s+(${UPPER_NAME_SEQUENCE})`,
+    "g"
+  );
+  result = result.replace(patientContextPattern, (_match, keyword) => {
+    count++;
+    return `${keyword}`;
+  });
+
+  const identityKeywords = ["identité", "nom", "prénom", "appelé", "appelée"];
+  const identityContextPattern = new RegExp(
     `\\b(${identityKeywords.join("|")})\\s*:?\\s+(${NAME_SEQUENCE})`,
     "gi"
   );
-  result = result.replace(contextPattern, (_match, keyword) => {
+  result = result.replace(identityContextPattern, (_match, keyword) => {
     count++;
-    return `${keyword} [NOM_MASQUÉ]`;
+    return `${keyword}`;
   });
 
-  return { result, count };
+  return { result: cleanupSilentDeletion(result), count };
 }
 
 // ─── Fonction principale ──────────────────────────────────────────────────────
@@ -271,7 +300,7 @@ export function pseudonymiseExamExtractionOutput(rawText: string): Pseudonymisat
 
   for (const rule of allowedRules) {
     const before = text;
-    text = text.replace(rule.pattern, rule.replacement);
+    text = text.replace(rule.pattern, "");
     if (text !== before) {
       const matches = (before.match(rule.pattern) || []).length;
       totalMaskCount += matches;
@@ -289,6 +318,8 @@ export function pseudonymiseExamExtractionOutput(rawText: string): Pseudonymisat
       detectedCategories.push("NOM_PROPRE");
     }
   }
+
+  text = cleanupSilentDeletion(text);
 
   const maskedTokens = (text.match(/\[[\w_]+_MASQUÉ[E]?\]/g) || []).length;
   const totalWords = rawText.split(/\s+/).length;
