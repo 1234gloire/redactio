@@ -12,6 +12,7 @@ import {
   Document,
   HeadingLevel,
   Packer,
+  PageOrientation,
   Paragraph,
   ShadingType,
   Table,
@@ -117,9 +118,12 @@ const CONCILIATION_STATUS_COLORS: Record<string, string> = {
   "ajouté": "3B783B",
   "ajoute": "3B783B",
 };
-// Proportions HAS (2900/1900/1900/2900/1900/3620 DXA en A4 paysage), remises
-// à l'échelle de la largeur de page utilisée par le reste du document.
+// Proportions HAS (2900/1900/1900/2900/1900/3620 DXA en A4 paysage). Ce document
+// est toujours produit seul (un volet = un fichier), donc la page entière peut
+// passer en paysage avec des marges réduites sans affecter d'autre contenu.
 const CONCILIATION_COLUMN_RATIOS = [2900, 1900, 1900, 2900, 1900, 3620];
+const CONCILIATION_TABLE_WIDTH_DXA = 14400; // page paysage 15840 dxa - marges 0,5" (720 x 2)
+const CONCILIATION_PAGE_MARGIN_DXA = 720;
 
 function stripTags(html: string): string {
   return cleanTextNode(html.replace(/<br\s*\/?>/gi, " "));
@@ -135,10 +139,23 @@ function isConciliationHeaderRow(cellsText: string[]): boolean {
   );
 }
 
+// La conciliation médicamenteuse est toujours le seul contenu du document exporté
+// (un volet = un fichier) : passer toute la page en paysage est donc sans risque
+// pour d'autres types de document, et nécessaire pour que la colonne Commentaires
+// ne s'écrase pas en portrait.
+function containsConciliationTable(content: string): boolean {
+  const lowered = content.toLowerCase();
+  return (
+    lowered.includes("traitement avant hospitalisation") &&
+    (lowered.includes("traitement à la sortie") || lowered.includes("traitement a la sortie")) &&
+    lowered.includes("devenir du traitement")
+  );
+}
+
 function conciliationColumnWidths(): number[] {
   const total = CONCILIATION_COLUMN_RATIOS.reduce((sum, value) => sum + value, 0);
-  const widths = CONCILIATION_COLUMN_RATIOS.map((ratio) => Math.round((ratio / total) * TABLE_WIDTH_DXA));
-  const roundingError = TABLE_WIDTH_DXA - widths.reduce((sum, value) => sum + value, 0);
+  const widths = CONCILIATION_COLUMN_RATIOS.map((ratio) => Math.round((ratio / total) * CONCILIATION_TABLE_WIDTH_DXA));
+  const roundingError = CONCILIATION_TABLE_WIDTH_DXA - widths.reduce((sum, value) => sum + value, 0);
   widths[widths.length - 1] += roundingError;
   return widths;
 }
@@ -233,7 +250,7 @@ function buildConciliationTable(dataRowsText: string[][]): Table {
   ];
   return new Table({
     rows,
-    width: { size: TABLE_WIDTH_DXA, type: WidthType.DXA },
+    width: { size: CONCILIATION_TABLE_WIDTH_DXA, type: WidthType.DXA },
     columnWidths: colWidths,
     layout: TableLayoutType.FIXED,
     borders: {
@@ -394,10 +411,26 @@ export function registerExportRoutes(app: Express): void {
 
     try {
       // 3. Création du document Word en mémoire
+      const isConciliation = containsConciliationTable(content);
       const doc = new Document({
         sections: [
           {
-            properties: {},
+            properties: isConciliation
+              ? {
+                  page: {
+                    // docx swaps width/height internally when orientation is LANDSCAPE,
+                    // so these must stay in portrait order (narrower, taller) — passing
+                    // them pre-swapped produces a page that LOOKS portrait despite the flag.
+                    size: { width: 12240, height: 15840, orientation: PageOrientation.LANDSCAPE },
+                    margin: {
+                      top: CONCILIATION_PAGE_MARGIN_DXA,
+                      bottom: CONCILIATION_PAGE_MARGIN_DXA,
+                      left: CONCILIATION_PAGE_MARGIN_DXA,
+                      right: CONCILIATION_PAGE_MARGIN_DXA,
+                    },
+                  },
+                }
+              : {},
             children: buildDocxContent(content),
           },
         ],
