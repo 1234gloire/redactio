@@ -2,6 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordStrength } from "@/components/PasswordStrength";
 import { trpc } from "@/lib/trpc";
 import {
   AlertCircle,
@@ -215,6 +216,11 @@ export default function Login() {
       }
 
       window.location.href = "/#contact";
+      return;
+    }
+
+    if (signupPassword.length < 8) {
+      setSignupError("Le mot de passe doit contenir au moins 8 caractères.");
       return;
     }
 
@@ -764,6 +770,7 @@ export default function Login() {
                           )}
                         </button>
                       </div>
+                      <PasswordStrength password={signupPassword} />
                     </div>
 
                     <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
