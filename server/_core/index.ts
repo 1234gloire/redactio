@@ -13,6 +13,7 @@ import { registerStreamGeneration } from "../streamGeneration";
 import { registerVoiceTranscription } from "../voiceTranscriptionRoute";
 import { registerMakeWebhookRoutes } from "../makeWebhooks";
 import { registerStripeWebhookRoutes } from "../stripeBilling";
+import { registerSupportTicketRoute } from "../supportTicket";
 import { createContext } from "./context";
 import { registerStorageProxy } from "./storageProxy";
 import { serveStatic, setupVite } from "./vite";
@@ -54,6 +55,7 @@ async function startServer() {
   registerExportRoutes(app);
   registerVoiceTranscription(app);
   registerMakeWebhookRoutes(app);
+  registerSupportTicketRoute(app);
   // tRPC API
   app.use(
     "/api/trpc",

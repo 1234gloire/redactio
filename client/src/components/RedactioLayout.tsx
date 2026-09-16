@@ -18,6 +18,7 @@ import {
 import { Link, useLocation } from "wouter";
 import { useEffect } from "react";
 import { trpc } from "../lib/trpc";
+import SupportTicketButton from "./SupportTicketButton";
 
 interface NavItem {
   label: string;
@@ -276,6 +277,8 @@ export default function RedactioLayout({ children }: RedactioLayoutProps) {
           {children}
         </main>
       </div>
+
+      <SupportTicketButton />
     </div>
   );
 }
@@ -337,10 +340,23 @@ const layoutStyles = `
 .rl-logout:disabled{opacity:.65;cursor:wait}
 .rl-logout svg{width:16px;height:16px;flex:none}
 .rl-main{flex:1;min-width:0;overflow:auto}
+.rl-help-fab{
+  position:fixed;right:22px;bottom:22px;z-index:40;
+  display:flex;align-items:center;gap:8px;
+  padding:12px 18px;border-radius:999px;border:none;
+  background:var(--navy);color:#fff;font-weight:700;font-size:13.5px;
+  font-family:inherit;cursor:pointer;
+  box-shadow:0 12px 26px -10px rgba(30,58,95,.55);
+  transition:.15s;
+}
+.rl-help-fab:hover{background:var(--teal-deep);transform:translateY(-1px)}
+.rl-help-fab svg{width:18px;height:18px;flex:none}
 @media(max-width:860px){
   .rl-side{display:none}
   .rl-app{display:block}
   .rl-main{min-height:calc(100vh - 45px)}
   .rl-warn{align-items:flex-start;padding:10px 16px;font-size:12.5px}
+  .rl-help-fab span{display:none}
+  .rl-help-fab{padding:14px;right:16px;bottom:16px}
 }
 `;
