@@ -23,18 +23,68 @@ const sections = [
   "Droit applicable et règlement des litiges",
 ];
 
+const CGU_EXTRA_STYLES = `
+  .legal-section {
+    scroll-margin-top: 24px;
+  }
+
+  .legal-section h3 {
+    margin: 20px 0 8px;
+    color: var(--legal-navy);
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  .legal-section ol {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+
+  .legal-section ol li {
+    margin-bottom: 6px;
+    color: var(--legal-text);
+    font-size: 15px;
+  }
+
+  .legal-section ol li:last-child {
+    margin-bottom: 0;
+  }
+
+  .legal-draft {
+    margin: 0 0 24px;
+    color: #a36200;
+    font-size: 14px;
+    font-style: italic;
+  }
+
+  .legal-section p.legal-draft {
+    margin: 10px 0 10px;
+    color: #a36200;
+    font-size: 14px;
+    font-style: italic;
+  }
+`;
+
+function articleTitle(number: number, title: string) {
+  return `Article ${number} — ${title}`;
+}
+
 function Section({
   id,
+  number,
   title,
   children,
 }: {
   id: string;
+  number?: number;
   title: string;
   children: React.ReactNode;
 }) {
   return (
     <section className="legal-section" id={id}>
-      <h2>{title}</h2>
+      <h2>{number ? articleTitle(number, title) : title}</h2>
       {children}
     </section>
   );
@@ -75,17 +125,21 @@ export default function CGU() {
   return (
     <div className="legal-page">
       <style>{LEGAL_STYLES}</style>
+      <style>{CGU_EXTRA_STYLES}</style>
 
       <header className="legal-header">
         <div className="legal-header-inner">
           <div className="legal-logo-mark" aria-hidden="true">
             M
           </div>
+
           <a className="legal-brand" href="/" aria-label="Retour à MEDACTIO">
             MEDACTIO
           </a>
         </div>
+
         <h1>Conditions générales d&apos;utilisation</h1>
+
         <div className="legal-subtitle">
           Site{" "}
           <a
@@ -100,25 +154,18 @@ export default function CGU() {
 
       <main className="legal-main">
         <div className="legal-card">
-          <p
-            role="note"
-            style={{
-              margin: "0 0 24px",
-              color: "#a36200",
-              fontSize: 14,
-              fontStyle: "italic",
-            }}
-          >
+          <p role="note" className="legal-draft">
             Document de travail — les clauses signalées en italique orangé sont
             à faire valider par un conseil juridique avant publication.
           </p>
+
           <nav className="legal-section" aria-label="Sommaire">
             <h2>Sommaire</h2>
-            <ol>
+            <ol style={{ listStyle: "none", paddingLeft: 0 }}>
               {sections.map((title, index) => (
                 <li key={title}>
                   <a href={`#section-${index + 1}`}>
-                    {index + 1}. {title}
+                    {articleTitle(index + 1, title)}
                   </a>
                 </li>
               ))}
@@ -134,20 +181,26 @@ export default function CGU() {
             </ol>
           </nav>
 
-          <Section id="section-1" title="1. Objet">
+          <Section id="section-1" number={1} title="Objet">
             <p>
               Les présentes Conditions Générales d&apos;Utilisation (ci-après «{" "}
               <strong>CGU</strong> ») régissent les conditions d&apos;accès et
               d&apos;utilisation de la plateforme « MEDACTIO », accessible à
               l&apos;adresse{" "}
-              <a href="https://www.medactio.fr">www.medactio.fr</a>, permettant
-              aux Professionnels de santé de bénéficier d&apos;une assistance
-              rédactionnelle par intelligence artificielle pour la production de
-              documents médicaux courants (courriers de sortie, correspondances
-              médicales, conciliations médicamenteuses, observations médicales,
-              comptes rendus, etc.), à tout Professionnel de santé ayant créé un
-              Compte Utilisateur dans les conditions définies ci-après (la «{" "}
-              <strong>Plateforme</strong> »).
+              <a
+                href="https://www.medactio.fr"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                www.medactio.fr
+              </a>
+              , permettant aux Professionnels de santé de bénéficier d&apos;une
+              assistance rédactionnelle par intelligence artificielle pour la
+              production de documents médicaux courants (courriers de sortie,
+              correspondances médicales, conciliations médicamenteuses,
+              observations médicales, comptes rendus, etc.), à tout
+              Professionnel de santé ayant créé un Compte Utilisateur dans les
+              conditions définies ci-après (la « <strong>Plateforme</strong> »).
             </p>
             <p>
               La Plateforme est éditée par la société{" "}
@@ -183,14 +236,14 @@ export default function CGU() {
               2 rue Kellermann à Roubaix (59100), certifiée hébergeur de données
               de santé (HDS).
             </p>
-            <p style={{ color: "#a36200", fontStyle: "italic" }}>
+            <p className="legal-draft">
               L&apos;infogérance des serveurs est assurée par OVH (cette
               rubrique sera complétée dès la confirmation du prestataire retenu,
               le cas échéant certifié HDS sur son périmètre).
             </p>
           </Section>
 
-          <Section id="section-2" title="2. Définitions">
+          <Section id="section-2" number={2} title="Définitions">
             <p>
               <strong>« Administrateur » :</strong> employé ou membre de
               l&apos;équipe d&apos;un Établissement Client, autorisé par
@@ -219,9 +272,9 @@ export default function CGU() {
             </p>
             <p>
               <strong>« Contenu Utilisateur » :</strong> ensemble des
-              informations, textes et éléments dictés ou saisis par
-              l&apos;Utilisateur dans la Plateforme en vue de la génération
-              d&apos;un Document Généré.
+              informations, textes et éléments saisis par l&apos;Utilisateur
+              dans la Plateforme en vue de la génération d&apos;un Document
+              Généré.
             </p>
             <p>
               <strong>« Contrat SaaS » :</strong> contrat conclu entre MEDACTIO
@@ -325,13 +378,17 @@ export default function CGU() {
             </p>
           </Section>
 
-          <Section id="section-3" title="3. Description du Service MEDACTIO">
+          <Section
+            id="section-3"
+            number={3}
+            title="Description du Service MEDACTIO"
+          >
             <p>
               MEDACTIO met à disposition des Professionnels de santé une
               solution d&apos;assistance rédactionnelle par intelligence
               artificielle leur permettant de produire plus rapidement des
               documents médicaux courants à partir des informations qu&apos;ils
-              saisissent ou dictent eux-mêmes.
+              saisissent eux-mêmes.
             </p>
             <p>
               <strong>
@@ -340,18 +397,17 @@ export default function CGU() {
               </strong>{" "}
               Le Service MEDACTIO est un outil d&apos;aide rédactionnelle. Il
               met en forme, reformule et structure les informations médicales
-              fournies, saisies ou dictées et validées par le Professionnel de
-              santé. Il ne constitue en aucun cas un outil d&apos;aide à la
-              décision médicale : il ne recommande, ne calcule et
-              n&apos;applique de façon autonome aucune valeur clinique
-              (posologie, molécule, durée de traitement, délai, modalité de
-              surveillance ou d&apos;immobilisation, etc.). Toute valeur
-              clinique figurant dans un Document Généré est celle que le
-              Professionnel de santé a lui-même saisie, dictée ou validée. Le
-              Professionnel de santé demeure seul responsable du contenu médical
-              de chaque Document Généré, de sa pertinence clinique et de sa
-              conformité aux données acquises de la science, comme s&apos;il
-              avait rédigé ce document sans assistance.
+              fournies, saisies et validées par le Professionnel de santé. Il ne
+              constitue en aucun cas un outil d&apos;aide à la décision médicale
+              : il ne recommande, ne calcule et n&apos;applique de façon
+              autonome aucune valeur clinique (posologie, molécule, durée de
+              traitement, délai, modalité de surveillance ou
+              d&apos;immobilisation, etc.). Toute valeur clinique figurant dans
+              un Document Généré est celle que le Professionnel de santé a
+              lui-même saisie ou validée. Le Professionnel de santé demeure seul
+              responsable du contenu médical de chaque Document Généré, de sa
+              pertinence clinique et de sa conformité aux données acquises de la
+              science, comme s&apos;il avait rédigé ce document sans assistance.
             </p>
             <p>
               Le Service permet notamment d&apos;utiliser les modules suivants,
@@ -369,10 +425,6 @@ export default function CGU() {
               <li>
                 Extraction et mise en forme de comptes rendus d&apos;examens ;
               </li>
-              <li>
-                Dictée vocale assistée par intelligence artificielle, avec
-                correction automatique des erreurs de reconnaissance vocale.
-              </li>
             </ul>
             <p>
               Chaque Document Généré demeure un projet de document, destiné à
@@ -382,7 +434,11 @@ export default function CGU() {
             </p>
           </Section>
 
-          <Section id="section-4" title="4. Documentation contractuelle">
+          <Section
+            id="section-4"
+            number={4}
+            title="Documentation contractuelle"
+          >
             <p>
               Les présentes CGU régissent Votre accès et Votre utilisation de la
               Plateforme et du Service MEDACTIO.
@@ -403,7 +459,7 @@ export default function CGU() {
             </p>
           </Section>
 
-          <Section id="section-5" title="5. Durée">
+          <Section id="section-5" number={5} title="Durée">
             <p>
               Les présentes CGU s&apos;appliquent dès leur acceptation lorsque
               Vous Vous connectez à la Plateforme et restent en vigueur pendant
@@ -412,7 +468,7 @@ export default function CGU() {
             </p>
           </Section>
 
-          <Section id="section-6" title="6. Accès à la Plateforme">
+          <Section id="section-6" number={6} title="Accès à la Plateforme">
             <p>
               L&apos;accès à la Plateforme et son utilisation sont exclusivement
               réservés aux Utilisateurs disposant d&apos;un Compte Utilisateur
@@ -422,9 +478,12 @@ export default function CGU() {
             <p>
               Vous ne pouvez Vous inscrire et bénéficier du Service en tant que
               Professionnel de santé qu&apos;à la condition d&apos;être inscrit
-              au fichier RPPS ou ADELI. Cette validité est contrôlée lors de
-              l&apos;inscription par comparaison avec les bases de données de
-              référence mises à disposition par les autorités compétentes.
+              au fichier RPPS ou ADELI, ou d&apos;être un praticien PADHUE en
+              cours de parcours de consolidation, un stagiaire associé ou un
+              interne en médecine. La validité du numéro RPPS ou ADELI est
+              contrôlée lors de l&apos;inscription par comparaison avec les
+              bases de données de référence mises à disposition par les
+              autorités compétentes.
             </p>
             <p>
               La fourniture, l&apos;installation et la maintenance des
@@ -531,7 +590,8 @@ export default function CGU() {
 
           <Section
             id="section-7"
-            title="7. Utilisation de la Plateforme et du Service MEDACTIO"
+            number={7}
+            title="Utilisation de la Plateforme et du Service MEDACTIO"
           >
             <h3>7.1. Droits d&apos;accès et d&apos;utilisation</h3>
             <p>
@@ -614,7 +674,11 @@ export default function CGU() {
             </p>
           </Section>
 
-          <Section id="section-8" title="8. Obligations de l'Utilisateur">
+          <Section
+            id="section-8"
+            number={8}
+            title="Obligations de l'Utilisateur"
+          >
             <h3>8.1. Obligations générales et positionnement rédactionnel</h3>
             <p>
               Les Utilisateurs s&apos;engagent à utiliser la Plateforme et le
@@ -629,13 +693,13 @@ export default function CGU() {
                 Obligation de relecture et de validation médicale.
               </strong>{" "}
               Chaque Document Généré est un projet produit à partir des seules
-              informations saisies, dictées ou validées par l&apos;Utilisateur.
-              Celui-ci s&apos;engage à relire, vérifier et valider
-              systématiquement tout Document Généré avant tout usage clinique,
-              administratif ou transmission à un tiers (patient, confrère,
-              établissement, organisme). Il ne doit jamais s&apos;appuyer
-              uniquement sur son contenu sans exercer son propre jugement
-              clinique et professionnel.
+              informations saisies ou validées par l&apos;Utilisateur. Celui-ci
+              s&apos;engage à relire, vérifier et valider systématiquement tout
+              Document Généré avant tout usage clinique, administratif ou
+              transmission à un tiers (patient, confrère, établissement,
+              organisme). Il ne doit jamais s&apos;appuyer uniquement sur son
+              contenu sans exercer son propre jugement clinique et
+              professionnel.
             </p>
             <p>
               Toute atteinte au droit à l&apos;image, au respect de la vie
@@ -677,9 +741,9 @@ export default function CGU() {
             </p>
             <h3>8.3. Contenu Utilisateur et Documents Générés</h3>
             <p>
-              Les Utilisateurs peuvent saisir ou dicter via la Plateforme les
-              informations pertinentes pour produire un Document Généré (le «
-              Contenu Utilisateur »).
+              Les Utilisateurs peuvent saisir via la Plateforme les informations
+              pertinentes pour produire un Document Généré (le « Contenu
+              Utilisateur »).
             </p>
             <p>
               La communication d&apos;informations ou fichiers sans lien avec la
@@ -692,20 +756,26 @@ export default function CGU() {
               l&apos;information du patient.
             </p>
             <p>
-              <strong>Filtre de pseudonymisation.</strong> À la sortie du
-              Service, un filtre masque automatiquement l&apos;identité directe
-              du patient (nom, prénom et variantes, date de naissance,
-              NIR/NIP/INS, numéro de dossier, coordonnées) ainsi que celle du
-              médecin et de l&apos;équipe soignante nommément désignés (nom,
-              prénom, RPPS) figurant dans le Document Généré. Les autres
-              informations médicales du corps du document (dates de prise en
-              charge, traitements et posologies, termes médicaux, pathologies,
-              diagnostics, noms de services ou d&apos;établissements) demeurent
-              en clair et relèvent de la responsabilité de l&apos;Utilisateur
-              quant à leur diffusion ultérieure. Ce filtre réduit le risque mais
-              ne dispense pas l&apos;Utilisateur de relire et vérifier le
-              Document avant toute transmission, conformément à l&apos;Article
-              8.1.
+              <strong>Filtre de pseudonymisation.</strong> Préalablement à tout
+              traitement et avant toute transmission au moteur
+              d&apos;intelligence artificielle, un filtre masque automatiquement
+              l&apos;identité directe du patient (nom, prénom et variantes, date
+              de naissance, NIR/NIP/INS, numéro de dossier, coordonnées) ainsi
+              que celle du médecin et de l&apos;équipe soignante nommément
+              désignés (nom, prénom, RPPS) figurant dans le Contenu Utilisateur.
+              Le moteur d&apos;intelligence artificielle ne reçoit ainsi que des
+              données pseudonymisées, à partir desquelles le Document Généré est
+              produit. L&apos;Utilisateur peut saisir ces données
+              d&apos;identification : elles sont pseudonymisées automatiquement.
+              Les autres informations médicales contenues dans le corps du
+              Contenu Utilisateur (dates de prise en charge, traitements et
+              posologies, termes médicaux, pathologies, diagnostics, noms de
+              services ou d&apos;établissements) demeurent en clair et relèvent
+              de la responsabilité de l&apos;Utilisateur quant à leur diffusion
+              ultérieure. Ce filtre constitue une mesure de réduction du risque
+              ; il ne dispense en aucun cas l&apos;Utilisateur de relire et de
+              vérifier le Document Généré avant toute transmission, conformément
+              à l&apos;Article 8.1.
             </p>
             <p>
               Le patient n&apos;accède ni à la Plateforme ni au Service. La
@@ -714,8 +784,8 @@ export default function CGU() {
               l&apos;Utilisateur. MEDACTIO n&apos;est pas responsable de la
               qualité ou du contenu médical des Contenus Utilisateur et
               Documents Générés : l&apos;Utilisateur est seul responsable des
-              informations et documents qu&apos;il saisit, dicte, dépose,
-              consulte et diffuse via la Plateforme.
+              informations et documents qu&apos;il saisit, dépose, consulte et
+              diffuse via la Plateforme.
             </p>
             <h3>8.4. Indemnisation</h3>
             <p>
@@ -742,7 +812,8 @@ export default function CGU() {
 
           <Section
             id="section-9"
-            title="9. Obligations de MEDACTIO et disponibilité du Service"
+            number={9}
+            title="Obligations de MEDACTIO et disponibilité du Service"
           >
             <p>
               MEDACTIO s&apos;engage à administrer la Plateforme et à faire ses
@@ -767,7 +838,7 @@ export default function CGU() {
             </p>
           </Section>
 
-          <Section id="section-10" title="10. Propriété intellectuelle">
+          <Section id="section-10" number={10} title="Propriété intellectuelle">
             <p>
               L&apos;accès ou l&apos;utilisation de la Plateforme et du Service
               ne reconnaît ni ne confère à l&apos;Utilisateur aucun droit de
@@ -786,9 +857,9 @@ export default function CGU() {
             <p>
               <strong>Propriété des Documents Générés.</strong> Par exception,
               l&apos;Utilisateur demeure seul propriétaire des Contenus
-              Utilisateur qu&apos;il saisit ou dicte ainsi que des Documents
-              Générés qui en résultent. MEDACTIO ne revendique aucun droit de
-              propriété intellectuelle sur ces Documents, sous réserve de
+              Utilisateur qu&apos;il saisit ainsi que des Documents Générés qui
+              en résultent. MEDACTIO ne revendique aucun droit de propriété
+              intellectuelle sur ces Documents, sous réserve de
               l&apos;utilisation de certaines données à des fins statistiques,
               d&apos;amélioration du Service et de conformité, selon
               l&apos;Article 15.
@@ -799,13 +870,17 @@ export default function CGU() {
             </p>
           </Section>
 
-          <Section id="section-11" title="11. Logiciels et Services de tiers">
+          <Section
+            id="section-11"
+            number={11}
+            title="Logiciels et Services de tiers"
+          >
             <p>
               La Plateforme et le Service font appel à des logiciels, produits
-              ou services tiers, notamment pour l&apos;hébergement, l&apos;envoi
-              de communications transactionnelles et la transcription assistée
-              de la dictée vocale (les « Logiciels et Services de tiers »). La
-              liste des principaux prestataires figure en Annexe 3.
+              ou services tiers, notamment pour l&apos;hébergement et
+              l&apos;envoi de communications transactionnelles (les « Logiciels
+              et Services de tiers »). La liste des principaux prestataires
+              figure en Annexe 3.
             </p>
             <p>
               MEDACTIO n&apos;est pas responsable et n&apos;offre aucune
@@ -815,7 +890,7 @@ export default function CGU() {
             </p>
           </Section>
 
-          <Section id="section-12" title="12. Garanties">
+          <Section id="section-12" number={12} title="Garanties">
             <p>
               <strong>
                 La Plateforme, le Service MEDACTIO et tous leurs éléments sont
@@ -846,7 +921,7 @@ export default function CGU() {
             </p>
           </Section>
 
-          <Section id="section-13" title="13. Responsabilité">
+          <Section id="section-13" number={13} title="Responsabilité">
             <p>
               MEDACTIO ne pourra être tenue responsable des dommages directs ou
               indirects causés à l&apos;Utilisateur, à un Professionnel de santé
@@ -904,7 +979,8 @@ export default function CGU() {
 
           <Section
             id="section-14"
-            title="14. Abonnement, semaine gratuite et modalités de paiement"
+            number={14}
+            title="Abonnement, semaine gratuite et modalités de paiement"
           >
             <h3>14.1. Utilisation Individuelle par abonnement</h3>
             <p>
@@ -966,7 +1042,8 @@ export default function CGU() {
 
           <Section
             id="section-15"
-            title="15. Données à caractère personnel et secret médical"
+            number={15}
+            title="Données à caractère personnel et secret médical"
           >
             <h3>15.1. Description des traitements</h3>
             <p>
@@ -978,9 +1055,9 @@ export default function CGU() {
               <li>
                 <strong>Utilisation Individuelle :</strong> le Professionnel
                 Individuel est Responsable du Traitement des données
-                personnelles de ses patients saisies ou dictées sur la
-                Plateforme ; MEDACTIO agit comme Sous-traitant. Les obligations
-                respectives sont définies au présent Article 15.
+                personnelles de ses patients saisies sur la Plateforme ;
+                MEDACTIO agit comme Sous-traitant. Les obligations respectives
+                sont définies au présent Article 15.
               </li>
               <li>
                 <strong>Utilisation dans un Établissement :</strong>{" "}
@@ -1004,14 +1081,17 @@ export default function CGU() {
             </p>
             <h3>15.2. Filtre de pseudonymisation</h3>
             <p>
-              Conformément à l&apos;Article 8.3, un filtre appliqué en sortie du
-              Service masque l&apos;identité directe du patient ainsi que celle
-              du Professionnel de santé et de l&apos;équipe soignante nommément
-              désignés. Les autres catégories de données médicales (dates,
-              traitements et posologies, termes médicaux, pathologies,
-              diagnostics, noms de services ou d&apos;établissements) ne sont
-              pas masquées et demeurent, le cas échéant, des Données de santé au
-              sens du RGPD traitées selon le présent Article 15.
+              Conformément à l&apos;Article 8.3, un filtre de pseudonymisation
+              appliqué préalablement à tout traitement et avant toute
+              transmission au moteur d&apos;intelligence artificielle masque
+              l&apos;identité directe du patient et celle du Professionnel de
+              santé et de l&apos;équipe soignante nommément désignés, y compris
+              lorsque ces données ont été saisies par l&apos;Utilisateur. Les
+              autres catégories de données médicales (dates, traitements et
+              posologies, termes médicaux, pathologies, diagnostics, noms de
+              services ou d&apos;établissements) ne sont pas masquées et
+              demeurent, le cas échéant, des Données de santé au sens du RGPD,
+              traitées dans les conditions du présent Article 15.
             </p>
             <h3>
               15.3. Obligations de MEDACTIO envers l&apos;Utilisateur Concerné
@@ -1119,7 +1199,8 @@ export default function CGU() {
 
           <Section
             id="section-16"
-            title="16. Suspension et résiliation d'accès à la Plateforme"
+            number={16}
+            title="Suspension et résiliation d'accès à la Plateforme"
           >
             <p>
               Sans préjudice de ses autres droits ou recours, MEDACTIO peut
@@ -1149,7 +1230,8 @@ export default function CGU() {
 
           <Section
             id="section-17"
-            title="17. Suppression d'un Compte Utilisateur et restitution des données"
+            number={17}
+            title="Suppression d'un Compte Utilisateur et restitution des données"
           >
             <p>
               L&apos;Utilisateur peut supprimer son Compte à tout moment en
@@ -1173,7 +1255,7 @@ export default function CGU() {
             </p>
           </Section>
 
-          <Section id="section-18" title="18. Divers">
+          <Section id="section-18" number={18} title="Divers">
             <h3>18.1. Renonciation</h3>
             <p>
               Le fait pour une Partie de ne pas se prévaloir à un moment donné
@@ -1192,7 +1274,8 @@ export default function CGU() {
 
           <Section
             id="section-19"
-            title="19. Droit applicable et règlement des litiges"
+            number={19}
+            title="Droit applicable et règlement des litiges"
           >
             <p>Les présentes CGU sont soumises au droit français.</p>
             <p>
@@ -1209,27 +1292,212 @@ export default function CGU() {
             id="annexe-1"
             title="Annexe 1 — Détails sur le traitement des données à caractère personnel"
           >
-            <p className="legal-tbd">
-              Contenu de l&apos;annexe non fourni dans le document transmis — à
-              compléter avant publication.
+            <h3>
+              I. Détail sur le traitement mis en œuvre par MEDACTIO pour le
+              compte de l&apos;Utilisateur Concerné
+            </h3>
+            <h4>Finalités et objet du traitement</h4>
+            <p>
+              Les Données à Caractère Personnel sont traitées par MEDACTIO, en
+              qualité de Sous-traitant, afin de permettre à l&apos;Utilisateur
+              Concerné de mettre en œuvre, au moyen du Service MEDACTIO : la
+              génération de Documents Générés à partir du Contenu Utilisateur ;
+              l&apos;application du filtre de pseudonymisation décrit à
+              l&apos;Article 15.2, préalablement à tout traitement et avant
+              toute transmission au moteur d&apos;intelligence artificielle ;
+              l&apos;hébergement sécurisé des Contenus Utilisateur et Documents
+              Générés le temps nécessaire à leur consultation et à leur
+              téléchargement par l&apos;Utilisateur Concerné.
             </p>
+            <h4>Nature du traitement</h4>
+            <p>
+              Les Données à Caractère Personnel sont soumises aux activités de
+              traitement suivantes : collecte, organisation, structuration,
+              conservation, extraction, consultation, communication par
+              transmission, hébergement, saisie, enregistrement,
+              pseudonymisation, modification et effacement, ainsi que
+              maintenance et support informatique de la Plateforme.
+            </p>
+            <h4>Durée du traitement</h4>
+            <p>
+              La Plateforme est une solution d&apos;assistance rédactionnelle et
+              n&apos;a pas vocation à se substituer aux dossiers médicaux des
+              patients constitués et tenus par les Professionnels de santé. Les
+              Utilisateurs doivent télécharger chaque Document Généré à
+              l&apos;issue de sa production et l&apos;intégrer au dossier
+              médical du patient, afin que les informations qui y sont intégrées
+              soient conservées pendant la durée nécessaire au suivi du patient
+              et aux responsabilités médicales associées.
+            </p>
+            <p className="legal-draft">
+              Durée de conservation des Contenus Utilisateur et Documents
+              Générés sur la Plateforme elle-même à préciser par l&apos;équipe
+              produit (par exemple : conservation limitée à une durée courte
+              après téléchargement, ou durée paramétrable par
+              l&apos;Utilisateur).
+            </p>
+            <h4>Catégories de Personnes Concernées</h4>
+            <ul>
+              <li>l&apos;Utilisateur Concerné (Professionnel de santé) ;</li>
+              <li>
+                les patients dont les informations figurent dans le Contenu
+                Utilisateur et/ou le Document Généré.
+              </li>
+            </ul>
+            <h4>Catégories de Données à Caractère Personnel concernées</h4>
+            <ul>
+              <li>
+                <strong>Concernant l&apos;Utilisateur Concerné :</strong>{" "}
+                données d&apos;identification (nom, prénom), numéro RPPS ou
+                ADELI, spécialité, numéro de téléphone et adresse email
+                professionnels, lieu ou structure d&apos;exercice, données de
+                connexion et de facturation.
+              </li>
+              <li>
+                <strong>Concernant les patients :</strong> selon les données
+                saisies par l&apos;Utilisateur Concerné, données
+                d&apos;identification (nom, prénom, date de naissance),
+                éventuellement numéro de sécurité sociale ou identifiant patient
+                (NDA/IPP/IEP), pathologies, antécédents médicaux, traitements et
+                posologies, dates de prise en charge, comptes rendus
+                d&apos;examens et tout élément communiqué aux fins de production
+                d&apos;un Document Généré. Les données d&apos;identité directe
+                du patient (nom, prénom, date de naissance, identifiants) sont
+                masquées, préalablement à tout traitement et avant toute
+                transmission au moteur d&apos;intelligence artificielle, par le
+                filtre de pseudonymisation décrit à l&apos;Article 15.2.
+              </li>
+            </ul>
+            <h3>
+              II. Liste des sous-traitants ultérieurs autorisés et transferts
+              hors Union européenne autorisés
+            </h3>
+            <p>Voir Annexe 3 des présentes.</p>
           </Section>
+
           <Section
             id="annexe-2"
             title="Annexe 2 — Mesures de sécurité mises en œuvre"
           >
-            <p className="legal-tbd">
-              Contenu de l&apos;annexe non fourni dans le document transmis — à
-              compléter avant publication.
+            <p className="legal-draft">
+              Note. Les mesures listées ci-après reflètent l&apos;état des choix
+              d&apos;architecture connus à ce jour. Chaque rubrique doit être
+              confirmée ou complétée par l&apos;équipe technique de MEDACTIO
+              avant publication de cette annexe, afin de n&apos;y faire figurer
+              que des mesures effectivement mises en œuvre et vérifiables.
+            </p>
+            <h3>Authentification</h3>
+            <p>
+              L&apos;accès à la Plateforme est réservé aux praticiens de santé
+              disposant d&apos;un numéro RPPS ou ADELI valide, vérifié lors de
+              l&apos;inscription, aux praticiens PADHUE en cours de parcours de
+              consolidation, aux stagiaires associés et aux internes en
+              médecine.
+            </p>
+            <h3>Certification HDS</h3>
+            <p>
+              Les données de santé sont hébergées sur l&apos;infrastructure
+              d&apos;OVH, hébergeur certifié « Hébergeur de Données de Santé »
+              (HDS) au sens de l&apos;article L.1111-8 du Code de la santé
+              publique.
+            </p>
+            <h3>Localisation des serveurs</h3>
+            <p className="legal-draft">
+              À confirmer : datacentres OVH utilisés (par exemple Gravelines,
+              Strasbourg ou Roubaix), tous situés en France ou dans l&apos;Union
+              européenne.
+            </p>
+            <h3>Chiffrement</h3>
+            <p className="legal-draft">
+              À confirmer avec l&apos;équipe technique : chiffrement des données
+              au repos et en transit (HTTPS/TLS), gestion des clés et
+              chiffrement des sauvegardes.
+            </p>
+            <h3>Pseudonymisation des Données de santé</h3>
+            <p>
+              Un filtre de pseudonymisation (EXG-PSE-01) masque, préalablement à
+              tout traitement et avant toute transmission au moteur
+              d&apos;intelligence artificielle, l&apos;identité directe du
+              patient et celle du Professionnel de santé et de l&apos;équipe
+              soignante nommément désignés, conformément à l&apos;Article 15.2
+              des présentes CGU.
+            </p>
+            <h3>Secret médical et système de permissions</h3>
+            <p>
+              Un Utilisateur non connecté ou non validé n&apos;a accès à aucune
+              donnée. Les Utilisateurs validés n&apos;ont accès qu&apos;à leurs
+              propres Contenus Utilisateur et Documents Générés.
+            </p>
+            <h3>Traçabilité des actions et sauvegardes</h3>
+            <p className="legal-draft">
+              À confirmer avec l&apos;équipe technique : politique de
+              journalisation des accès, durée de conservation des journaux,
+              politique et fréquence des sauvegardes, et réplication
+              géographique.
+            </p>
+            <h3>Cookies</h3>
+            <p className="legal-draft">
+              À confirmer : politique de dépôt de cookies sur la Plateforme et
+              distinction entre cookies strictement nécessaires et cookies de
+              mesure d&apos;audience.
             </p>
           </Section>
+
           <Section
             id="annexe-3"
             title="Annexe 3 — Liste des sous-traitants ultérieurs autorisés"
           >
-            <p className="legal-tbd">
-              Contenu de l&apos;annexe non fourni dans le document transmis — à
-              compléter avant publication.
+            <p>
+              La liste ci-après recense les principaux prestataires techniques
+              intervenant dans la fourniture du Service MEDACTIO, à la date des
+              présentes. Elle distingue les prestataires intervenant sur le cœur
+              du produit (susceptibles de traiter des Données de santé) de ceux
+              intervenant sur le seul tunnel commercial (inscription, paiement,
+              relation client), qui ne traitent pas de Données de santé patient.
+            </p>
+            <h3>
+              Cœur du produit — susceptible de traiter des Données de santé
+            </h3>
+            <ul>
+              <li>
+                <strong>OVH</strong> — Hébergement de la Plateforme et des bases
+                de données. OVH bénéficie de la certification Hébergeur de
+                Données de Santé (HDS). Localisation : Union européenne
+                (France).
+              </li>
+              <li>
+                <strong>Prestataire d&apos;infogérance</strong> —{" "}
+                <span className="legal-draft">à préciser, le cas échéant</span>.
+                Localisation : <span className="legal-draft">à préciser</span>.
+              </li>
+            </ul>
+            <h3>Tunnel commercial — pas de traitement de Données de santé</h3>
+            <ul>
+              <li>
+                <strong>Mailjet</strong> — Envoi d&apos;emails transactionnels
+                (confirmation d&apos;inscription, factures, relances). Pas de
+                traitement de Données de santé. Localisation : Union européenne.
+              </li>
+              <li>
+                <strong>Make.com / Airtable</strong> — Automatisation et gestion
+                de la relation commerciale (CRM inscriptions, demandes de
+                démonstration). Pas de traitement de Données de santé.
+                Localisation : Union européenne.
+              </li>
+              <li>
+                <strong>Stripe</strong> — Traitement des paiements liés à
+                l&apos;abonnement. Pas de traitement de Données de santé.
+                Localisation :{" "}
+                <span className="legal-draft">hors Union européenne</span>.
+              </li>
+            </ul>
+            <p className="legal-draft">
+              Cette annexe doit être revue et complétée par Roland ou
+              l&apos;équipe technique avant publication : vérifier
+              l&apos;exhaustivité de la liste, la localisation exacte de chaque
+              prestataire et le mécanisme de transfert applicable (clauses
+              contractuelles types, décision d&apos;adéquation, etc.) pour tout
+              prestataire situé hors Union européenne.
             </p>
           </Section>
         </div>

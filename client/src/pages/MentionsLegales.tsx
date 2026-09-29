@@ -5,8 +5,9 @@ export default function MentionsLegales() {
     const previousTitle = document.title;
     document.title = "Mentions légales — MEDACTIO";
 
-    let metaDescription =
-      document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    let metaDescription = document.querySelector<HTMLMetaElement>(
+      'meta[name="description"]'
+    );
 
     const metaAlreadyExisted = Boolean(metaDescription);
     const previousDescription = metaDescription?.content ?? "";
@@ -82,8 +83,8 @@ export default function MentionsLegales() {
                 www.medactio.fr
               </a>{" "}
               ainsi que l&apos;application MEDACTIO qui lui est associée sont
-              édités par la société <strong>Grays &amp; Co</strong> (ci-après
-              « l&apos;Éditeur »).
+              édités par la société <strong>Grays &amp; Co</strong> (ci-après «
+              l&apos;Éditeur »).
             </p>
 
             <ul>
@@ -92,35 +93,21 @@ export default function MentionsLegales() {
                 simplifiée (SAS) au capital de <strong>1 000 €</strong>
               </li>
 
-              <li>
-                Immatriculation RCS :{" "}
-                <span className="legal-tbd">
-                  à préciser ultérieurement
-                </span>
-              </li>
+              <li>Immatriculation RCS : 109 564 427 R.C.S. Lille Métropole</li>
 
-              <li>
-                Siège social :{" "}
-                <span className="legal-tbd">
-                  adresse à préciser ultérieurement
-                </span>
-              </li>
+              <li>Siège social : 229 rue Solférino, 59000 Lille</li>
 
               <li>
                 Adresse e-mail :{" "}
-                <a href="mailto:contact@medactio.fr">
-                  contact@medactio.fr
-                </a>
+                <a href="mailto:contact@medactio.fr">contact@medactio.fr</a>
               </li>
+
+              <li>Numéro de TVA intracommunautaire : FR63109564427</li>
 
               <li>
-                Numéro de TVA intracommunautaire :{" "}
-                <span className="legal-tbd">
-                  à préciser ultérieurement
-                </span>
+                Directeur de la publication : Monsieur Christel Roland MAFOUTA,
+                Président de Grays &amp; Co
               </li>
-
-              <li>Directeur de la publication : Monsieur Roland MAFOUTA</li>
             </ul>
           </section>
 
@@ -152,19 +139,15 @@ export default function MentionsLegales() {
 
             <p className="legal-muted">
               Conformément à l&apos;article L.1111-8 du Code de la santé
-              publique, les données de santé à caractère personnel traitées
-              dans le cadre de l&apos;utilisation de l&apos;application
-              MEDACTIO sont hébergées auprès d&apos;OVH, hébergeur certifié
-              HDS.
-              {" "}
-              MEDACTIO n&apos;a pas vocation à héberger de données de santé à
-              caractère directement identifiant. L&apos;Utilisateur s&apos;interdit
-              de saisir dans le Service tout identifiant direct du Patient
-              (nom, prénom, date de naissance, numéro de sécurité sociale ou
-              tout autre élément permettant une identification directe) et de
-              déposer tout Document contenant de telles données non
-              pseudonymisées. Dans l&apos;hypothèse où de telles données seraient
-              néanmoins saisies ou déposées, elles font l&apos;objet,
+              publique, les données de santé à caractère personnel traitées dans
+              le cadre de l&apos;utilisation de l&apos;application MEDACTIO sont
+              hébergées auprès d&apos;OVH, hébergeur certifié HDS. MEDACTIO
+              n&apos;a pas vocation à héberger de données de santé à caractère
+              directement identifiant. L&apos;Utilisateur peut saisir dans le
+              Service des identifiants directs du Patient (nom, prénom, date de
+              naissance, numéro de sécurité sociale ou tout autre élément
+              permettant une identification directe) ou déposer des Documents
+              contenant de telles données. Ces données font l&apos;objet,
               préalablement à tout traitement, d&apos;une pseudonymisation
               intégrale au moyen du filtre technique dédié de MEDACTIO, avant
               toute transmission au moteur d&apos;intelligence artificielle.
@@ -194,19 +177,15 @@ export default function MentionsLegales() {
               site ou l&apos;application MEDACTIO est décrit dans notre
               politique de confidentialité, disponible sur simple demande à
               l&apos;adresse{" "}
-              <a href="mailto:contact@medactio.fr">
-                contact@medactio.fr
-              </a>
-              .
+              <a href="mailto:contact@medactio.fr">contact@medactio.fr</a>.
             </p>
 
             <p>
               Conformément au Règlement Général sur la Protection des Données
               (RGPD) et à la loi « Informatique et Libertés », vous disposez
-              d&apos;un droit d&apos;accès, de rectification,
-              d&apos;effacement, de limitation, d&apos;opposition et de
-              portabilité de vos données, que vous pouvez exercer en écrivant à
-              l&apos;adresse ci-dessus.
+              d&apos;un droit d&apos;accès, de rectification, d&apos;effacement,
+              de limitation, d&apos;opposition et de portabilité de vos données,
+              que vous pouvez exercer en écrivant à l&apos;adresse ci-dessus.
             </p>
           </section>
 
@@ -238,15 +217,13 @@ export default function MentionsLegales() {
             <p>
               Pour toute question relative aux présentes mentions légales, vous
               pouvez nous contacter à l&apos;adresse :{" "}
-              <a href="mailto:contact@medactio.fr">
-                contact@medactio.fr
-              </a>
+              <a href="mailto:contact@medactio.fr">contact@medactio.fr</a>
             </p>
           </section>
         </div>
 
         <div className="legal-updated">
-          Dernière mise à jour : 5 août 2026
+          Dernière mise à jour : 29 septembre 2026
         </div>
       </main>
 
