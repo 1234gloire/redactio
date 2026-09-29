@@ -24,6 +24,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Tutoriels from "./pages/Tutoriels";
 import Utilisateurs from "./pages/Utilisateurs";
 import CGV from "./pages/CGV";
+import CGU from "./pages/CGU";
 
 function Router() {
   return (
@@ -49,6 +50,10 @@ function Router() {
       <Route
         path="/cgv"
         component={CGV}
+      />
+      <Route
+        path="/cgu"
+        component={CGU}
       />
 
       <Route path="/paiement" component={Paiement} />

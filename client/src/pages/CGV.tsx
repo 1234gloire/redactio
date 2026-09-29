@@ -342,7 +342,7 @@ export default function CGV() {
   );
 }
 
-const LEGAL_STYLES = `
+export const LEGAL_STYLES = `
   .legal-page {
     --legal-navy: #101b34;
     --legal-navy-2: #16233f;

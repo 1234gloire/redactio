@@ -772,7 +772,7 @@ footer{background:var(--sand);padding:60px 0 0}
   </div>
   <div class="footer-col">
     <h5>Plateforme</h5>
-    <a href="/conformite.html">CGU</a>
+    <a href="/cgu">CGU</a>
     <a href="/cgv">CGV</a>
     <a href="/mentions-legales">Mentions légales</a>
   </div>
