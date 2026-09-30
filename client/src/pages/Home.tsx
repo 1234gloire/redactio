@@ -11,7 +11,7 @@ export default function Home() {
       meta.name = "description";
       document.head.appendChild(meta);
     }
-    meta.content = "Rédaction hospitalière assistée par IA. Courrier de sortie, conciliation médicamenteuse, correspondance, observation médicale. Collez ou dictez vos notes : documents structurés, pseudonymisés, conformes. Pour les praticiens et les établissements.";
+    meta.content = "Rédaction hospitalière assistée par IA. Courrier de sortie, conciliation médicamenteuse, correspondance, observation médicale. Saisissez ou collez vos notes : documents structurés, pseudonymisés, conformes. Pour les praticiens et les établissements.";
 
     const root = rootRef.current;
     if (!root) return;
@@ -38,7 +38,7 @@ export default function Home() {
     const copy = {
       prat: {
         title: "Vos écrits hospitaliers, <em>structurés</em> par l'IA. La plume reste la vôtre.",
-        lead: "Courrier de sortie, conciliation médicamenteuse, correspondance, observation : collez ou dictez vos notes, MEDACTIO les met en forme — pseudonymisées, conformes, prêtes à relire et signer.",
+        lead: "Courrier de sortie, conciliation médicamenteuse, correspondance, observation : saisissez ou collez vos notes, MEDACTIO les met en forme — pseudonymisées, conformes, prêtes à relire et signer.",
         actions: '<a class="btn teal" href="#offres">Commencer une rédaction <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a><a class="btn outline" href="#outils">Voir les outils</a>',
         trust: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Pseudonymisation automatique<span class="sep"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Vous validez chaque document',
       },
@@ -219,7 +219,6 @@ nav.mainnav a:hover{color:var(--ink)}
 .demo-title{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:1.5px;color:#9fb3bf;text-transform:uppercase}
 .demo-tabs{display:flex;gap:6px}
 .demo-tabs span{font-size:10.5px;color:#9fb3bf;background:rgba(255,255,255,.06);padding:5px 10px;border-radius:8px;display:flex;align-items:center;gap:5px}
-.demo-tabs span.mic{color:var(--teal-light)}
 .demo-body{display:grid;grid-template-columns:1fr 1fr}
 .demo-col{padding:20px}
 .demo-col.notes{background:#0e2033;border-right:1px solid rgba(255,255,255,.06)}
@@ -262,25 +261,9 @@ nav.mainnav a:hover{color:var(--ink)}
 .step-col hr{border:0;border-top:2px solid var(--gold,#c58a17);width:36px;margin:0 0 18px;opacity:.55}
 .step-tag{display:inline-flex;font-family:"JetBrains Mono",monospace;font-size:11px;background:#fff;border:1px solid var(--line);padding:6px 12px;border-radius:8px;color:var(--ink-soft)}
 
-/* ---------- DICTEE ---------- */
-.dictee-section{background:var(--cream)}
-.dictee-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
-.dictee-grid h2{font-size:30px;max-width:14ch;margin-bottom:18px}
-.dictee-grid p.lede{max-width:none;margin-bottom:20px}
 .checklist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
 .checklist li{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--ink)}
 .checklist li svg{width:16px;height:16px;color:var(--teal-deep);flex:none;margin-top:2px}
-.mic-card{background:var(--ink);border-radius:18px;padding:26px;color:#fff}
-.mic-row{display:flex;align-items:center;gap:14px;margin-bottom:18px}
-.mic-btn{width:44px;height:44px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;flex:none}
-.mic-btn svg{width:20px;height:20px;color:#fff}
-.mic-wave{display:flex;gap:3px;align-items:center}
-.mic-wave span{width:3px;background:var(--teal-light);border-radius:2px}
-.mic-meta{margin-left:auto;text-align:right;font-size:11px;color:#9fb3bf}
-.mic-meta b{display:block;color:#fff;font-family:"JetBrains Mono",monospace;font-size:12px}
-.mic-flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.mic-flow span{font-size:11px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);padding:6px 11px;border-radius:8px;color:#dbe6ec}
-.mic-flow svg{width:13px;height:13px;color:#7690a1}
 
 /* ---------- DEUX USAGES ---------- */
 .usages-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:50px}
@@ -382,7 +365,7 @@ footer{background:var(--sand);padding:60px 0 0}
 :focus-visible{outline:2px solid var(--teal);outline-offset:3px;border-radius:4px}
 
 @media(max-width:980px){
-  .hero-grid,.dictee-grid,.tools-grid,.usages-grid,.offres-grid,.contact-grid,.footer-grid,.etab-grid{grid-template-columns:1fr}
+  .hero-grid,.tools-grid,.usages-grid,.offres-grid,.contact-grid,.footer-grid,.etab-grid{grid-template-columns:1fr}
   .steps-grid,.cards3,.secu-grid,.strip .wrap{grid-template-columns:1fr 1fr}
   nav.mainnav{display:none}
   .menu-btn{display:block}
@@ -393,6 +376,26 @@ footer{background:var(--sand);padding:60px 0 0}
   .wrap{padding:0 20px}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+/* ---------- Documents externes + section DPI ---------- */
+.tool-card ul.ext-docs{list-style:none;padding:0;margin:12px 0 0;display:flex;flex-wrap:wrap;gap:6px}
+.tool-card ul.ext-docs li{font-size:12px;font-weight:600;color:#4b3fa6;background:#efecfb;border:1px solid #dcd6f6;border-radius:999px;padding:4px 10px}
+.tool-card p.ext-note{margin-top:10px;font-size:13px;color:var(--ink);font-weight:600}
+.dpi-section{background:var(--mint)}
+.dpi-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+.dpi-grid h2{font-size:32px;max-width:17ch;margin-bottom:16px}
+.dpi-points{list-style:none;padding:0;margin:26px 0 0;display:grid;gap:14px}
+.dpi-points li{display:flex;gap:12px;font-size:14.5px;line-height:1.5;color:var(--ink-soft)}
+.dpi-points li b{color:var(--ink)}
+.dpi-points svg{width:18px;height:18px;flex:none;color:var(--teal);margin-top:2px}
+.dpi-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:28px;box-shadow:0 20px 40px -24px rgba(11,27,41,.25)}
+.dpi-card .lbl{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-faint);margin-bottom:14px}
+.dpi-logos{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dpi-logos span{border:1px solid var(--line);background:var(--field);border-radius:12px;padding:16px 12px;text-align:center;font-weight:700;font-size:15px;color:var(--navy)}
+.dpi-flow{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:20px;font-size:12px;font-weight:600;color:var(--ink-soft)}
+.dpi-flow span{background:var(--mint);border:1px solid #cfe6e1;border-radius:8px;padding:6px 11px;color:var(--teal-deep)}
+.dpi-foot{margin-top:16px;font-size:12px;color:var(--ink-faint);text-align:center}
+@media (max-width:900px){.dpi-grid{grid-template-columns:1fr;gap:34px}}
+
 </style>
 
 <!-- ================= BANDEAU CONFORMITÉ ================= -->
@@ -437,7 +440,7 @@ footer{background:var(--sand);padding:60px 0 0}
         <button role="tab" data-aud="etab" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21v-5h6v5"/></svg>Établissement</button>
       </div>
       <h1 id="heroTitle">Vos écrits hospitaliers, <em>structurés</em> par l'IA. La plume reste la vôtre.</h1>
-      <p class="claim" id="heroLead">Courrier de sortie, conciliation médicamenteuse, correspondance, observation : collez ou dictez vos notes, MEDACTIO les met en forme — pseudonymisées, conformes, prêtes à relire et signer.</p>
+      <p class="claim" id="heroLead">Courrier de sortie, conciliation médicamenteuse, correspondance, observation : saisissez ou collez vos notes, MEDACTIO les met en forme — pseudonymisées, conformes, prêtes à relire et signer.</p>
       <div class="hero-ctas" id="heroActions">
         <a class="btn teal" href="#offres">Commencer une rédaction <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
         <a class="btn outline" href="#outils">Voir les outils</a>
@@ -461,11 +464,11 @@ footer{background:var(--sand);padding:60px 0 0}
       <div class="demo-topbar">
         <div class="demo-dots"><span></span><span></span><span></span></div>
         <div class="demo-title">Courrier-de-sortie</div>
-        <div class="demo-tabs"><span>⌨ clavier</span><span class="mic">🎤 dictée</span></div>
+        <div class="demo-tabs"><span>⌨ clavier</span></div>
       </div>
       <div class="demo-body">
         <div class="demo-col notes">
-          <div class="demo-label">Vos notes · collées ou dictées</div>
+          <div class="demo-label">Vos notes · saisies ou collées</div>
           <div class="demo-notes-text"><b>H 72a</b>, hosp 12/03 dlr thoracique. <b>SCA NST+</b>. corona → <b>stent IVA</b>. sortie J4. ttt: aspirine 75, <b>ticagrelor</b> 90×2, atorva 80, bisop 2.5, ramipril 5. FEVG 48%. revoir cardio 1 mois + ETT. arrêt tabac.</div>
         </div>
         <div class="demo-col result">
@@ -495,13 +498,13 @@ footer{background:var(--sand);padding:60px 0 0}
   <div class="wrap center">
     <div class="eyebrow" style="justify-content:center">Les outils</div>
     <h2 style="font-size:32px">Toute votre rédaction hospitalière, assistée.</h2>
-    <p class="lede">Quatre documents, une seule logique : collez ou dictez, MEDACTIO structure, vous validez.</p>
+    <p class="lede">Quatre documents, une seule logique : saisissez ou collez, MEDACTIO structure, vous validez.</p>
   </div>
   <div class="wrap">
     <div class="tools-grid">
       <div class="tool-card reveal">
         <div class="ic" style="background:var(--teal)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
-        <div><h3>Courrier de sortie</h3><p>Lettre de liaison structurée (motif, synthèse, traitement de sortie, suivi), conforme au décret 2016-995.</p><span class="tag">Chirurgie · médecine polyvalente</span></div>
+        <div><h3>Courrier de sortie</h3><p>Lettre de liaison structurée (motif, synthèse, traitement de sortie, suivi), conforme au décret 2016-995.</p><span class="tag">Chirurgie · Médecine · SMR</span></div>
       </div>
       <div class="tool-card reveal">
         <div class="ic" style="background:var(--navy)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v18M15 3v18M4 8h4M16 8h4M4 16h4M16 16h4"/></svg></div>
@@ -513,10 +516,32 @@ footer{background:var(--sand);padding:60px 0 0}
       </div>
       <div class="tool-card reveal">
         <div class="ic" style="background:#6d5bd0"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6M12 14a4 4 0 1 0-4-4M12 14a4 4 0 1 1 4-4"/></svg></div>
-        <div><h3>Observation médicale</h3><p>Mise en forme d'une observation libre, dictée ou saisie, prête à être insérée au dossier.</p><span class="tag">Suivi quotidien</span></div>
+        <div><h3>Observation médicale</h3><p>Mise en forme d'une observation libre, saisie ou collée, prête à être insérée au dossier.</p><ul class="ext-docs"><li>Bilans biologiques</li><li>Comptes rendus d'examens paracliniques</li><li>Courriers</li></ul><p class="ext-note">Vos documents externes sont intégrés au dossier du patient, pseudonymisés : aucun élément d'identité n'est repris.</p><span class="tag">Suivi quotidien · Documents externes intégrés</span></div>
       </div>
     </div>
   </div>
+</section>
+
+<!-- ================= DPI ================= -->
+<section class="section dpi-section" id="dpi">
+<div class="wrap dpi-grid">
+<div>
+<div class="eyebrow">Compatible avec votre DPI</div>
+<h2>MEDACTIO s'utilise à côté de votre dossier patient informatisé.</h2>
+<p class="lede">Hôpital Manager, DxCare, Orbis, Osiris… Gardez votre DPI habituel : MEDACTIO s'ouvre à côté, dans le navigateur, et s'insère naturellement dans votre flux de travail.</p>
+<ul class="dpi-points">
+<li><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg><span><b>Aucune installation, aucun connecteur à développer.</b> Pas de projet informatique ni de paramétrage côté DSI.</span></li>
+<li><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg><span><b>Copier, structurer, recopier.</b> Vos notes et documents sortent du DPI, le document validé y retourne en un copier-coller.</span></li>
+<li><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg><span><b>Aucune donnée conservée.</b> Le DPI reste le seul dossier de référence du patient.</span></li>
+</ul>
+</div>
+<div class="dpi-card reveal">
+<div class="lbl">Fonctionne à côté de</div>
+<div class="dpi-logos"><span>Hôpital Manager</span><span>DxCare</span><span>Orbis</span><span>Osiris</span></div>
+<div class="dpi-flow"><span>Votre DPI</span>→<span>MEDACTIO</span>→<span>Votre DPI</span></div>
+<div class="dpi-foot">et tout autre logiciel de dossier patient</div>
+</div>
+</div>
 </section>
 
 <!-- ================= FONCTIONNEMENT ================= -->
@@ -526,45 +551,13 @@ footer{background:var(--sand);padding:60px 0 0}
     <h2 style="font-size:32px;max-width:16ch">De vos notes au document signé, en trois temps.</h2>
     <p class="lede">Une séquence courte, pensée pour s'insérer dans le flux d'un service — pas pour le ralentir.</p>
     <div class="steps-grid">
-      <div class="step-col reveal"><div class="step-num">TEMPS 01</div><h3>Vous saisissez</h3><hr><p>Collez vos notes ou dictez-les, en forme libre. Sans identifiant direct du patient.</p><span class="step-tag">clavier · dictée</span></div>
+      <div class="step-col reveal"><div class="step-num">TEMPS 01</div><h3>Vous saisissez</h3><hr><p>Saisissez ou collez vos notes, en forme libre. Sans identifiant direct du patient.</p><span class="step-tag">clavier · copier-coller</span></div>
       <div class="step-col reveal"><div class="step-num">TEMPS 02</div><h3>MEDACTIO structure</h3><hr><p>Le contenu est pseudonymisé puis mis en sections, dans le format du document choisi.</p><span class="step-tag">Motif · Synthèse · Traitement…</span></div>
       <div class="step-col reveal"><div class="step-num">TEMPS 03</div><h3>Vous relisez &amp; validez</h3><hr><p>Vous corrigez, complétez, signez. Le document final est le vôtre.</p><span class="step-tag">Exporter · Copier · Signer</span></div>
     </div>
   </div>
 </section>
 
-<!-- ================= DICTEE VOCALE ================= -->
-<section class="section dictee-section" id="dictee">
-  <div class="wrap dictee-grid">
-    <div>
-      <h2>La dictée vocale, dans les quatre outils.</h2>
-      <p class="lede">Toute la rédaction fonctionne au clavier. Mais si vous préférez, énoncez simplement vos notes : MEDACTIO les transcrit, les pseudonymise et les structure — dans les quatre outils.</p>
-      <ul class="checklist">
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Disponible sur les 4 documents</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Pseudonymisation conservée sur la voix</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Un brouillon, jamais une décision</li>
-      </ul>
-    </div>
-    <div class="mic-card">
-      <div class="mic-row">
-        <div class="mic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4"/></svg></div>
-        <div class="mic-wave">
-          <span style="height:10px"></span><span style="height:18px"></span><span style="height:9px"></span><span style="height:22px"></span><span style="height:13px"></span><span style="height:19px"></span><span style="height:8px"></span>
-        </div>
-        <div class="mic-meta"><b>06:14</b>à l'écoute · dictée vocale</div>
-      </div>
-      <div class="mic-flow">
-        <span>voix</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        <span>pseudonymisation</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        <span>structuration</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        <span>validation</span>
-      </div>
-    </div>
-  </div>
-</section>
 
 <!-- ================= DEUX USAGES ================= -->
 <section class="section">
@@ -634,7 +627,7 @@ footer{background:var(--sand);padding:60px 0 0}
     <div class="etab-card reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg><h4>Conformité de la lettre de liaison</h4><p>Les sections produites couvrent les critères QLS : motif, synthèse, traitements de sortie, suivi.</p></div>
     <div class="etab-card reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg><h4>Des écrits homogènes</h4><p>Même structure et même niveau de qualité d'un praticien à l'autre, d'un service à l'autre.</p></div>
     <div class="etab-card reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20v-1a5 5 0 0 1 5-5h3a5 5 0 0 1 5 5v1"/><circle cx="18" cy="9" r="2.4"/><path d="M17 20v-.6a3.8 3.8 0 0 1 3.5-3.8"/></svg><h4>Comptes équipes &amp; pilotage</h4><p>Déploiement par service, gestion des accès, interlocuteur dédié pour vos référents qualité et DSI.</p></div>
-    <div class="etab-card reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><h4>Conformité contractuelle</h4><p>Cadre de traitement (convention/DPA), hébergement et réversibilité à définir avec votre DPO.</p></div>
+    <div class="etab-card reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><h4>Conformité contractuelle</h4><p>Convention de traitement (DPA) établie avec votre DPO. Aucune donnée patient conservée : rien à stocker, rien à restituer.</p></div>
   </div>
 
   <div class="tag-row">
@@ -679,7 +672,7 @@ footer{background:var(--sand);padding:60px 0 0}
         <h3>À titre individuel</h3>
         <p class="desc">Pour un médecin, un interne ou un candidat PADHUE qui rédige pour lui-même.</p>
         <ul class="checklist">
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Les 4 outils, dictée comprise</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Les 4 outils de rédaction</li>
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Compte personnel immédiat</li>
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Confidentialité par conception</li>
         </ul>
@@ -762,7 +755,6 @@ footer{background:var(--sand);padding:60px 0 0}
     <h5>Produit</h5>
     <a href="#outils">Les 4 outils</a>
     <a href="#fonctionnement">Fonctionnement</a>
-    <a href="#dictee">Dictée IA</a>
   </div>
   <div class="footer-col">
     <h5>Établissements</h5>
@@ -783,7 +775,6 @@ footer{background:var(--sand);padding:60px 0 0}
 </div>
 <div class="footer-legal">
   <span>© <span id="yr"></span> MEDACTIO — Aide à la rédaction, jamais à la décision médicale.</span>
-  <span>un service de l'écosystème evc-pae.fr</span>
 </div>
 </div></footer>
 `;
