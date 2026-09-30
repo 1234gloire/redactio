@@ -70,9 +70,8 @@ export default function MentionsLegales() {
 
       <main className="legal-main">
         <div className="legal-card">
-          <section className="legal-section">
+          <section className="legal-section" id="section-1">
             <h2>Éditeur du site</h2>
-
             <p>
               Le site{" "}
               <a
@@ -82,148 +81,144 @@ export default function MentionsLegales() {
               >
                 www.medactio.fr
               </a>{" "}
-              ainsi que l&apos;application MEDACTIO qui lui est associée sont
-              édités par la société <strong>Grays &amp; Co</strong> (ci-après «
-              l&apos;Éditeur »).
+              ainsi que l’application MEDACTIO qui lui est associée sont édités
+              par la société <strong>Grays &amp; Co</strong> (ci-après «
+              l’Éditeur »).
             </p>
-
             <ul>
               <li>
-                Forme juridique et capital social : société par actions
-                simplifiée (SAS) au capital de <strong>1 000 €</strong>
+                <strong>Forme juridique et capital social : </strong>société par
+                actions simplifiée (SAS) au capital de 1 000 €
               </li>
-
-              <li>Immatriculation RCS : 109 564 427 R.C.S. Lille Métropole</li>
-
-              <li>Siège social : 229 rue Solférino, 59000 Lille</li>
-
               <li>
-                Adresse e-mail :{" "}
+                <strong>Immatriculation RCS : </strong>109 564 427 R.C.S. Lille
+                Métropole
+              </li>
+              <li>
+                <strong>Siège social : </strong>229 rue Solférino, 59000 Lille
+              </li>
+              <li>
+                <strong>Adresse e-mail : </strong>
                 <a href="mailto:contact@medactio.fr">contact@medactio.fr</a>
               </li>
-
-              <li>Numéro de TVA intracommunautaire : FR63109564427</li>
-
               <li>
-                Directeur de la publication : Monsieur Christel Roland MAFOUTA,
-                Président de Grays &amp; Co
+                <strong>Numéro de TVA intracommunautaire : </strong>
+                FR63109564427
+              </li>
+              <li>
+                <strong>Directeur de la publication : </strong>Monsieur Christel
+                Roland MAFOUTA, Président de Grays &amp; Co
               </li>
             </ul>
           </section>
-
-          <section className="legal-section">
+          <section className="legal-section" id="section-2">
             <h2>Hébergement du site</h2>
-
             <p>
-              Le site et l&apos;application MEDACTIO sont hébergés par la
-              société <strong>OVH</strong>, société par actions simplifiée au
-              capital de 50 000 000 €, immatriculée au Registre du Commerce et
-              des Sociétés de Lille Métropole sous le numéro 424 761 419, dont
-              le siège social est situé 2 rue Kellermann, 59100 Roubaix.
+              Le site et l’application MEDACTIO sont hébergés par la société{" "}
+              <strong>OVH</strong>, société par actions simplifiée au capital de
+              50 000 000 €, immatriculée au Registre du Commerce et des Sociétés
+              de Lille Métropole sous le numéro 424 761 419, dont le siège
+              social est situé 2 rue Kellermann, 59100 Roubaix.
             </p>
-
             <ul>
-              <li>Numéro de téléphone : 09 72 10 10 07</li>
-
-              <li>N° de TVA intracommunautaire : FR 22 424 761 419</li>
-
               <li>
-                Directeur de la publication : Monsieur Benjamin Revcolevschi
+                <strong>Numéro de téléphone : </strong>09 72 10 10 07
               </li>
-
               <li>
-                Certification : hébergeur agréé pour l&apos;hébergement de
-                données de santé à caractère personnel (HDS)
+                <strong>N° de TVA intracommunautaire : </strong>FR 22 424 761
+                419
+              </li>
+              <li>
+                <strong>Directeur de la publication : </strong>Monsieur Benjamin
+                Revcolevschi
+              </li>
+              <li>
+                <strong>Certification : </strong>hébergeur agréé pour
+                l’hébergement de données de santé à caractère personnel (HDS)
               </li>
             </ul>
-
-            <p className="legal-muted">
-              Conformément à l&apos;article L.1111-8 du Code de la santé
-              publique, les données de santé à caractère personnel traitées dans
-              le cadre de l&apos;utilisation de l&apos;application MEDACTIO sont
-              hébergées auprès d&apos;OVH, hébergeur certifié HDS. MEDACTIO
-              n&apos;a pas vocation à héberger de données de santé à caractère
-              directement identifiant. L&apos;Utilisateur peut saisir dans le
-              Service des identifiants directs du Patient (nom, prénom, date de
-              naissance, numéro de sécurité sociale ou tout autre élément
-              permettant une identification directe) ou déposer des Documents
-              contenant de telles données. Ces données font l&apos;objet,
-              préalablement à tout traitement, d&apos;une pseudonymisation
-              intégrale au moyen du filtre technique dédié de MEDACTIO, avant
-              toute transmission au moteur d&apos;intelligence artificielle.
+            <p>
+              Conformément à l’article L.1111-8 du Code de la santé publique,
+              l’application MEDACTIO est hébergée auprès d’OVH, hébergeur
+              certifié HDS. MEDACTIO ne stocke aucune donnée de santé de
+              patients. L’Utilisateur peut saisir dans le Service des
+              identifiants directs du Patient (nom, prénom, date de naissance,
+              numéro de sécurité sociale ou tout autre élément permettant une
+              identification directe) ou déposer des Documents contenant de
+              telles données. Ces identifiants directs font l’objet,
+              préalablement à tout traitement, d’une pseudonymisation au moyen
+              du filtre technique dédié de MEDACTIO, avant toute transmission au
+              moteur d’intelligence artificielle.
             </p>
           </section>
-
-          <section className="legal-section">
-            <h2>Propriété intellectuelle</h2>
-
+          <section className="legal-section" id="section-3">
+            <h2>Développement et maintenance</h2>
             <p>
-              L&apos;ensemble des éléments composant le site et
-              l&apos;application MEDACTIO (textes, structure, logiciels, bases
-              de données, graphismes, logos, marques, etc.) est la propriété
-              exclusive de Grays &amp; Co ou de ses partenaires, et est protégé
-              par le droit de la propriété intellectuelle. Toute reproduction,
+              Le développement et la maintenance du site et de l’application
+              MEDACTIO sont assurés par la société{" "}
+              <strong>ELIKIA GROUP SARL</strong>, société de droit sénégalais
+              dont le siège est situé à Dakar (Sénégal), prestataire
+              informatique de Grays &amp; Co.
+            </p>
+          </section>
+          <section className="legal-section" id="section-4">
+            <h2>Propriété intellectuelle</h2>
+            <p>
+              L’ensemble des éléments composant le site et l’application
+              MEDACTIO (textes, structure, logiciels, bases de données,
+              graphismes, logos, marques, etc.) est la propriété exclusive de
+              Grays &amp; Co ou de ses partenaires, et est protégé par le droit
+              de la propriété intellectuelle. Toute reproduction,
               représentation, modification ou diffusion, totale ou partielle,
               sans autorisation préalable écrite de Grays &amp; Co, est
               interdite.
             </p>
           </section>
-
-          <section className="legal-section">
+          <section className="legal-section" id="section-5">
             <h2>Données personnelles</h2>
-
             <p>
               Le traitement des données à caractère personnel effectué via le
-              site ou l&apos;application MEDACTIO est décrit dans notre
-              politique de confidentialité, disponible sur simple demande à
-              l&apos;adresse{" "}
+              site ou l’application MEDACTIO est décrit dans notre politique de
+              confidentialité, disponible sur simple demande à l’adresse{" "}
               <a href="mailto:contact@medactio.fr">contact@medactio.fr</a>.
             </p>
-
             <p>
               Conformément au Règlement Général sur la Protection des Données
               (RGPD) et à la loi « Informatique et Libertés », vous disposez
-              d&apos;un droit d&apos;accès, de rectification, d&apos;effacement,
-              de limitation, d&apos;opposition et de portabilité de vos données,
-              que vous pouvez exercer en écrivant à l&apos;adresse ci-dessus.
+              d’un droit d’accès, de rectification, d’effacement, de limitation,
+              d’opposition et de portabilité de vos données, que vous pouvez
+              exercer en écrivant à l’adresse ci-dessus.
             </p>
           </section>
-
-          <section className="legal-section">
+          <section className="legal-section" id="section-6">
             <h2>Cookies</h2>
-
             <p>
-              Le site est susceptible d&apos;utiliser des cookies nécessaires à
-              son bon fonctionnement, ainsi que, le cas échéant, des cookies de
-              mesure d&apos;audience. L&apos;utilisateur peut à tout moment
-              configurer son navigateur pour refuser les cookies.
+              Le site est susceptible d’utiliser des cookies nécessaires à son
+              bon fonctionnement, ainsi que, le cas échéant, des cookies de
+              mesure d’audience. L’utilisateur peut à tout moment configurer son
+              navigateur pour refuser les cookies.
             </p>
           </section>
-
-          <section className="legal-section">
+          <section className="legal-section" id="section-7">
             <h2>Droit applicable</h2>
-
             <p>
               Les présentes mentions légales sont soumises au droit français.
-              Tout litige relatif à l&apos;utilisation du site ou de
-              l&apos;application MEDACTIO relève de la compétence des tribunaux
-              français.
+              Tout litige relatif à l’utilisation du site ou de l’application
+              MEDACTIO relève de la compétence des tribunaux français.
             </p>
           </section>
-
-          <section className="legal-section">
+          <section className="legal-section" id="section-8">
             <h2>Contact</h2>
-
             <p>
               Pour toute question relative aux présentes mentions légales, vous
-              pouvez nous contacter à l&apos;adresse :{" "}
+              pouvez nous contacter à l’adresse :{" "}
               <a href="mailto:contact@medactio.fr">contact@medactio.fr</a>
             </p>
           </section>
         </div>
 
         <div className="legal-updated">
-          Dernière mise à jour : 29 septembre 2026
+          Dernière mise à jour : 30 septembre 2026
         </div>
       </main>
 

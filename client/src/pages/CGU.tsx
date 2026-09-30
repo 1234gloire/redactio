@@ -15,10 +15,10 @@ const sections = [
   "Logiciels et Services de tiers",
   "Garanties",
   "Responsabilité",
-  "Abonnement, semaine gratuite et modalités de paiement",
+  "Abonnement, période d'essai de 7 jours et modalités de paiement",
   "Données à caractère personnel et secret médical",
   "Suspension et résiliation d'accès à la Plateforme",
-  "Suppression d'un Compte Utilisateur et restitution des données",
+  "Suppression d'un Compte Utilisateur",
   "Divers",
   "Droit applicable et règlement des litiges",
 ];
@@ -69,25 +69,6 @@ const CGU_EXTRA_STYLES = `
 
 function articleTitle(number: number, title: string) {
   return `Article ${number} — ${title}`;
-}
-
-function Section({
-  id,
-  number,
-  title,
-  children,
-}: {
-  id: string;
-  number?: number;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="legal-section" id={id}>
-      <h2>{number ? articleTitle(number, title) : title}</h2>
-      {children}
-    </section>
-  );
 }
 
 export default function CGU() {
@@ -167,1117 +148,1228 @@ export default function CGU() {
             </ol>
           </nav>
 
-          <Section id="section-1" number={1} title="Objet">
+          <section className="legal-section" id="section-1">
+            <h2>Article 1 — Objet</h2>
             <p>
-              Les présentes Conditions Générales d&apos;Utilisation (ci-après «{" "}
-              <strong>CGU</strong> ») régissent les conditions d&apos;accès et
-              d&apos;utilisation de la plateforme « MEDACTIO », accessible à
-              l&apos;adresse{" "}
-              <a
-                href="https://www.medactio.fr"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                www.medactio.fr
-              </a>
-              , permettant aux Professionnels de santé de bénéficier d&apos;une
+              Les présentes Conditions Générales d'Utilisation (ci-après «{" "}
+              <strong>CGU</strong> ») régissent les conditions d'accès et
+              d'utilisation de la plateforme « MEDACTIO », accessible à
+              l'adresse{" "}
+              <em>
+                <a
+                  href="https://www.medactio.fr"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  www.medactio.fr
+                </a>
+              </em>
+              , permettant aux Professionnels de santé de bénéficier d'une
               assistance rédactionnelle par intelligence artificielle pour la
               production de documents médicaux courants (courriers de sortie,
               correspondances médicales, conciliations médicamenteuses,
               observations médicales, comptes rendus, etc.), à tout
               Professionnel de santé ayant créé un Compte Utilisateur dans les
-              conditions définies ci-après (la « <strong>Plateforme</strong> »).
+              conditions plus amplement définies ci-après (ci-après la «{" "}
+              <strong>Plateforme</strong> »).
             </p>
             <p>
               La Plateforme est éditée par la société{" "}
               <strong>Grays &amp; Co</strong>, société par actions simplifiée
-              (SAS) au capital social de 1 000 €, dont le siège social est situé
+              (SAS) au capital social de 1 000 € dont le siège social est situé
               229 rue Solférino, 59000 Lille, immatriculée au Registre du
               Commerce et des Sociétés de Lille Métropole sous le numéro 109 564
-              427 (ci-après « Grays &amp; Co », « MEDACTIO » ou « Nous »).
-            </p>
-            <ul>
-              <li>
-                Adresse mail :{" "}
-                <a href="mailto:contact@medactio.fr">contact@medactio.fr</a>
-              </li>
-              <li>Numéro de TVA intracommunautaire : FR63109564427</li>
-              <li>
-                Directeur de la publication : M. Christel Roland MAFOUTA,
-                Président de Grays &amp; Co
-              </li>
-            </ul>
-            <p>
-              Les données de santé à caractère personnel collectées et traitées
-              dans le cadre de l&apos;utilisation de la Plateforme sont
-              hébergées auprès d&apos;un hébergeur certifié pour
-              l&apos;hébergement de données de santé, conformément à
-              l&apos;article L.1111-8 du Code de la santé publique.
+              427 (ci-après « <strong>Grays &amp; Co</strong> », «{" "}
+              <strong>MEDACTIO</strong> » ou « <strong>Nous</strong> »).
             </p>
             <p>
-              Les données de santé sont hébergées par <strong>OVH</strong>,
-              société par actions simplifiée au capital de 50 000 000 €,
-              immatriculée au Registre du Commerce et des Sociétés de Lille
-              Métropole sous le numéro 424 761 419, dont le siège social est sis
-              2 rue Kellermann à Roubaix (59100), certifiée hébergeur de données
-              de santé (HDS).
-            </p>
-            <p className="legal-draft">
-              L&apos;infogérance des serveurs est assurée par OVH (cette
-              rubrique sera complétée dès la confirmation du prestataire retenu,
-              le cas échéant certifié HDS sur son périmètre).
-            </p>
-          </Section>
-
-          <Section id="section-2" number={2} title="Définitions">
-            <p>
-              <strong>« Administrateur » :</strong> employé ou membre de
-              l&apos;équipe d&apos;un Établissement Client, autorisé par
-              celui-ci et ayant conclu un Contrat SaaS avec MEDACTIO, habilité à
-              créer et gérer les Comptes Utilisateurs et à réaliser certaines
-              actions selon l&apos;abonnement souscrit.
+              <strong>Adresse mail : </strong>
+              <a href="mailto:contact@medactio.fr">contact@medactio.fr</a>
             </p>
             <p>
-              <strong>« Autorité de Contrôle » :</strong> a la signification qui
-              lui est attribuée à l&apos;article 4 du Règlement européen
-              2016/679 du 27 avril 2016 (« RGPD »).
+              <strong>Numéro de TVA intracommunautaire : </strong>FR63109564427
             </p>
             <p>
-              <strong>« Client » ou « Établissement » :</strong> établissement
-              de santé, clinique ou structure médicale ayant conclu un Contrat
-              SaaS avec MEDACTIO pour les besoins de tout ou partie de ses
-              équipes médicales.
+              <strong>Directeur de la publication : </strong>Monsieur Christel
+              Roland MAFOUTA, Président de Grays &amp; Co
             </p>
             <p>
-              <strong>« Compte Utilisateur » :</strong> compte permettant au
-              Professionnel de santé d&apos;accéder à son espace privé et
-              sécurisé sur la Plateforme, créé directement par
-              l&apos;Utilisateur pour un usage individuel par abonnement ou
-              selon les instructions de l&apos;Établissement Client ou de ses
-              Administrateurs.
+              La Plateforme MEDACTIO est hébergée auprès d'un hébergeur agréé de
+              santé, conformément aux dispositions de l'article L.1111-8 du Code
+              de la santé publique. MEDACTIO ne stocke aucune donnée de santé de
+              patients.
             </p>
             <p>
-              <strong>« Contenu Utilisateur » :</strong> ensemble des
-              informations, textes et éléments saisis par l&apos;Utilisateur
-              dans la Plateforme en vue de la génération d&apos;un Document
-              Généré.
+              Le site et l'application MEDACTIO sont hébergés par :{" "}
+              <strong>OVH</strong>, société par actions simplifiée au capital de
+              50 000 000 €, immatriculée au Registre du Commerce et des Sociétés
+              de Lille Métropole sous le numéro 424 761 419, dont le siège
+              social est sis 2 rue Kellermann à Roubaix (59100), certifiée
+              hébergeur de données de santé (HDS).
             </p>
             <p>
-              <strong>« Contrat SaaS » :</strong> contrat conclu entre MEDACTIO
-              et un Établissement Client déterminant les conditions de mise à
-              disposition de la Plateforme aux Utilisateurs Habilités, le
-              paramétrage du Service et les prestations de support associées.
+              Le développement et la maintenance du site et de l'application
+              sont assurés par : <strong>ELIKIA GROUP SARL</strong>, société de
+              droit sénégalais dont le siège est situé à Dakar (Sénégal),
+              prestataire informatique de Grays &amp; Co.
+            </p>
+          </section>
+          <section className="legal-section" id="section-2">
+            <h2>Article 2 — Définitions</h2>
+            <p>
+              <strong>« Administrateur » : </strong>désigne un employé ou un
+              membre de l'équipe d'un Établissement Client, autorisé par
+              celui-ci et ayant conclu un Contrat SaaS avec MEDACTIO, à créer et
+              gérer les Comptes Utilisateurs et à réaliser certaines actions sur
+              la Plateforme en fonction de l'abonnement souscrit par
+              l'Établissement.
             </p>
             <p>
-              <strong>« Document Généré » :</strong> document médical produit
-              par le Service MEDACTIO à partir du Contenu Utilisateur, notamment
-              courrier de sortie, correspondance médicale, compte rendu,
-              observation médicale ou tableau de conciliation médicamenteuse.
+              <strong>« Autorité de Contrôle » : </strong>a la signification qui
+              lui est attribuée à l'article 4 du Règlement Européen 2016/679 du
+              27 avril 2016 (ci-après le « RGPD »).
             </p>
             <p>
-              <strong>« Données à Caractère Personnel » :</strong> a la
-              signification attribuée à l&apos;article 4 du RGPD.
+              <strong>« Client / Établissement » : </strong>désigne
+              l'établissement de santé, la clinique ou toute structure médicale
+              ayant conclu un Contrat SaaS avec MEDACTIO pour les besoins d'une
+              partie ou de la totalité de ses équipes médicales.
             </p>
             <p>
-              <strong>« Données de santé » :</strong> a la signification
-              attribuée à l&apos;article 4 du RGPD.
+              <strong>« Compte Utilisateur » : </strong>désigne le compte
+              permettant au Professionnel de santé d'accéder à son espace privé
+              et sécurisé sur la Plateforme, créé soit directement par
+              l'Utilisateur (utilisation individuelle par abonnement), soit
+              selon les instructions communiquées par l'Établissement Client ou
+              ses Administrateurs (utilisation dans le cadre d'un Contrat SaaS).
             </p>
             <p>
-              <strong>« Identifiants » :</strong> adresse email identifiant
-              l&apos;Utilisateur (« login ») et mot de passe associé (« password
-              »), créés selon l&apos;Article 6.3.
+              <strong>« Contenu Utilisateur » : </strong>désigne l'ensemble des
+              informations, textes, éléments saisis par l'Utilisateur dans la
+              Plateforme en vue de la génération d'un Document Généré.
             </p>
             <p>
-              <strong>« Parties » :</strong> conjointement MEDACTIO et
-              l&apos;Utilisateur.
+              <strong>« Contrat SaaS » : </strong>désigne le contrat conclu
+              entre MEDACTIO et un Établissement Client ayant pour objet de
+              déterminer les conditions applicables à la mise à disposition de
+              la Plateforme aux Utilisateurs Habilités de cet Établissement, au
+              paramétrage du Service MEDACTIO et aux prestations de support y
+              afférentes.
             </p>
             <p>
-              <strong>« Personnes Concernées » :</strong> a la signification
-              attribuée à l&apos;article 4 du RGPD.
+              <strong>« Document Généré » : </strong>désigne tout document
+              médical (courrier de sortie, correspondance médicale,
+              compte-rendu, observation médicale, tableau de conciliation
+              médicamenteuse, etc.) produit par le Service MEDACTIO à partir du
+              Contenu Utilisateur.
             </p>
             <p>
-              <strong>« Plateforme » :</strong> a le sens donné à l&apos;Article
-              1 « Objet ».
+              <strong>« Données à Caractère Personnel » : </strong>a la
+              signification qui lui est attribuée à l'article 4 du RGPD.
             </p>
             <p>
-              <strong>« Professionnel de santé » :</strong> professionnel de
-              santé au sens du Code de la santé publique, disposant d&apos;un
-              numéro RPPS ou ADELI et pouvant accéder à la Plateforme sous
-              réserve des conditions de l&apos;Article 6.1. Selon le cas, ce
-              terme désigne le Professionnel Individuel et/ou le Professionnel
+              <strong>« Données de santé » : </strong>a la signification qui lui
+              est attribuée à l'article 4 du RGPD.
+            </p>
+            <p>
+              <strong>« Identifiants » : </strong>désigne l'adresse email
+              identifiant un Utilisateur (« login ») ainsi que le mot de passe
+              de connexion y étant associé (« password »), créés par
+              l'Utilisateur dans les conditions décrites à l'Article 6.3 des
+              présentes.
+            </p>
+            <p>
+              <strong>« Parties » : </strong>désigne conjointement MEDACTIO et
+              l'Utilisateur.
+            </p>
+            <p>
+              <strong>« Personnes Concernées » : </strong>a la signification qui
+              lui est attribuée à l'article 4 du RGPD.
+            </p>
+            <p>
+              <strong>« Plateforme » : </strong>a le sens donné au sein de
+              l'Article 1 « Objet » des présentes CGU.
+            </p>
+            <p>
+              <strong>« Professionnel de santé » : </strong>désigne les
+              professionnels de santé tels que définis par le Code de la santé
+              publique, disposant d'un numéro RPPS ou ADELI, et pouvant avoir
+              accès à la Plateforme sous réserve que les conditions figurant à
+              l'Article 6.1 des CGU soient réunies. Ce terme désigne, selon le
+              cas applicable, le Professionnel Individuel et/ou le Professionnel
               Établissement.
             </p>
             <p>
-              <strong>« Professionnel Individuel » :</strong> Professionnel de
-              santé souscrivant et utilisant le Service à titre personnel, pour
-              les besoins d&apos;un exercice individuel, par abonnement payant
-              selon l&apos;Article 14.1.
+              <strong>« Professionnel Individuel » : </strong>désigne un
+              Professionnel de santé souscrivant et utilisant le Service
+              MEDACTIO via la Plateforme dans le cadre et pour les besoins d'un
+              exercice individuel (à titre personnel), par voie d'abonnement
+              payant tel que décrit à l'Article 14.1.
             </p>
             <p>
-              <strong>« Professionnel Établissement » :</strong> Professionnel
-              de santé utilisant le Service pour son activité au sein d&apos;un
-              Établissement Client ayant conclu un Contrat SaaS, selon
-              l&apos;Article 14.2.
+              <strong>« Professionnel Établissement » : </strong>désigne un
+              Professionnel de santé utilisant le Service MEDACTIO via la
+              Plateforme dans le cadre et pour les besoins de son activité au
+              sein d'un Établissement Client ayant conclu un Contrat SaaS, tel
+              que décrit à l'Article 14.2.
             </p>
             <p>
               <strong>
                 « Réglementation Applicable en matière de Protection des Données
-                » :
-              </strong>{" "}
-              RGPD, loi française n° 78-17 du 6 janvier 1978 dite « loi
-              Informatique et Libertés », ainsi que toute loi nationale
-              applicable transposant la directive 2002/58/CE dite « e-Privacy »,
-              telle que mise à jour, modifiée ou remplacée.
+                » :{" "}
+              </strong>
+              désigne le RGPD, la loi française n°78-17 du 6 janvier 1978 dite «
+              loi Informatique et Libertés », ainsi que toute loi nationale
+              applicable transposant la directive européenne 2002/58/CE du 12
+              juillet 2002 dite directive « e-Privacy », telle que régulièrement
+              mise à jour, modifiée et/ou remplacée.
             </p>
             <p>
-              <strong>« Responsable du Traitement » :</strong> a la
-              signification attribuée à l&apos;article 4 du RGPD.
+              <strong>« Responsable du Traitement » : </strong>a la
+              signification qui lui est attribuée à l'article 4 du RGPD.
             </p>
             <p>
-              <strong>« Service MEDACTIO » :</strong> service d&apos;assistance
-              rédactionnelle par intelligence artificielle fourni via la
-              Plateforme et décrit à l&apos;Article 3.
+              <strong>« Service MEDACTIO » : </strong>désigne le service
+              d'assistance rédactionnelle par intelligence artificielle fourni
+              par MEDACTIO aux Utilisateurs via la Plateforme, décrit à
+              l'Article 3 des présentes.
             </p>
             <p>
-              <strong>« Sous-traitant » :</strong> a la signification attribuée
-              à l&apos;article 4 du RGPD.
+              <strong>« Sous-traitant » : </strong>a la signification qui lui
+              est attribuée à l'article 4 du RGPD.
             </p>
             <p>
-              <strong>« Traitement » :</strong> a la signification attribuée à
-              l&apos;article 4 du RGPD.
+              <strong>« Traitement » : </strong>a la signification qui lui est
+              attribuée à l'article 4 du RGPD.
             </p>
             <p>
-              <strong>« Utilisateur » ou « Vous » :</strong> toute personne
-              bénéficiant d&apos;un Compte Utilisateur (Professionnel Individuel
-              ou Professionnel Établissement) et/ou autorisée par un
-              Établissement Client à accéder à la Plateforme, sous réserve du
-              respect des CGU et, le cas échéant, du Contrat SaaS.
+              <strong>« Utilisateur(s) ou Vous » : </strong>désigne toute
+              personne bénéficiant d'un Compte Utilisateur sur la Plateforme
+              (Professionnel Individuel ou Professionnel Établissement) et/ou
+              tout utilisateur autorisé par un Établissement Client à accéder à
+              la Plateforme, sous réserve du respect des stipulations des
+              présentes CGU et, selon le cas applicable, du Contrat SaaS.
             </p>
             <p>
-              <strong>« Utilisateur Habilité » :</strong> tout Utilisateur
-              autorisé par un Établissement Client et/ou ses Administrateurs à
-              accéder à la Plateforme et à utiliser le Service.
+              <strong>« Utilisateur(s) Habilité(s) » : </strong>désigne tout
+              Utilisateur autorisé par un Établissement Client et/ou ses
+              Administrateurs à accéder à la Plateforme et à utiliser le Service
+              MEDACTIO, sous réserve du respect des stipulations des présentes
+              CGU et, selon le cas applicable, du Contrat SaaS.
             </p>
             <p>
-              <strong>« Violation de Données à Caractère Personnel » :</strong>{" "}
-              a la signification attribuée à l&apos;article 4 du RGPD.
+              <strong>« Violation de Données à Caractère Personnel » : </strong>
+              a la signification qui lui est attribuée à l'article 4 du RGPD.
             </p>
-          </Section>
-
-          <Section
-            id="section-3"
-            number={3}
-            title="Description du Service MEDACTIO"
-          >
+          </section>
+          <section className="legal-section" id="section-3">
+            <h2>Article 3 — Description du Service MEDACTIO</h2>
             <p>
               MEDACTIO met à disposition des Professionnels de santé une
-              solution d&apos;assistance rédactionnelle par intelligence
-              artificielle leur permettant de produire plus rapidement des
-              documents médicaux courants à partir des informations qu&apos;ils
+              solution d'assistance rédactionnelle par intelligence
+              artificielle, leur permettant de produire plus rapidement des
+              documents médicaux courants à partir des informations qu'ils
               saisissent eux-mêmes.
             </p>
             <p>
               <strong>
                 Positionnement du Service — assistance strictement
-                rédactionnelle.
-              </strong>{" "}
-              Le Service MEDACTIO est un outil d&apos;aide rédactionnelle. Il
-              met en forme, reformule et structure les informations médicales
-              fournies, saisies et validées par le Professionnel de santé. Il ne
-              constitue en aucun cas un outil d&apos;aide à la décision médicale
-              : il ne recommande, ne calcule et n&apos;applique de façon
-              autonome aucune valeur clinique (posologie, molécule, durée de
-              traitement, délai, modalité de surveillance ou
-              d&apos;immobilisation, etc.). Toute valeur clinique figurant dans
-              un Document Généré est celle que le Professionnel de santé a
-              lui-même saisie ou validée. Le Professionnel de santé demeure seul
-              responsable du contenu médical de chaque Document Généré, de sa
-              pertinence clinique et de sa conformité aux données acquises de la
-              science, comme s&apos;il avait rédigé ce document sans assistance.
+                rédactionnelle.{" "}
+              </strong>
+              Le Service MEDACTIO est un outil d'aide RÉDACTIONNELLE. Il met en
+              forme, reformule et structure les informations médicales fournies,
+              saisies et validées par le Professionnel de santé. Il ne constitue
+              en aucun cas un outil d'aide à la décision médicale : il ne
+              recommande, ne calcule et n'applique de façon autonome aucune
+              valeur clinique (posologie, molécule, durée de traitement, délai,
+              modalité de surveillance ou d'immobilisation, etc.). Toute valeur
+              clinique figurant dans un Document Généré est celle que le
+              Professionnel de santé a lui-même saisie ou validée. Le
+              Professionnel de santé demeure seul responsable du contenu médical
+              de chaque Document Généré, de sa pertinence clinique et de sa
+              conformité aux données acquises de la science, au même titre que
+              s'il avait rédigé ce document sans assistance.
             </p>
             <p>
-              Le Service permet notamment d&apos;utiliser les modules suivants,
-              liste non exhaustive susceptible d&apos;évoluer :
+              Le Service MEDACTIO permet notamment aux Utilisateurs d'utiliser,
+              via la Plateforme, les modules suivants (liste non exhaustive,
+              susceptible d'évoluer) :
             </p>
             <ul>
               <li>
-                Courrier de sortie, dont les déclinaisons par spécialité (par
+                Courrier de sortie (dont les déclinaisons par spécialité, par
                 exemple chirurgie orthopédique, court séjour gériatrique,
                 médecine polyvalente) ;
               </li>
               <li>Correspondance médicale ;</li>
               <li>Conciliation médicamenteuse ;</li>
               <li>Observation médicale ;</li>
-              <li>
-                Extraction et mise en forme de comptes rendus d&apos;examens ;
-              </li>
+              <li>Extraction et mise en forme de comptes rendus d'examens ;</li>
             </ul>
             <p>
               Chaque Document Généré demeure un projet de document, destiné à
               être relu, complété et validé par le Professionnel de santé avant
-              tout usage clinique, administratif ou transmission à un tiers,
-              conformément à l&apos;Article 8.1.
+              tout usage clinique, administratif ou toute transmission à un
+              tiers, conformément à l'Article 8.1 des présentes.
             </p>
-          </Section>
-
-          <Section
-            id="section-4"
-            number={4}
-            title="Documentation contractuelle"
-          >
+          </section>
+          <section className="legal-section" id="section-4">
+            <h2>Article 4 — Documentation contractuelle</h2>
             <p>
               Les présentes CGU régissent Votre accès et Votre utilisation de la
               Plateforme et du Service MEDACTIO.
             </p>
             <p>
               Tout bon de commande, accusé de réception ou autre formulaire
-              commercial émis par l&apos;une ou l&apos;autre des Parties en
-              relation avec la Plateforme est uniquement destiné à la commodité
-              interne de la partie émettrice et ne modifiera, n&apos;amendera ni
-              ne complétera les présentes CGU, même s&apos;il prétend le faire
-              ou s&apos;il est contresigné ou reconnu par l&apos;autre Partie.
+              commercial émis par l'une ou l'autre des Parties en relation avec
+              la Plateforme est uniquement destiné à la commodité interne de la
+              partie émettrice et ne modifiera pas, n'amendera pas et ne
+              complétera pas les dispositions des présentes CGU, même s'il
+              prétend le faire ou s'il est contresigné ou reconnu par l'autre
+              Partie.
             </p>
             <p>
-              Lorsqu&apos;applicable, en cas de conflit entre les présentes CGU
-              et un Contrat SaaS conclu avec un Établissement Client, les
-              stipulations du Contrat SaaS prévaudront dans la mesure du
-              conflit.
+              Lorsqu'applicable, en cas de conflit entre les stipulations des
+              présentes CGU et celles d'un Contrat SaaS conclu avec un
+              Établissement Client, les stipulations de ce Contrat SaaS
+              prévaudront sur celles des CGU dans la mesure du conflit.
             </p>
-          </Section>
-
-          <Section id="section-5" number={5} title="Durée">
+          </section>
+          <section className="legal-section" id="section-5">
+            <h2>Article 5 — Durée</h2>
             <p>
-              Les présentes CGU s&apos;appliquent dès leur acceptation lorsque
-              Vous Vous connectez à la Plateforme et restent en vigueur pendant
+              Les présentes CGU s'appliquent à Vous dès leur acceptation lorsque
+              Vous vous connectez à la Plateforme et restent en vigueur pendant
               toute la durée de Votre utilisation autorisée de la Plateforme et
-              du Service, sous réserve des Articles 16 et 17 (la « Durée »).
+              du Service MEDACTIO, sous réserve des stipulations des Articles 16
+              et 17 des présentes (ci-après la « Durée »).
             </p>
-          </Section>
-
-          <Section id="section-6" number={6} title="Accès à la Plateforme">
+          </section>
+          <section className="legal-section" id="section-6">
+            <h2>Article 6 — Accès à la Plateforme</h2>
             <p>
-              L&apos;accès à la Plateforme et son utilisation sont exclusivement
-              réservés aux Utilisateurs disposant d&apos;un Compte Utilisateur
-              conforme aux conditions ci-après.
+              L'accès à la Plateforme et son utilisation sont exclusivement
+              réservés aux Utilisateurs disposant d'un Compte Utilisateur
+              conforme aux conditions détaillées ci-après.
             </p>
-            <h3>6.1. Conditions préalables d&apos;accès</h3>
+            <h3>6.1. Conditions préalables d'accès à la Plateforme</h3>
             <p>
-              Vous ne pouvez Vous inscrire et bénéficier du Service en tant que
-              Professionnel de santé qu&apos;à la condition d&apos;être inscrit
-              au fichier RPPS ou ADELI, ou d&apos;être un praticien PADHUE en
-              cours de parcours de consolidation, un stagiaire associé ou un
-              interne en médecine. La validité du numéro RPPS ou ADELI est
-              contrôlée lors de l&apos;inscription par comparaison avec les
-              bases de données de référence mises à disposition par les
-              autorités compétentes.
+              Vous n'êtes autorisé à Vous inscrire sur la Plateforme et à
+              bénéficier du Service MEDACTIO en tant que Professionnel de santé
+              qu'à la condition d'être inscrit au fichier RPPS ou ADELI. Cette
+              validité est contrôlée lors de Votre inscription sur la
+              Plateforme, par comparaison avec les bases de données de référence
+              mises à disposition par les autorités compétentes. L'accès est
+              également ouvert aux praticiens à diplôme hors Union européenne
+              (PADHUE) en cours de parcours de consolidation des compétences,
+              aux stagiaires associés et aux internes en médecine.
             </p>
             <p>
-              La fourniture, l&apos;installation et la maintenance des
-              équipements ainsi que les frais de communications électroniques
-              (coûts téléphoniques et d&apos;accès à Internet) résultant de
-              l&apos;utilisation relèvent de la seule responsabilité de
-              l&apos;Utilisateur et sont à sa charge.
+              L'Utilisateur reconnaît et accepte que la fourniture,
+              l'installation et la maintenance des équipements ainsi que les
+              frais relatifs aux communications électroniques (coûts
+              téléphoniques, coûts d'accès à Internet) résultant de son
+              utilisation relèvent de sa seule responsabilité et sont
+              exclusivement à sa charge.
             </p>
-            <h3>6.2. Modalités de mise à disposition</h3>
+            <h3>6.2. Modalités de mise à disposition de la Plateforme</h3>
             <p>
-              La Plateforme et le Service sont mis à disposition selon deux
-              modalités, exclusives l&apos;une de l&apos;autre pour un même
-              usage :
+              La Plateforme et le Service MEDACTIO qui y est associé sont mis à
+              disposition selon <strong>deux modalités</strong>, exclusives
+              l'une de l'autre pour un même usage :
             </p>
             <ul>
               <li>
-                <strong>Utilisation Individuelle par abonnement :</strong> le
-                Professionnel de santé souscrit personnellement un abonnement
-                payant selon l&apos;Article 14.1. Il n&apos;existe pas
-                d&apos;offre totalement gratuite ; l&apos;abonnement inclut
-                toutefois une semaine (7 jours) gratuite, à l&apos;issue de
-                laquelle l&apos;abonnement payant démarre automatiquement sauf
-                résiliation.
+                <strong>Utilisation Individuelle par abonnement : </strong>le
+                Professionnel de santé souscrit personnellement, à titre
+                individuel, un abonnement payant à la Plateforme, dans les
+                conditions décrites à l'Article 14.1. Il n'existe pas d'offre
+                gratuite du Service MEDACTIO : l'abonnement débute par une
+                période d'essai de 7 jours, à l'issue de laquelle, sauf
+                résiliation, le Professionnel Individuel est débité et
+                l'abonnement payant démarre automatiquement.
               </li>
               <li>
                 <strong>
-                  Utilisation dans le cadre d&apos;un Établissement (Contrat
-                  SaaS) :
-                </strong>{" "}
-                lorsque le Service est mis à disposition d&apos;un établissement
-                de santé, d&apos;une clinique ou d&apos;une structure médicale
-                pour tout ou partie de ses équipes dans le cadre d&apos;un
-                Contrat SaaS. L&apos;utilisation est régie par les présentes CGU
-                et les stipulations complémentaires du Contrat SaaS, notamment
-                sur le prix, la facturation et le périmètre des équipes. En
-                accédant à la Plateforme à ce titre, Vous certifiez (i) être
-                autorisé par l&apos;Établissement et désigné comme Utilisateur
-                Habilité et (ii) avoir pris connaissance des éventuelles
-                stipulations complémentaires du Contrat SaaS et Vous Vous
-                engagez à les respecter.
+                  Utilisation dans le cadre d'un Établissement (Contrat SaaS)
+                  :{" "}
+                </strong>
+                lorsque MEDACTIO est mis à disposition d'un établissement de
+                santé, d'une clinique ou de toute autre structure médicale (l'«
+                Établissement » ou le « Client »), pour une partie ou la
+                totalité de ses équipes médicales, dans le cadre d'un Contrat
+                SaaS conclu entre l'Établissement et MEDACTIO. Dans ce cadre,
+                Votre utilisation de la Plateforme et du Service MEDACTIO sera
+                régie par les présentes CGU mais également par toute stipulation
+                complémentaire détaillée au sein du Contrat SaaS, notamment
+                relative au prix, à la facturation et au périmètre des équipes
+                concernées. En accédant à la Plateforme à ce titre, Vous
+                certifiez (i) bénéficier de l'autorisation de l'Établissement
+                Client pour accéder à la Plateforme et avoir été désigné par ce
+                dernier comme Utilisateur Habilité ; et (ii) avoir pris
+                connaissance des éventuelles stipulations complémentaires
+                figurant dans le Contrat SaaS, que Vous vous engagez à
+                respecter.
               </li>
             </ul>
             <p>
-              <strong>Activité mixte :</strong> si Vous exercez à la fois comme
-              Professionnel Individuel et Professionnel Établissement, Vous
-              pouvez utiliser la Plateforme au titre de chacune de ces
-              activités, selon les modalités et tarifs respectifs.
+              Activité mixte : lorsque Vous exercez à la fois en tant que
+              Professionnel Individuel et en tant que Professionnel
+              Établissement (par exemple pour partie en exercice libéral et pour
+              partie au sein d'un Établissement Client), Vous pouvez utiliser la
+              Plateforme et le Service MEDACTIO au titre de chacune de ces deux
+              activités, selon les modalités et la tarification qui leur sont
+              respectivement applicables.
             </p>
             <p>
-              Si Vous changez de statut pendant la Durée des CGU, Vous pourrez
-              conserver Votre Compte Utilisateur, qui est personnel, sous
-              réserve de la mise à jour de son mode de facturation.
+              Si Vous changez de statut pendant la Durée des CGU (Professionnel
+              Individuel devenant Professionnel Établissement, ou inversement),
+              Vous pourrez conserver Votre Compte Utilisateur pour continuer à
+              accéder à la Plateforme, dans la mesure où celui-ci est un compte
+              personnel à chaque Professionnel de santé, sous réserve de la mise
+              à jour de son mode de facturation.
             </p>
-            <h3>6.3. Création d&apos;un Compte Utilisateur</h3>
+            <h3>6.3. Création d'un Compte Utilisateur sur la Plateforme</h3>
             <p>
-              La création d&apos;un Compte Utilisateur est subordonnée à la
-              transmission d&apos;un formulaire d&apos;inscription dûment
-              complété.
-            </p>
-            <p>
-              Pour un usage individuel, Vous devez renseigner Votre nom, adresse
-              email, spécialité, le cas échéant Votre numéro RPPS, choisir un
-              mot de passe, puis accepter les CGU selon l&apos;Article 6.4.
-            </p>
-            <p>
-              Pour un Établissement Client sous Contrat SaaS, le Compte peut
-              être créé par MEDACTIO selon les instructions de
-              l&apos;Établissement ou de ses Administrateurs. Vous recevrez un
-              lien de connexion permettant de finaliser l&apos;inscription et
-              d&apos;accepter les CGU.
+              La création d'un Compte Utilisateur par un Professionnel de santé
+              est subordonnée à la transmission du formulaire d'inscription
+              dûment complété, dans les conditions plus amplement décrites
+              ci-après.
             </p>
             <p>
-              En cas d&apos;incohérence avec les éléments de vérification (base
-              RPPS/ADELI), MEDACTIO peut solliciter des informations
-              complémentaires. Si Vous ne les communiquez pas ou transmettez des
-              informations inexactes ou incomplètes, l&apos;inscription ne sera
-              pas validée.
+              Pour créer un Compte Utilisateur et bénéficier du Service
+              MEDACTIO, en tant que Professionnel Individuel, Vous devez Vous
+              rendre sur la page d'inscription et renseigner Votre nom, Votre
+              adresse de courrier électronique, Votre spécialité, le cas échéant
+              Votre numéro RPPS, choisir un mot de passe, puis accepter les
+              présentes CGU dans les conditions décrites à l'Article 6.4
+              ci-après.
+            </p>
+            <p>
+              Si Vous appartenez à un Établissement Client sous Contrat SaaS,
+              Votre Compte Utilisateur pourra être créé directement par MEDACTIO
+              selon les instructions transmises par l'Établissement Client et/ou
+              ses Administrateurs. Dans un tel cas, Vous recevrez un lien de
+              connexion vous permettant de finaliser Votre inscription sur la
+              Plateforme et d'accepter les CGU.
+            </p>
+            <p>
+              En cas d'incohérence entre les informations transmises et les
+              éléments de vérification (base RPPS/ADELI), MEDACTIO se réserve la
+              possibilité de solliciter auprès de Vous des informations
+              complémentaires. Si Vous ne communiquez pas l'ensemble des
+              informations demandées, ou si Vous communiquez des informations
+              inexactes et/ou incomplètes, Votre inscription sur la Plateforme
+              ne sera pas validée.
             </p>
             <h3>6.4. Acceptation et modification des CGU</h3>
             <p>
-              Les CGU et leurs versions ultérieures sont accessibles à tout
-              moment en cliquant sur le lien « CGU » de la Plateforme.
+              Les présentes CGU ainsi que toutes versions ultérieures sont
+              accessibles à tout moment par l'Utilisateur directement en
+              cliquant sur le lien « CGU » figurant sur la Plateforme.
             </p>
             <p>
-              La création d&apos;un Compte et l&apos;utilisation du Service sont
-              conditionnées à la consultation et à l&apos;acceptation préalable
-              et sans réserve des CGU. Si Vous ne les acceptez pas, Vous ne
-              devez pas utiliser la Plateforme ni le Service.
+              Toute création d'un Compte Utilisateur et utilisation du Service
+              MEDACTIO est conditionnée à la consultation et à l'acceptation
+              préalable et sans réserve des CGU par l'Utilisateur. Si Vous
+              n'acceptez pas les présentes CGU, Vous ne devez pas utiliser la
+              Plateforme et le Service MEDACTIO.
             </p>
             <p>
-              MEDACTIO peut modifier les CGU à tout moment et en informera les
-              Utilisateurs en temps utile, notamment lors d&apos;une
-              identification ou connexion ultérieure ou par email. La nouvelle
-              version se substituera à la précédente et sera applicable à
-              compter de sa publication.
+              MEDACTIO se réserve le droit de modifier les présentes CGU à tout
+              moment, ce dont elle informera en temps utile les Utilisateurs par
+              tout moyen, notamment lors de leur identification et/ou connexion
+              ultérieure à la Plateforme ou par email. En cas de modification,
+              la nouvelle version des CGU se substituera à la précédente et sera
+              applicable automatiquement aux Utilisateurs à compter de sa date
+              de publication.
             </p>
             <p>
-              Si l&apos;Utilisateur n&apos;accepte pas les CGU modifiées, il
-              devra cesser d&apos;utiliser le Service et se désinscrire, sous
-              réserve, pour le Professionnel Individuel abonné, des modalités de
-              résiliation de l&apos;Article 14.1.
+              Si l'Utilisateur ne souhaite pas accepter les CGU modifiées, il
+              devra arrêter l'usage du Service MEDACTIO et se désinscrire de la
+              Plateforme, sous réserve, pour le Professionnel Individuel abonné,
+              des modalités de résiliation prévues à l'Article 14.1.
             </p>
-          </Section>
-
-          <Section
-            id="section-7"
-            number={7}
-            title="Utilisation de la Plateforme et du Service MEDACTIO"
-          >
-            <h3>7.1. Droits d&apos;accès et d&apos;utilisation</h3>
+          </section>
+          <section className="legal-section" id="section-7">
+            <h2>
+              Article 7 — Utilisation de la Plateforme et du Service MEDACTIO
+            </h2>
+            <h3>7.1. Droits d'accès et d'utilisation</h3>
             <p>
-              Sous réserve du respect des CGU et, le cas échéant, du Contrat
-              SaaS, Nous Vous accordons pour la Durée un droit non exclusif, non
-              cessible et non transférable (y compris par sous-licence)
-              d&apos;accéder en mode SaaS à la Plateforme et d&apos;utiliser le
-              Service dans les limites des droits attribués à Votre profil. Vous
-              ne pouvez les utiliser que conformément à leur destination et pour
-              Vos besoins professionnels ou ceux de l&apos;Établissement Client
-              auquel Vous appartenez.
+              Sous réserve que Vous respectiez les présentes CGU et,
+              lorsqu'applicable, les stipulations du Contrat SaaS, Nous Vous
+              accordons un droit non exclusif, non cessible, non transférable (y
+              compris par voie de sous-licence), d'accéder en mode SaaS et
+              d'utiliser la Plateforme et le Service MEDACTIO dans les limites
+              des droits attribués à Votre profil Utilisateur, pour la Durée
+              indiquée à l'Article 5. Vous ne pouvez accéder et utiliser la
+              Plateforme et le Service MEDACTIO que conformément à leur
+              destination et uniquement pour Vos besoins professionnels, ou
+              selon le cas applicable, pour les besoins professionnels de
+              l'Établissement Client auquel Vous appartenez.
             </p>
-            <h3>7.2. Restrictions d&apos;utilisation</h3>
+            <h3>
+              7.2. Restrictions d'utilisation de la Plateforme et du Service
+              MEDACTIO
+            </h3>
             <p>
-              Sauf disposition légale ou réglementaire contraire ou autorisation
-              expresse des CGU, Vous ne devez pas :
+              Sauf dans les cas où les lois ou règlements applicables le
+              permettent ou dans les cas expressément autorisés par les CGU,
+              Vous ne devez pas :
             </p>
             <ul>
               <li>
-                utiliser la Plateforme ou le Service à d&apos;autres fins que
-                celles prévues par les CGU ou le Contrat SaaS, ou d&apos;une
-                manière interdite par la loi ;
+                utiliser la Plateforme et/ou le Service MEDACTIO à des fins
+                autres que celles explicitement prévues par les présentes CGU,
+                le Contrat SaaS ou de toute manière interdite par une loi ou une
+                réglementation applicable ;
               </li>
               <li>
-                utiliser un Document Généré comme seul fondement d&apos;une
-                décision clinique, sans relecture, vérification et jugement
-                médical propre ;
+                utiliser un Document Généré comme unique fondement d'une
+                décision clinique, sans relecture, vérification et validation
+                par un jugement médical propre ;
               </li>
               <li>
-                porter atteinte aux droits d&apos;autrui, notamment au secret
-                médical et à la vie privée des patients ;
+                utiliser la Plateforme et/ou le Service MEDACTIO pour porter
+                atteinte aux droits d'autrui, notamment au secret médical et à
+                la vie privée des patients ;
               </li>
               <li>
-                perturber la Plateforme, le Service ou leur utilisation par un
-                autre Client, Professionnel de santé ou Utilisateur ;
+                utiliser la Plateforme et/ou le Service MEDACTIO d'une façon qui
+                pourrait porter atteinte à la Plateforme, au Service MEDACTIO ou
+                perturber leur utilisation par un autre Client, Professionnel de
+                santé ou Utilisateur ;
               </li>
               <li>
                 copier, modifier, altérer, fusionner, adapter, intégrer,
                 supprimer, dupliquer, créer des œuvres dérivées, republier,
-                télécharger, transmettre ou distribuer tout ou partie de la
-                Plateforme, du Service ou de leur contenu ;
+                télécharger, transmettre et/ou distribuer tout ou partie de la
+                Plateforme, du Service MEDACTIO et/ou de son contenu, sous
+                quelque forme ou support que ce soit ;
               </li>
               <li>
-                décompiler, désassembler, faire de l&apos;ingénierie inverse,
-                traduire ou réduire de toute autre manière tout ou partie de la
-                Plateforme ;
+                tenter de décompiler, désassembler, faire de l'ingénierie
+                inverse, traduire et/ou réduire de toute autre manière tout ou
+                partie de la Plateforme ;
               </li>
               <li>
-                concéder une sous-licence, vendre, louer, transférer, afficher,
+                accorder une sous-licence, vendre, louer, transférer, afficher,
                 divulguer, diffuser, distribuer, exploiter commercialement ou
-                mettre la Plateforme ou le Service à la disposition d&apos;un
-                tiers sans accord écrit préalable de MEDACTIO ;
+                mettre, de quelque manière que ce soit, la Plateforme et/ou le
+                Service MEDACTIO à la disposition d'un tiers sans l'accord
+                préalable et écrit de MEDACTIO ;
               </li>
               <li>
-                accéder à la Plateforme ou au Service afin de développer un
-                produit ou service concurrent ;
+                accéder à tout ou partie de la Plateforme et/ou du Service
+                MEDACTIO afin de développer un produit ou un service en
+                concurrence avec la Plateforme, le Service MEDACTIO ou tout
+                service fourni par MEDACTIO ;
               </li>
               <li>
-                accéder, stocker, distribuer ou transmettre, pendant
-                l&apos;utilisation, tout virus, donnée ou matériel illégal,
-                illicite, nuisible, menaçant, diffamatoire, obscène, abusif,
-                attentatoire aux droits d&apos;autrui ou contraire aux lois
+                accéder, stocker, distribuer ou transmettre tout virus, toute
+                donnée ou tout matériel pendant Votre utilisation de la
+                Plateforme et/ou du Service MEDACTIO qui soit illégal, illicite,
+                nuisible, menaçant, diffamatoire, obscène, abusif, ou qui porte
+                atteinte à des droits, ou qui ne soit pas conforme aux lois
                 applicables ;
               </li>
               <li>
                 supprimer ou modifier la marque, le logo ou tout autre signe
-                distinctif de MEDACTIO ;
+                distinctif de MEDACTIO contenus dans la Plateforme et/ou le
+                Service MEDACTIO ;
               </li>
               <li>
-                utiliser un système ou logiciel automatisé (robots, spiders ou
-                lecteurs hors ligne) pour accéder anormalement à la Plateforme
-                ou en extraire des données (« screen scraping »).
+                utiliser un système ou un logiciel automatisé, y compris des «
+                robots », « spiders » ou « lecteurs hors ligne », pour accéder à
+                la Plateforme d'une manière anormale ou en extraire des données
+                (« screen scraping »).
               </li>
             </ul>
             <p>
-              MEDACTIO se réserve le droit, à tout moment et sans préavis, de
-              désactiver ou suspendre l&apos;accès à la Plateforme dans la
-              mesure et pour la durée nécessaires en cas de non-respect de ces
+              MEDACTIO se réserve le droit, à tout moment et sans préavis, à sa
+              seule et absolue discrétion, sans qu'elle puisse être tenue d'une
+              quelconque responsabilité à Votre égard, de désactiver et
+              suspendre Votre accès à la Plateforme dans la mesure et pour la
+              durée nécessaire, en cas de non-respect des présentes
               stipulations.
             </p>
-          </Section>
-
-          <Section
-            id="section-8"
-            number={8}
-            title="Obligations de l'Utilisateur"
-          >
-            <h3>8.1. Obligations générales et positionnement rédactionnel</h3>
+          </section>
+          <section className="legal-section" id="section-8">
+            <h2>Article 8 — Obligations de l'Utilisateur</h2>
+            <h3>
+              8.1. Obligations générales et positionnement rédactionnel du
+              Service
+            </h3>
             <p>
-              Les Utilisateurs s&apos;engagent à utiliser la Plateforme et le
-              Service dans le respect des CGU et, le cas échéant, du Contrat
-              SaaS, des lois et règlements en vigueur, des droits des tiers
-              (notamment propriété intellectuelle, santé publique, déontologie
-              médicale et secret professionnel), de manière loyale et
-              conformément à leur destination.
+              De manière générale, les Utilisateurs s'engagent à utiliser la
+              Plateforme et le Service MEDACTIO :
             </p>
+            <ul>
+              <li>
+                dans le respect des stipulations des présentes CGU et,
+                lorsqu'applicable, du Contrat SaaS ;
+              </li>
+              <li>dans le respect des lois et réglementations en vigueur ;</li>
+              <li>
+                dans le respect des droits des tiers, notamment des droits de
+                propriété intellectuelle et industrielle, des règles applicables
+                en matière de santé publique et de déontologie médicale, et plus
+                particulièrement du secret professionnel ;
+              </li>
+              <li>de manière loyale et conformément à leur destination.</li>
+            </ul>
             <p>
               <strong>
-                Obligation de relecture et de validation médicale.
-              </strong>{" "}
-              Chaque Document Généré est un projet produit à partir des seules
-              informations saisies ou validées par l&apos;Utilisateur. Celui-ci
-              s&apos;engage à relire, vérifier et valider systématiquement tout
-              Document Généré avant tout usage clinique, administratif ou
-              transmission à un tiers (patient, confrère, établissement,
-              organisme). Il ne doit jamais s&apos;appuyer uniquement sur son
-              contenu sans exercer son propre jugement clinique et
-              professionnel.
+                Obligation de relecture et de validation médicale.{" "}
+              </strong>
+              L'Utilisateur reconnaît que chaque Document Généré est un projet
+              de document, produit à partir des seules informations qu'il a
+              lui-même saisies ou validées. Il s'engage à relire, vérifier et
+              valider systématiquement tout Document Généré avant tout usage
+              clinique, administratif ou toute transmission à un tiers (patient,
+              confrère, établissement, organisme). L'Utilisateur ne doit en
+              aucun cas s'appuyer uniquement sur le contenu d'un Document Généré
+              sans exercer son propre jugement clinique et professionnel.
             </p>
             <p>
-              Toute atteinte au droit à l&apos;image, au respect de la vie
-              privée ou au secret professionnel et médical peut faire
-              l&apos;objet de sanctions, y compris pénales.
+              À ce titre, l'Utilisateur est informé que toute atteinte au droit
+              à l'image, au respect de la vie privée ou au secret professionnel
+              et médical peut faire l'objet de sanctions, y compris pénales.
             </p>
             <p>
-              L&apos;Utilisateur s&apos;engage à fournir à MEDACTIO les
-              justificatifs, documents et informations sollicités, notamment
-              pour confirmer son identité, et à les tenir à jour.
+              L'Utilisateur s'engage par ailleurs à mettre à disposition de
+              MEDACTIO tous les justificatifs, documents et informations
+              sollicités par MEDACTIO permettant notamment de confirmer son
+              identité et, plus généralement, requis dans le cadre de la
+              fourniture du Service MEDACTIO, et à mettre à jour l'ensemble de
+              ces informations.
             </p>
             <h3>8.2. Confidentialité et gestion des Identifiants</h3>
             <p>
-              Les Identifiants sont strictement personnels et confidentiels.
-              L&apos;Utilisateur s&apos;interdit de les communiquer à un tiers.
+              Les Identifiants de l'Utilisateur sont strictement personnels et
+              confidentiels. L'Utilisateur s'interdit de les communiquer à un
+              tiers.
             </p>
             <p>
-              Lors de la création de son compte personnel, l&apos;Utilisateur
-              garantit remplir les conditions de création, avoir la capacité
-              d&apos;accepter les CGU, fournir des informations exactes,
-              complètes et à jour sur son identité et son droit d&apos;exercice
-              conformément à sa déontologie et aux règles professionnelles, et
-              ne pas usurper l&apos;identité d&apos;une personne physique ou
-              morale.
+              Dans le cadre de la création de son compte personnel,
+              l'Utilisateur garantit notamment : remplir les conditions de
+              création de compte précisées ci-avant ; avoir toute capacité pour
+              accepter les CGU ; fournir des informations exactes, complètes et
+              à jour sur son identité et, le cas échéant, sur son droit
+              d'exercice, conformes à la déontologie et aux règles définies par
+              sa profession et/ou son ordre professionnel ; ne pas usurper
+              l'identité d'une autre personne physique ou morale.
             </p>
             <p>
-              L&apos;Utilisateur conserve secrets ses Identifiants et ne les
-              divulgue sous aucune forme. Il est responsable de la
-              confidentialité de son mot de passe et doit se déconnecter à la
-              fin de chaque session, en particulier depuis un ordinateur public.
+              L'Utilisateur s'oblige à conserver secrets ses Identifiants et à
+              ne pas les divulguer, sous quelque forme que ce soit. La
+              sauvegarde de la confidentialité du mot de passe choisi relève de
+              l'entière responsabilité de l'Utilisateur, qui est tenu de se
+              déconnecter de manière effective de la Plateforme à l'issue de
+              chaque session, en particulier lorsqu'il y accède depuis un
+              ordinateur public.
             </p>
             <p>
-              L&apos;Utilisateur est seul responsable de l&apos;utilisation de
-              ses Identifiants et des conséquences d&apos;une utilisation non
-              conforme. En cas de divulgation involontaire ou de présomption de
-              vol, il s&apos;engage à modifier sans délai son mot de passe et à
-              contacter{" "}
+              L'Utilisateur est seul responsable de l'utilisation qui est faite
+              de ses Identifiants et supporte toutes les conséquences qui
+              découleraient d'une utilisation non conforme aux CGU. En cas de
+              divulgation involontaire ou de présomption de vol de ses
+              Identifiants, l'Utilisateur s'engage à modifier sans délai son mot
+              de passe et à contacter MEDACTIO à l'adresse{" "}
               <a href="mailto:contact@medactio.fr">contact@medactio.fr</a>.
             </p>
             <h3>8.3. Contenu Utilisateur et Documents Générés</h3>
             <p>
-              Les Utilisateurs peuvent saisir via la Plateforme les informations
-              pertinentes pour produire un Document Généré (le « Contenu
-              Utilisateur »).
+              Les Utilisateurs ont la possibilité de saisir, via la Plateforme,
+              toute information pertinente pour la production d'un Document
+              Généré (ci-après le « Contenu Utilisateur »).
             </p>
             <p>
-              La communication d&apos;informations ou fichiers sans lien avec la
-              production d&apos;un Document Généré est strictement interdite.
-              Tout partage de Données de santé entre Professionnels de santé
-              doit respecter l&apos;article L.1110-4 du Code de la santé
-              publique. Pour les données relatives aux patients,
-              l&apos;Utilisateur est responsable du respect du secret médical et
-              du recueil des autorisations nécessaires, notamment de
-              l&apos;information du patient.
+              Toute communication d'information ou de fichier qui n'est pas en
+              lien avec la production d'un Document Généré est strictement
+              interdite. L'Utilisateur reconnaît que tout partage de Données de
+              santé à d'autres Professionnels de santé doit se faire
+              conformément aux dispositions de l'article L.1110-4 du Code de la
+              santé publique. Lors de la saisie d'informations relatives au
+              patient, l'Utilisateur est responsable (i) du respect des règles
+              attachées au secret médical et (ii) du recueil des autorisations
+              nécessaires au respect des lois et réglementations en vigueur,
+              notamment de l'information du patient.
             </p>
             <p>
-              <strong>Filtre de pseudonymisation.</strong> Préalablement à tout
-              traitement et avant toute transmission au moteur
-              d&apos;intelligence artificielle, un filtre masque automatiquement
-              l&apos;identité directe du patient (nom, prénom et variantes, date
-              de naissance, NIR/NIP/INS, numéro de dossier, coordonnées) ainsi
-              que celle du médecin et de l&apos;équipe soignante nommément
-              désignés (nom, prénom, RPPS) figurant dans le Contenu Utilisateur.
-              Le moteur d&apos;intelligence artificielle ne reçoit ainsi que des
-              données pseudonymisées, à partir desquelles le Document Généré est
-              produit. L&apos;Utilisateur peut saisir ces données
-              d&apos;identification : elles sont pseudonymisées automatiquement.
-              Les autres informations médicales contenues dans le corps du
-              Contenu Utilisateur (dates de prise en charge, traitements et
-              posologies, termes médicaux, pathologies, diagnostics, noms de
-              services ou d&apos;établissements) demeurent en clair et relèvent
-              de la responsabilité de l&apos;Utilisateur quant à leur diffusion
-              ultérieure. Ce filtre constitue une mesure de réduction du risque
-              ; il ne dispense en aucun cas l&apos;Utilisateur de relire et de
-              vérifier le Document Généré avant toute transmission, conformément
-              à l&apos;Article 8.1.
+              <strong>Filtre de pseudonymisation. </strong>Préalablement à tout
+              traitement et avant toute transmission au moteur d'intelligence
+              artificielle, un filtre de pseudonymisation masque automatiquement
+              l'identité directe du patient (nom, prénom et variantes, date de
+              naissance, NIR/NIP/INS, numéro de dossier, coordonnées) ainsi que
+              celle du médecin et de l'équipe soignante nommément désignés (nom,
+              prénom, RPPS) figurant dans le Contenu Utilisateur. Le moteur
+              d'intelligence artificielle ne reçoit ainsi que des données
+              pseudonymisées, à partir desquelles le Document Généré est
+              produit. L'Utilisateur peut saisir ces données d'identification :
+              elles sont pseudonymisées automatiquement. Les autres informations
+              médicales contenues dans le corps du Contenu Utilisateur (dates de
+              prise en charge, traitements et posologies, termes médicaux,
+              pathologies, diagnostics, noms de services ou d'établissements)
+              demeurent en clair et relèvent de la responsabilité de
+              l'Utilisateur quant à leur diffusion ultérieure. Ce filtre
+              constitue une mesure de réduction du risque ; il ne dispense en
+              aucun cas l'Utilisateur de relire et de vérifier le Document
+              Généré avant toute transmission, conformément à l'Article 8.1.
             </p>
             <p>
-              Le patient n&apos;accède ni à la Plateforme ni au Service. La
-              communication au patient d&apos;informations ou de documents issus
-              du Document Généré relève de la responsabilité exclusive de
-              l&apos;Utilisateur. MEDACTIO n&apos;est pas responsable de la
-              qualité ou du contenu médical des Contenus Utilisateur et
-              Documents Générés : l&apos;Utilisateur est seul responsable des
-              informations et documents qu&apos;il saisit, dépose, consulte et
-              diffuse via la Plateforme.
+              Le patient n'accède pas à la Plateforme ni au Service MEDACTIO. La
+              communication éventuelle au patient d'informations et/ou de
+              documents résultant du Document Généré relève de la responsabilité
+              exclusive de l'Utilisateur. MEDACTIO n'est pas responsable de la
+              qualité et/ou du contenu médical des Contenus Utilisateur et des
+              Documents Générés qui en résultent : l'Utilisateur est seul
+              responsable des informations et documents qu'il saisit, dépose,
+              consulte et diffuse via la Plateforme.
             </p>
             <h3>8.4. Indemnisation</h3>
             <p>
-              L&apos;Utilisateur reconnaît être responsable (i) de son
-              utilisation de la Plateforme et du Service, (ii) de
-              l&apos;utilisation de son Compte et de ses Identifiants, (iii) du
-              Contenu Utilisateur et des Documents Générés et (iv) de
-              l&apos;utilisation de ces éléments par un autre Utilisateur. Il
-              garantit détenir tous les droits et autorisations nécessaires sur
-              le Contenu Utilisateur.
+              L'Utilisateur reconnaît et accepte qu'il est responsable (i) de
+              l'utilisation qu'il fait de la Plateforme et du Service MEDACTIO,
+              (ii) de l'utilisation de son Compte Utilisateur et de ses
+              Identifiants, (iii) du Contenu Utilisateur et des Documents
+              Générés, et (iv) de l'utilisation de ces éléments par un autre
+              Utilisateur. L'Utilisateur garantit qu'il détient tous les droits
+              et autorisations nécessaires à l'utilisation du Contenu
+              Utilisateur.
             </p>
             <p>
-              L&apos;Utilisateur s&apos;engage à indemniser MEDACTIO contre
-              toute action, procédure ou réclamation d&apos;un tiers (notamment
-              Professionnel de santé, Utilisateur, patient ou autorité
-              compétente) liée (i) à une utilisation de la Plateforme ou du
-              Service en violation des CGU ou du Contrat SaaS, ou illégale,
-              immorale ou frauduleuse ; (ii) au Contenu Utilisateur ou à un
-              Document Généré ; ou (iii) à la violation de droits de tiers,
-              notamment propriété intellectuelle, droit à l&apos;image, vie
-              privée et protection des Données à Caractère Personnel.
+              L'Utilisateur s'engage à indemniser MEDACTIO contre toute action
+              en justice, toute procédure ou réclamation d'un tiers (y compris
+              un autre Professionnel de santé, Utilisateur ou patient, ou une
+              autorité compétente), dont MEDACTIO pourrait faire l'objet, en
+              lien avec (i) l'utilisation de la Plateforme et/ou du Service
+              MEDACTIO en violation des présentes CGU et/ou du Contrat SaaS, ou
+              de manière illégale, immorale ou frauduleuse ; (ii) le Contenu
+              Utilisateur ou tout Document Généré ; ou (iii) la violation de
+              tout droit de tiers, en ce compris tout droit de propriété
+              intellectuelle, droit à l'image, droit au respect de la vie privée
+              et à la protection des Données à Caractère Personnel.
             </p>
-          </Section>
-
-          <Section
-            id="section-9"
-            number={9}
-            title="Obligations de MEDACTIO et disponibilité du Service"
-          >
+          </section>
+          <section className="legal-section" id="section-9">
+            <h2>
+              Article 9 — Obligations de MEDACTIO et disponibilité du Service
+            </h2>
             <p>
-              MEDACTIO s&apos;engage à administrer la Plateforme et à faire ses
-              meilleurs efforts pour assurer le bon fonctionnement du Service.
-              MEDACTIO n&apos;assume qu&apos;une obligation de moyens.
-            </p>
-            <p>
-              Le Service peut être interrompu, notamment pour maintenance ou
-              sécurité, en raison de problèmes informatiques,
-              d&apos;interruption ou de dysfonctionnement du service Internet,
-              de défaillance de matériel ou de lignes de communication, ou
-              d&apos;autres circonstances imprévues.
+              MEDACTIO s'engage à administrer la Plateforme et à faire ses
+              meilleurs efforts pour assurer le bon fonctionnement du Service
+              MEDACTIO. À ce titre, MEDACTIO n'assume qu'une obligation de
+              moyens dans l'exécution de ses obligations.
             </p>
             <p>
-              MEDACTIO peut modifier l&apos;infrastructure technique de la
-              Plateforme, supprimer ou ajouter des fonctionnalités ou modules.
+              L'Utilisateur reconnaît et accepte que le Service MEDACTIO rendu
+              disponible via la Plateforme peut être interrompu, en particulier
+              pour des raisons de maintenance, de sécurité, ou pour cause de
+              problèmes informatiques, d'interruption ou de dysfonctionnement du
+              service Internet, de défaillance de tout matériel de réception ou
+              des lignes de communication, ou d'autres circonstances imprévues.
             </p>
             <p>
-              Pour toute difficulté ou dysfonctionnement, les Utilisateurs
-              peuvent contacter{" "}
+              MEDACTIO pourra librement modifier l'infrastructure technique de
+              sa Plateforme, supprimer et/ou ajouter des fonctionnalités et/ou
+              des modules.
+            </p>
+            <p>
+              Pour toute difficulté d'utilisation ou dysfonctionnement de la
+              Plateforme, les Utilisateurs sont invités à contacter MEDACTIO à
+              l'adresse électronique suivante :{" "}
               <a href="mailto:contact@medactio.fr">contact@medactio.fr</a>.
             </p>
-          </Section>
-
-          <Section id="section-10" number={10} title="Propriété intellectuelle">
+          </section>
+          <section className="legal-section" id="section-10">
+            <h2>Article 10 — Propriété intellectuelle</h2>
             <p>
-              L&apos;accès ou l&apos;utilisation de la Plateforme et du Service
-              ne reconnaît ni ne confère à l&apos;Utilisateur aucun droit de
-              propriété intellectuelle sur la Plateforme, le Service ou leurs
-              éléments.
+              L'accès et/ou l'utilisation de la Plateforme et du Service
+              MEDACTIO ne constitue en aucun cas la reconnaissance d'un droit
+              quelconque et, plus généralement, ne confère à l'Utilisateur aucun
+              droit de propriété intellectuelle sur la Plateforme, le Service
+              MEDACTIO ou l'un quelconque des éléments qui les composent.
             </p>
             <p>
-              MEDACTIO, ses sociétés affiliées et, le cas échéant, ses
-              concédants demeurent propriétaires exclusifs de tous les droits, y
-              compris de propriété intellectuelle, sur la Plateforme, le
-              Service, leurs composants, fonctionnalités, modules (textes,
-              graphiques, images, logos, noms, marques, désignations, sons,
-              photographies, données, bases de données et logiciels) et leur
-              documentation (« Propriétés de MEDACTIO »).
+              À cet égard, Vous reconnaissez et acceptez que MEDACTIO, ses
+              sociétés affiliées et/ou, le cas échéant, l'un de ses concédants,
+              sont et demeurent les propriétaires exclusifs de tous les droits
+              (y compris tous les droits de propriété intellectuelle) sur la
+              Plateforme, le Service MEDACTIO, tous ses composants,
+              fonctionnalités et modules (textes, graphiques, images, logos,
+              noms, marques, désignations, sons, photographies, données, bases
+              de données et logiciels) et la documentation y étant associée («
+              Propriétés de MEDACTIO »).
             </p>
             <p>
-              <strong>Propriété des Documents Générés.</strong> Par exception,
-              l&apos;Utilisateur demeure seul propriétaire des Contenus
-              Utilisateur qu&apos;il saisit ainsi que des Documents Générés qui
-              en résultent. MEDACTIO ne revendique aucun droit de propriété
-              intellectuelle sur ces Documents, sous réserve de
-              l&apos;utilisation de certaines données à des fins statistiques,
-              d&apos;amélioration du Service et de conformité, selon
-              l&apos;Article 15.
+              <strong>Propriété des Documents Générés. </strong>Par exception,
+              l'Utilisateur demeure seul propriétaire des Contenus Utilisateur
+              qu'il saisit, ainsi que des Documents Générés qui en résultent.
+              MEDACTIO ne revendique aucun droit de propriété intellectuelle sur
+              ces Documents Générés, sous réserve du droit d'utiliser certaines
+              données à des fins statistiques, d'amélioration du Service et de
+              conformité, dans les conditions prévues à l'Article 15.
             </p>
             <p>
-              Toute violation du présent Article est susceptible de constituer
-              une contrefaçon civilement et pénalement sanctionnable.
+              L'Utilisateur reconnaît que toute violation des stipulations du
+              présent Article est constitutive de contrefaçon civilement et
+              pénalement sanctionnable.
             </p>
-          </Section>
-
-          <Section
-            id="section-11"
-            number={11}
-            title="Logiciels et Services de tiers"
-          >
+          </section>
+          <section className="legal-section" id="section-11">
+            <h2>Article 11 — Logiciels et Services de tiers</h2>
             <p>
-              La Plateforme et le Service font appel à des logiciels, produits
-              ou services tiers, notamment pour l&apos;hébergement et
-              l&apos;envoi de communications transactionnelles (les « Logiciels
-              et Services de tiers »). La liste des principaux prestataires
-              figure en Annexe 3.
+              La Plateforme et le Service MEDACTIO font appel à certains
+              logiciels, produits ou services tiers, notamment pour
+              l'hébergement, le développement, la maintenance et l'envoi de
+              communications transactionnelles (ci-après les « Logiciels et
+              Services de tiers »), dont la liste des principaux prestataires
+              figure en Annexe 3 des présentes.
             </p>
             <p>
-              MEDACTIO n&apos;est pas responsable et n&apos;offre aucune
-              garantie, expresse ou implicite, pour les informations, contenus,
-              produits ou services contenus dans les Logiciels et Services de
-              tiers ou accessibles via ceux-ci.
+              MEDACTIO n'est pas responsable et n'offre aucune garantie,
+              expresse ou implicite, pour les informations, le contenu ou
+              d'autres produits ou services contenus dans les Logiciels et
+              Services de tiers ou accessibles via ces derniers.
             </p>
-          </Section>
-
-          <Section id="section-12" number={12} title="Garanties">
+          </section>
+          <section className="legal-section" id="section-12">
+            <h2>Article 12 — Garanties</h2>
             <p>
-              <strong>
-                La Plateforme, le Service MEDACTIO et tous leurs éléments sont
-                fournis « en l&apos;état ». Vous acceptez que leur utilisation
-                se fasse entièrement à Vos risques et périls.
-              </strong>
+              LA PLATEFORME, LE SERVICE MEDACTIO AINSI QUE L'ENSEMBLE DES
+              ÉLÉMENTS QUI LES COMPOSENT SONT FOURNIS « EN L'ÉTAT ». À CET
+              ÉGARD, VOUS ACCEPTEZ QUE VOTRE UTILISATION DE LA PLATEFORME ET/OU
+              DU SERVICE MEDACTIO SE FASSE ENTIÈREMENT À VOS RISQUES ET PÉRILS.
             </p>
             <p>
               MEDACTIO et ses sociétés affiliées excluent toute garantie ou
-              représentation, expresse ou implicite, concernant la Plateforme,
-              le Service, leurs éléments ou tout contenu, média ou information
-              qu&apos;ils contiennent ou auxquels ils donnent accès.
+              représentation de quelque nature que ce soit, qu'elle soit
+              expresse ou implicite, concernant la Plateforme, le Service
+              MEDACTIO, l'ensemble des éléments qui les composent ainsi que tout
+              contenu, média ou information contenus sur la Plateforme ou
+              accessibles via celle-ci.
             </p>
             <p>
-              MEDACTIO ne garantit pas que l&apos;accès à la Plateforme ou au
-              Service, ou à une partie de ceux-ci, sera ininterrompu ou exempt
-              de défauts. MEDACTIO décline toute garantie implicite de qualité
-              marchande, d&apos;adéquation à un usage particulier, de titre ou
-              d&apos;absence de contrefaçon.
+              MEDACTIO ne garantit pas que Votre accès à la Plateforme et/ou au
+              Service MEDACTIO, ou à une partie de ceux-ci, sera ininterrompu ou
+              exempt de défauts. MEDACTIO décline toute garantie implicite de
+              qualité marchande, d'adéquation à un usage particulier, de titre
+              ou d'absence de contrefaçon.
             </p>
             <p>
-              Le rôle de MEDACTIO se limite à celui d&apos;un prestataire
-              technique d&apos;assistance rédactionnelle. MEDACTIO ne peut être
-              tenue responsable du contenu médical des Documents Générés, du
-              comportement des Utilisateurs, de l&apos;utilisation des Documents
-              Générés, ni des résultats ou décisions cliniques pris par
-              l&apos;Utilisateur ou un tiers sur leur fondement.
+              Vous reconnaissez que le rôle de MEDACTIO se limite à celui d'un
+              prestataire technique d'assistance rédactionnelle, et que ce
+              dernier ne peut en aucune manière être tenu responsable du contenu
+              médical des Documents Générés, ni du comportement des Utilisateurs
+              sur la Plateforme. MEDACTIO décline toute responsabilité quant à
+              l'utilisation des Documents Générés et/ou aux résultats ou
+              décisions cliniques prises par l'Utilisateur ou par un tiers sur
+              leur fondement.
             </p>
-          </Section>
-
-          <Section id="section-13" number={13} title="Responsabilité">
+          </section>
+          <section className="legal-section" id="section-13">
+            <h2>Article 13 — Responsabilité</h2>
             <p>
-              MEDACTIO ne pourra être tenue responsable des dommages directs ou
-              indirects causés à l&apos;Utilisateur, à un Professionnel de santé
-              ou à un tiers en cas :
+              En aucun cas MEDACTIO ne pourra être tenue responsable des
+              dommages directs ou indirects causés à l'Utilisateur, à un
+              Professionnel de santé et/ou à tout tiers, en cas :
             </p>
             <ul>
               <li>
-                de force majeure au sens de la loi et des tribunaux français
-                ayant un impact sur la Plateforme ou le Service ;
+                de survenance d'un événement de force majeure tel que défini par
+                la loi et les tribunaux français ayant un impact sur la
+                Plateforme et/ou le Service MEDACTIO ;
               </li>
-              <li>de problèmes liés au réseau Internet ;</li>
+              <li>de problèmes liés au réseau internet ;</li>
               <li>
-                de pannes ou dommages résultant des équipements de
-                l&apos;Utilisateur ou de la contamination de son système par des
-                virus, attaques ou actes malveillants de tiers ;
-              </li>
-              <li>
-                d&apos;indisponibilité ou de dysfonctionnement de la Plateforme
-                ou du Service, quelle qu&apos;en soit la raison ;
+                de pannes ou dommages résultant des équipements de l'Utilisateur
+                ou de la contamination de son système informatique par des
+                virus, attaques ou malveillances de tiers ;
               </li>
               <li>
-                d&apos;utilisation non conforme aux CGU ou au Contrat SaaS ;
+                d'indisponibilité ou de dysfonctionnement de la Plateforme et/ou
+                du Service MEDACTIO quelle qu'en soit la raison ;
               </li>
               <li>
-                d&apos;inexactitude, d&apos;incomplétude ou d&apos;absence de
-                validation du Contenu Utilisateur avant la génération d&apos;un
-                Document ;
+                d'utilisation de la Plateforme par l'Utilisateur non conforme
+                aux présentes CGU et/ou au Contrat SaaS ;
               </li>
               <li>
-                d&apos;utilisation d&apos;un Document Généré sans la relecture
-                et la validation médicale prévues à l&apos;Article 8.1.
+                d'inexactitude, d'incomplétude ou d'absence de validation du
+                Contenu Utilisateur préalablement à la génération d'un Document
+                Généré ;
+              </li>
+              <li>
+                d'utilisation d'un Document Généré sans la relecture et la
+                validation médicale prévues à l'Article 8.1.
               </li>
             </ul>
             <p>
-              MEDACTIO et ses sociétés affiliées ne sauraient être tenues
-              responsables envers l&apos;Utilisateur, le Client ou un tiers de
-              dommages indirects ou immatériels liés à la Plateforme, au Service
-              ou aux informations qu&apos;ils contiennent, tels que manque à
-              gagner, interruption d&apos;activité, perte d&apos;exploitation,
-              de chiffre d&apos;affaires, de bénéfice, de clientèle ou de
-              patientèle, de contrats, de données, perte d&apos;une chance,
-              préjudice d&apos;image ou atteinte à la réputation.
+              MEDACTIO ainsi que ses sociétés affiliées ne sauraient en aucun
+              cas être tenues responsables envers l'Utilisateur, le Client et/ou
+              tout tiers pour tout dommage indirect ou immatériel de quelque
+              nature que ce soit résultant de ou en lien avec la Plateforme, le
+              Service MEDACTIO et/ou les informations qu'ils contiennent, tels
+              que notamment tout manque à gagner, interruption d'activité, perte
+              d'exploitation, de chiffre d'affaires, de bénéfice, de clientèle
+              ou de patientèle, de contrats, de données et perte d'une chance,
+              préjudice d'image et atteinte à la réputation.
             </p>
             <p>
-              <strong>Plafond de responsabilité.</strong> En toute hypothèse, en
-              cas de faute prouvée de MEDACTIO envers l&apos;Utilisateur, la
-              responsabilité totale de MEDACTIO au titre des CGU est limitée,
-              tous dommages et pénalités confondus, aux sommes effectivement
-              versées par l&apos;Utilisateur au titre de son abonnement au cours
-              des douze (12) mois précédant le fait générateur (Professionnel
-              Individuel), ou au plafond défini au Contrat SaaS (Établissement
-              Client).
+              <strong>Plafond de responsabilité.</strong>En toute hypothèse, en
+              cas de faute prouvée de MEDACTIO à l'égard de l'Utilisateur,
+              l'entière responsabilité de MEDACTIO au titre des présentes CGU
+              est limitée, tous dommages et pénalités confondus, à un montant
+              total équivalent aux sommes effectivement versées par
+              l'Utilisateur au titre de son abonnement au cours des douze (12)
+              mois précédant le fait générateur du dommage (pour un
+              Professionnel Individuel), ou au montant plafonné défini au sein
+              du Contrat SaaS (pour un Établissement Client).
             </p>
-          </Section>
-
-          <Section
-            id="section-14"
-            number={14}
-            title="Abonnement, semaine gratuite et modalités de paiement"
-          >
+          </section>
+          <section className="legal-section" id="section-14">
+            <h2>
+              Article 14 — Abonnement, période d'essai de 7 jours et modalités
+              de paiement
+            </h2>
             <h3>14.1. Utilisation Individuelle par abonnement</h3>
             <p>
-              L&apos;accès au Service pour une Utilisation Individuelle est
-              payant. Il n&apos;existe pas d&apos;offre totalement gratuite ;
-              tout abonnement inclut une semaine (7 jours) gratuite à compter de
-              l&apos;inscription.
+              L'accès au Service MEDACTIO au titre d'une Utilisation
+              Individuelle est payant. Il n'existe pas d'offre gratuite : tout
+              abonnement débute par une période d'essai de 7 jours à compter de
+              l'inscription, à l'issue de laquelle l'Utilisateur est débité.
             </p>
             <p>
               Le moyen de paiement du Professionnel Individuel est enregistré
-              dès l&apos;inscription. Aucun débit n&apos;intervient pendant les
-              7 premiers jours. Sauf résiliation avant la fin de cette période,
-              le premier prélèvement intervient automatiquement à son issue,
-              puis l&apos;abonnement se renouvelle automatiquement chaque mois
-              au tarif en vigueur affiché lors de l&apos;inscription et rappelé
-              avant tout prélèvement.
+              dès l'inscription. Aucun débit n'intervient pendant la période
+              d'essai de 7 jours. Sauf résiliation avant son terme, le premier
+              prélèvement intervient automatiquement après le 7e jour, puis
+              l'abonnement se renouvelle automatiquement selon une périodicité
+              mensuelle, au tarif en vigueur affiché lors de l'inscription et
+              rappelé avant tout prélèvement.
             </p>
             <p>
-              À titre indicatif, l&apos;offre « Praticien individuel » affichée
-              sur la Plateforme est de{" "}
-              <strong>
-                32,00 € HT / mois (38,40 € TTC / mois, TVA à 20 % incluse)
-              </strong>
-              .
+              À titre indicatif, l'offre « Praticien individuel » actuellement
+              affichée sur la Plateforme est de{" "}
+              <strong>32,00 € HT / mois</strong> (soit{" "}
+              <strong>38,40 € TTC / mois</strong> TVA à 20 % incluse),{" "}
             </p>
             <p>
-              L&apos;Utilisateur peut résilier à tout moment, sans engagement ni
-              justification, depuis son espace praticien. La résiliation prend
-              effet à la fin de la période déjà facturée ; elle empêche tout
-              renouvellement ultérieur mais ne modifie pas les sommes dues pour
-              la période en cours.
+              L'Utilisateur peut résilier son abonnement à tout moment, sans
+              engagement de durée et sans justification, depuis son espace
+              praticien. La résiliation prend effet à l'issue de la période déjà
+              facturée en cours ; elle empêche tout renouvellement ultérieur
+              mais reste sans effet sur les sommes déjà dues au titre de la
+              période en cours.
             </p>
             <p>
-              En cas d&apos;échec de paiement à l&apos;échéance, MEDACTIO peut
-              suspendre l&apos;accès jusqu&apos;à régularisation, sans préjudice
-              de l&apos;Article 16.
+              En cas d'échec de paiement à l'échéance, MEDACTIO pourra suspendre
+              l'accès de l'Utilisateur au Service MEDACTIO jusqu'à
+              régularisation, sans préjudice des stipulations de l'Article 16.
             </p>
             <p>
               Les tarifs applicables sont ceux en vigueur au jour du
-              renouvellement. Toute évolution tarifaire sera communiquée avec un
-              préavis raisonnable avant son application.
+              renouvellement ; toute évolution tarifaire sera communiquée à
+              l'Utilisateur avec un préavis raisonnable avant son application.
             </p>
             <h3>
-              14.2. Utilisation dans le cadre d&apos;un Établissement (Contrat
-              SaaS)
+              14.2. Utilisation dans le cadre d'un Établissement (Contrat SaaS)
             </h3>
             <p>
-              Pour les Établissements Clients, le prix, la facturation, la
-              périodicité de paiement et le périmètre des équipes couvertes sont
-              exclusivement définis par le Contrat SaaS, qui prévaut en cas de
-              conflit conformément à l&apos;Article 4.
+              Pour les Établissements Clients, les modalités de prix, de
+              facturation, de périodicité de paiement et le périmètre des
+              équipes médicales couvertes (tout ou partie des Professionnels de
+              santé de l'Établissement) sont exclusivement définies au sein du
+              Contrat SaaS conclu entre l'Établissement et MEDACTIO, qui prévaut
+              sur les présentes en cas de conflit conformément à l'Article 4.
             </p>
             <p>
-              Les Professionnels Établissement ne sont pas facturés
-              individuellement : la relation contractuelle et financière est
-              portée par l&apos;Établissement Client.
+              Les Professionnels Établissement accédant à la Plateforme dans ce
+              cadre ne sont pas facturés individuellement : la relation
+              contractuelle et financière est portée par l'Établissement Client.
             </p>
-          </Section>
-
-          <Section
-            id="section-15"
-            number={15}
-            title="Données à caractère personnel et secret médical"
-          >
-            <h3>15.1. Description des traitements</h3>
+          </section>
+          <section className="legal-section" id="section-15">
+            <h2>
+              Article 15 — Données à caractère personnel et secret médical
+            </h2>
+            <h3>15.1. Description des différents traitements mis en œuvre</h3>
             <p>
-              Dans le cadre du Service, plusieurs traitements de Données à
-              Caractère Personnel sont mis en œuvre, pour lesquels les rôles et
-              responsabilités des Parties diffèrent :
+              Dans le cadre de la fourniture du Service MEDACTIO, les Parties
+              reconnaissent et acceptent que plusieurs types de traitements de
+              Données à Caractère Personnel sont mis en œuvre, pour lesquels les
+              rôles, obligations et responsabilités des Parties diffèrent :
             </p>
             <ul>
               <li>
-                <strong>Utilisation Individuelle :</strong> le Professionnel
-                Individuel est Responsable du Traitement des données
-                personnelles de ses patients saisies sur la Plateforme ;
-                MEDACTIO agit comme Sous-traitant. Les obligations respectives
-                sont définies au présent Article 15.
+                <strong>Utilisation Individuelle : </strong>le Professionnel
+                Individuel agit en qualité de Responsable du Traitement
+                s'agissant des Données à Caractère Personnel de ses patients
+                qu'il saisit sur la Plateforme ; MEDACTIO agit en qualité de
+                Sous-traitant. Les obligations respectives des Parties pour ce
+                Traitement sont définies au sein du présent Article 15.
               </li>
               <li>
-                <strong>Utilisation dans un Établissement :</strong>{" "}
-                l&apos;Établissement Client est Responsable du Traitement et
-                MEDACTIO Sous-traitant. Les obligations sont définies dans un
-                accord de traitement des données complétant le Contrat SaaS.
+                <strong>Utilisation dans le cadre d'un Établissement : </strong>
+                l'Établissement Client agit en qualité de Responsable du
+                Traitement ; MEDACTIO agit en qualité de Sous-traitant. Les
+                obligations respectives des Parties sont définies au sein d'un
+                convention de traitement des données complétant le Contrat SaaS
+                conclu entre l'Établissement et MEDACTIO.
               </li>
               <li>
-                <strong>Fourniture des comptes utilisateurs :</strong> MEDACTIO
-                est Responsable du Traitement pour la gestion des comptes des
-                Professionnels de santé (données d&apos;identification, de
-                connexion et de facturation), les Utilisateurs étant alors les
-                Personnes Concernées.
+                <strong>
+                  Traitements relatifs à la fourniture de comptes utilisateurs
+                  :{" "}
+                </strong>
+                MEDACTIO agit en qualité de Responsable du Traitement pour la
+                gestion des comptes des Professionnels de santé eux-mêmes
+                (données d'identification, de connexion et de facturation), les
+                Utilisateurs étant alors des Personnes Concernées.
               </li>
             </ul>
             <p>
-              Les Articles 15.2 à 15.9 s&apos;appliquent aux traitements
-              réalisés dans le cadre d&apos;une Utilisation Individuelle. Pour
-              ces Articles, « Utilisateur Concerné » désigne le Professionnel
+              Les stipulations des Articles 15.2 à 15.9 ci-après ont vocation à
+              s'appliquer aux Traitements mis en œuvre dans le cadre d'une
+              Utilisation Individuelle. Pour les besoins de ces Articles, le
+              terme « Utilisateur Concerné » désigne le Professionnel
               Individuel.
             </p>
             <h3>15.2. Filtre de pseudonymisation</h3>
             <p>
-              Conformément à l&apos;Article 8.3, un filtre de pseudonymisation
+              Conformément à l'Article 8.3, un filtre de pseudonymisation
               appliqué préalablement à tout traitement et avant toute
-              transmission au moteur d&apos;intelligence artificielle masque
-              l&apos;identité directe du patient et celle du Professionnel de
-              santé et de l&apos;équipe soignante nommément désignés, y compris
-              lorsque ces données ont été saisies par l&apos;Utilisateur. Les
-              autres catégories de données médicales (dates, traitements et
-              posologies, termes médicaux, pathologies, diagnostics, noms de
-              services ou d&apos;établissements) ne sont pas masquées et
-              demeurent, le cas échéant, des Données de santé au sens du RGPD,
-              traitées dans les conditions du présent Article 15.
+              transmission au moteur d'intelligence artificielle masque
+              l'identité directe du patient et celle du Professionnel de santé
+              et de l'équipe soignante nommément désignés, y compris lorsque ces
+              données ont été saisies par l'Utilisateur. Les autres catégories
+              de données médicales (dates, traitements et posologies, termes
+              médicaux, pathologies, diagnostics, noms de services ou
+              d'établissements) ne sont pas masquées et demeurent, le cas
+              échéant, des Données de santé au sens du RGPD, traitées dans les
+              conditions du présent Article 15.
             </p>
             <h3>
-              15.3. Obligations de MEDACTIO envers l&apos;Utilisateur Concerné
+              15.3. Obligation de MEDACTIO vis-à-vis de l'Utilisateur Concerné
             </h3>
             <p>
-              Pour fournir la Plateforme et le Service à l&apos;Utilisateur
-              Concerné, MEDACTIO peut traiter des Données à Caractère Personnel
-              de celui-ci et de ses patients en qualité de Sous-traitant, dans
-              les conditions précisées à l&apos;Annexe 1.
+              Dans le cadre de la fourniture de la Plateforme et du Service
+              MEDACTIO à l'Utilisateur Concerné, MEDACTIO est susceptible de
+              traiter des Données à Caractère Personnel appartenant à
+              l'Utilisateur Concerné et à ses patients, en qualité de
+              Sous-traitant, dans les conditions précisées en Annexe 1 des
+              présentes.
             </p>
             <p>
-              MEDACTIO s&apos;engage à traiter les données confiées dans le
-              strict respect des CGU et de la Réglementation Applicable en
-              matière de Protection des Données, et à mettre en œuvre les
-              mesures techniques et organisationnelles adaptées pour préserver
-              leur sécurité, disponibilité, confidentialité et intégrité,
-              notamment contre la destruction accidentelle ou illicite, la
-              perte, l&apos;altération, la diffusion ou l&apos;accès non
-              autorisé. Les mesures sont listées en Annexe 2.
+              À ce titre, MEDACTIO s'engage à traiter les données qui lui sont
+              confiées par l'Utilisateur Concerné dans le strict respect des
+              présentes stipulations contractuelles et de la Réglementation
+              Applicable en matière de Protection des Données, et à mettre en
+              œuvre toutes les mesures techniques et organisationnelles adaptées
+              afin de préserver la sécurité, la disponibilité, la
+              confidentialité et l'intégrité de ces Données à Caractère
+              Personnel, notamment contre la destruction accidentelle ou
+              illicite, la perte accidentelle, l'altération, la diffusion ou
+              l'accès non autorisé. Les mesures de sécurité mises en place sont
+              listées en Annexe 2 des présentes.
             </p>
             <p>
-              MEDACTIO s&apos;engage notamment à traiter les données uniquement
-              pour les finalités de l&apos;Annexe 1 et selon les instructions de
-              l&apos;Utilisateur Concerné ; à l&apos;informer si un transfert
-              vers un pays tiers est requis ; à prendre les précautions utiles
-              pour garantir leur confidentialité ; à veiller à ce que les
-              personnes autorisées s&apos;engagent à la confidentialité et
-              reçoivent la formation nécessaire ; et à aider l&apos;Utilisateur
-              Concerné dans la réalisation d&apos;analyses d&apos;impact
-              relatives à la protection des données.
+              MEDACTIO s'engage notamment à : traiter les données uniquement
+              pour la ou les finalités énoncées en Annexe 1 et conformément aux
+              instructions de l'Utilisateur Concerné ; informer l'Utilisateur
+              Concerné s'il est tenu de procéder à un transfert de données vers
+              un pays tiers ; prendre toutes précautions utiles pour garantir la
+              confidentialité des données traitées ; veiller à ce que les
+              personnes autorisées à traiter les Données à Caractère Personnel
+              s'engagent à respecter la confidentialité et reçoivent la
+              formation nécessaire ; aider l'Utilisateur Concerné pour la
+              réalisation d'analyses d'impact relatives à la protection des
+              données.
             </p>
             <h3>15.4. Sous-traitance ultérieure</h3>
             <p>
-              MEDACTIO peut faire appel à des Sous-traitants ultérieurs pour des
-              activités de Traitement spécifiques. La liste des sous-traitants
-              autorisés figure à l&apos;Annexe 3. Toute modification de cette
-              liste sera préalablement notifiée par écrit à l&apos;Utilisateur
-              Concerné, qui dispose de trente (30) jours à compter de la
-              réception de cette information pour présenter ses objections.
+              MEDACTIO peut faire appel à des Sous-traitants ultérieurs pour
+              mener des activités de Traitement spécifiques. La liste des
+              sous-traitants ultérieurs autorisés à ce jour figure en Annexe 3
+              des présentes. Dans le cas où MEDACTIO souhaiterait apporter une
+              modification à cette liste, elle en informe préalablement et par
+              écrit l'Utilisateur Concerné, qui dispose d'un délai de trente
+              (30) jours à compter de la réception de cette information pour
+              présenter ses objections.
             </p>
             <p>
-              MEDACTIO s&apos;assure que le sous-traitant ultérieur présente les
-              mêmes garanties concernant les mesures techniques et
-              organisationnelles appropriées. Si celui-ci ne remplit pas ses
-              obligations de protection des données, MEDACTIO demeure pleinement
-              responsable envers l&apos;Utilisateur Concerné.
+              Il appartient à MEDACTIO de s'assurer que le sous-traitant
+              ultérieur présente les mêmes garanties quant à la mise en œuvre de
+              mesures techniques et organisationnelles appropriées. Si le
+              sous-traitant ultérieur ne remplit pas ses obligations en matière
+              de protection des données, MEDACTIO demeure pleinement responsable
+              devant l'Utilisateur Concerné.
             </p>
             <h3>15.5. Exercice des droits des personnes</h3>
             <p>
-              Dans la mesure du possible, MEDACTIO aide l&apos;Utilisateur
-              Concerné à répondre aux demandes d&apos;exercice des droits des
-              Personnes Concernées (accès, rectification, effacement,
-              opposition, limitation et portabilité).
+              Dans la mesure du possible, MEDACTIO aidera l'Utilisateur Concerné
+              à s'acquitter de son obligation de donner suite aux demandes
+              d'exercice des droits des Personnes Concernées (droit d'accès, de
+              rectification, d'effacement et d'opposition, droit à la limitation
+              du traitement, droit à la portabilité des données).
             </p>
             <p>
-              Si une Personne Concernée exerce ses droits auprès de MEDACTIO,
-              celle-ci transmet la demande dans les meilleurs délais et au plus
-              tard dans les huit (8) jours ouvrés à l&apos;Utilisateur Concerné,
-              à l&apos;adresse email renseignée lors de la création du compte.
+              Si des Personnes Concernées venaient à exercer auprès de MEDACTIO
+              des demandes d'exercice de leurs droits, MEDACTIO adressera ces
+              demandes, dans les meilleurs délais et au plus tard dans les huit
+              (8) jours ouvrés, à l'Utilisateur Concerné, à l'adresse email
+              renseignée lors de la création de son compte.
             </p>
-            <h3>15.6. Notification des violations de données</h3>
+            <h3>
+              15.6. Notification des Violations de Données à Caractère Personnel
+            </h3>
             <p>
-              MEDACTIO notifie à l&apos;Utilisateur Concerné toute Violation de
-              Données à Caractère Personnel dans les meilleurs délais et au plus
-              tard dans les quarante-huit (48) heures après en avoir pris
-              connaissance, par email à l&apos;adresse renseignée lors de la
-              création du compte. La notification décrit la violation, les
-              données concernées, sa cause et toute documentation utile pour
-              permettre, si nécessaire, une notification à l&apos;Autorité de
-              Contrôle compétente.
+              MEDACTIO notifie à l'Utilisateur Concerné toute Violation de
+              Données à Caractère Personnel dans les meilleurs délais et en tout
+              état de cause dans un délai de quarante-huit (48) heures après en
+              avoir pris connaissance, par email à l'adresse renseignée lors de
+              la création du compte. Cette notification est accompagnée de la
+              description de la violation, des données concernées, de la cause
+              et de toute documentation utile afin de permettre à l'Utilisateur
+              Concerné, si nécessaire, de notifier cette violation à l'Autorité
+              de Contrôle compétente.
             </p>
             <h3>15.7. Sort des données</h3>
             <p>
-              À l&apos;expiration de la relation contractuelle, quelle
-              qu&apos;en soit la cause, MEDACTIO devra, selon la demande de
-              l&apos;Utilisateur Concerné, détruire les données et toutes leurs
-              copies ou les restituer puis détruire les copies existantes, sauf
-              obligation de conservation au titre de la Réglementation
-              Applicable, dont MEDACTIO informera l&apos;Utilisateur Concerné.
+              MEDACTIO ne stockant aucune donnée de santé de patients,
+              l'expiration de la relation contractuelle n'entraîne aucune
+              restitution ni destruction de telles données. À cette date,
+              MEDACTIO supprime ou restitue, selon la demande de l'Utilisateur
+              Concerné, les données de son compte, sauf lorsqu'elle est tenue de
+              les conserver en application de la Réglementation Applicable en
+              matière de Protection des Données, ce dont elle s'engage à
+              informer l'Utilisateur Concerné.
             </p>
-            <h3>15.8. Obligations de l&apos;Utilisateur envers MEDACTIO</h3>
+            <h3>15.8. Obligations de l'Utilisateur vis-à-vis de MEDACTIO</h3>
             <p>
-              L&apos;Utilisateur Concerné s&apos;engage à fournir les données
-              nécessaires au Service ; à veiller, avant et pendant la relation
-              contractuelle, au respect de la Réglementation Applicable et du
-              Code de la santé publique, notamment à l&apos;information des
-              patients ; et à obtenir, lorsque les dispositions légales
-              l&apos;exigent, le consentement des Personnes Concernées au
-              partage de leurs données avec d&apos;autres Professionnels de
-              santé.
+              L'Utilisateur Concerné s'engage à : fournir à MEDACTIO les données
+              nécessaires à la fourniture des services prévus au sein des
+              présentes CGU ; veiller, préalablement et pendant toute la durée
+              de la relation contractuelle, au respect des obligations prévues
+              par la Réglementation Applicable en matière de Protection des
+              Données et par les dispositions du Code de la Santé Publique,
+              notamment à l'information des patients concernés par le Traitement
+              ; obtenir, lorsque cela s'avère nécessaire en raison des
+              dispositions légales applicables, le consentement des Personnes
+              Concernées au partage de leurs données avec d'autres
+              Professionnels de santé.
             </p>
             <p>
-              L&apos;Utilisateur Concerné est seul responsable de
-              l&apos;exactitude des données fournies à MEDACTIO ainsi que de la
-              conformité et de la légalité du Traitement mis en œuvre via la
-              Plateforme.
+              L'Utilisateur Concerné reconnaît et accepte qu'il est seul
+              responsable de l'exactitude des Données à Caractère Personnel
+              qu'il fournit à MEDACTIO ainsi que de la conformité et de la
+              légalité du Traitement mis en œuvre via la Plateforme.
             </p>
             <h3>15.9. Coordonnées et points de contact</h3>
             <p>
               Pour toute question relative à la protection des Données à
-              Caractère Personnel, l&apos;Utilisateur peut contacter MEDACTIO à{" "}
-              <a href="mailto:contact@medactio.fr">contact@medactio.fr</a>.
+              Caractère Personnel, l'Utilisateur peut contacter MEDACTIO à
+              l'adresse suivante :{" "}
+              <a href="mailto:contact@medactio.fr">contact@medactio.fr</a>.{" "}
             </p>
-          </Section>
-
-          <Section
-            id="section-16"
-            number={16}
-            title="Suspension et résiliation d'accès à la Plateforme"
-          >
+          </section>
+          <section className="legal-section" id="section-16">
+            <h2>
+              Article 16 — Suspension et résiliation d'accès à la Plateforme
+            </h2>
             <p>
-              Sans préjudice de ses autres droits ou recours, MEDACTIO peut
-              unilatéralement, de plein droit et sans préavis, suspendre,
-              limiter ou résilier un Compte Utilisateur, temporairement ou
-              définitivement : (i) en cas de violation des CGU, du Contrat SaaS,
-              ou d&apos;une loi ou réglementation ; (ii) en cas
-              d&apos;utilisation susceptible de porter atteinte aux droits de
-              tiers ; (iii) en cas d&apos;utilisation susceptible de nuire au
-              fonctionnement de la Plateforme ou du Service ou à leur
-              utilisation par d&apos;autres Utilisateurs ; (iv) si la loi, la
-              réglementation ou une autorité compétente l&apos;exige ; ou (v) en
-              cas de défaut de paiement non régularisé d&apos;un Professionnel
-              Individuel.
+              Sans préjudice des autres droits ou recours dont dispose MEDACTIO,
+              MEDACTIO pourra, unilatéralement, de plein droit et sans préavis,
+              suspendre, limiter ou résilier un Compte Utilisateur, de manière
+              permanente ou temporaire : (i) en cas de violation des présentes
+              CGU, du Contrat SaaS applicable, ou de toute loi ou réglementation
+              applicable ; (ii) en cas d'utilisation de la Plateforme
+              susceptible de porter atteinte aux droits de tiers ; (iii) en cas
+              d'utilisation susceptible de porter atteinte au bon fonctionnement
+              de la Plateforme et/ou du Service MEDACTIO ou à son utilisation
+              par d'autres Utilisateurs ; (iv) si la loi ou toute réglementation
+              applicable et/ou toute autorité compétente l'exige ; et (v) en cas
+              de défaut de paiement non régularisé, s'agissant d'un
+              Professionnel Individuel.
             </p>
             <p>
-              À l&apos;expiration ou à la résiliation du Contrat SaaS entre
-              l&apos;Établissement Client et MEDACTIO, les Comptes des
+              En cas d'expiration ou de résiliation du Contrat SaaS
+              correspondant entre l'Établissement Client et MEDACTIO,
+              l'Utilisateur est informé que les Comptes Utilisateurs des
               Professionnels Établissement ne sont pas automatiquement
-              désactivés, sauf demande écrite de l&apos;Établissement. Le Compte
-              reste personnel et unique au Professionnel de santé, qui peut
-              continuer à y accéder comme Professionnel Individuel, sans accès
-              aux données et Documents Générés liés à l&apos;Établissement
+              désactivés, sauf demande écrite de l'Établissement Client. Dans un
+              tel cas, le Compte Utilisateur reste personnel et unique au
+              Professionnel de santé, qui pourra continuer à y accéder en tant
+              que Professionnel Individuel, étant précisé qu'il n'aura toutefois
+              plus accès aux données et Documents Générés liés à l'Établissement
               Client.
             </p>
-          </Section>
-
-          <Section
-            id="section-17"
-            number={17}
-            title="Suppression d'un Compte Utilisateur et restitution des données"
-          >
+          </section>
+          <section className="legal-section" id="section-17">
+            <h2>Article 17 — Suppression d'un Compte Utilisateur</h2>
             <p>
-              L&apos;Utilisateur peut supprimer son Compte à tout moment en
-              écrivant à{" "}
-              <a href="mailto:contact@medactio.fr">contact@medactio.fr</a> ou
-              via la Plateforme. MEDACTIO désactivera alors les Identifiants et
-              le Compte associé.
+              L'Utilisateur peut supprimer son Compte Utilisateur à tout moment
+              en envoyant un email à l'adresse suivante :{" "}
+              <a href="mailto:contact@medactio.fr">contact@medactio.fr</a>, ou
+              via la Plateforme. Vous reconnaissez et acceptez que, dans un tel
+              cas, Nous désactiverons Vos Identifiants et le Compte qui y est
+              associé.
             </p>
             <p>
-              Après suppression du Compte, le Professionnel de santé n&apos;aura
-              plus accès aux Contenus Utilisateur ni aux Documents Générés
-              stockés sur la Plateforme. Il peut en demander la restitution à
-              MEDACTIO par email avant la suppression de son Compte.
+              Une fois le Compte Utilisateur supprimé, le Professionnel de santé
+              n'a plus accès à la Plateforme. MEDACTIO ne stockant aucun Contenu
+              Utilisateur ni Document Généré contenant des données de santé de
+              patients, aucune restitution de ces éléments n'est possible : il
+              appartient à l'Utilisateur de télécharger chaque Document Généré
+              dès sa production.
             </p>
             <p>
-              La Plateforme est un outil d&apos;assistance rédactionnelle et ne
-              se substitue pas au dossier médical du patient. Il appartient à
-              l&apos;Utilisateur de télécharger chaque Document Généré et de
-              l&apos;intégrer au dossier médical du patient concerné, après
-              relecture et validation, dans les délais utiles à son suivi.
+              La Plateforme est un outil d'assistance rédactionnelle et n'a pas
+              vocation à se substituer au dossier médical du patient. Il
+              appartient à l'Utilisateur de télécharger chaque Document Généré
+              dès sa production et de l'intégrer, une fois relu et validé, au
+              dossier médical du patient concerné, dans les délais utiles au
+              suivi de ce dernier.
             </p>
-          </Section>
-
-          <Section id="section-18" number={18} title="Divers">
+          </section>
+          <section className="legal-section" id="section-18">
+            <h2>Article 18 — Divers</h2>
             <h3>18.1. Renonciation</h3>
             <p>
-              Le fait pour une Partie de ne pas se prévaloir à un moment donné
-              d&apos;une stipulation des présentes ne vaut pas renonciation à
-              cette stipulation ni au droit de s&apos;en prévaloir
-              ultérieurement.
+              Le fait pour l'une des Parties de ne pas se prévaloir à un moment
+              donné d'une stipulation quelconque des présentes ne peut être
+              considéré comme valant renonciation au bénéfice de cette
+              stipulation ou au droit de s'en prévaloir ultérieurement.
             </p>
             <h3>18.2. Nullité partielle</h3>
             <p>
-              Si une stipulation des CGU est nulle, illégale, inopposable ou
-              inapplicable, la validité, la légalité et l&apos;application des
-              autres stipulations ne sont pas affectées ; celles-ci demeurent en
-              vigueur et conservent leur plein effet.
+              Dans l'hypothèse où une stipulation des présentes CGU serait
+              nulle, illégale, inopposable ou inapplicable d'une manière
+              quelconque, la validité, la légalité ou l'application des autres
+              stipulations des présentes CGU n'en seraient aucunement affectées
+              ou altérées, les autres stipulations demeurant en vigueur et
+              conservant leur plein et entier effet.
             </p>
-          </Section>
-
-          <Section
-            id="section-19"
-            number={19}
-            title="Droit applicable et règlement des litiges"
-          >
+          </section>
+          <section className="legal-section" id="section-19">
+            <h2>Article 19 — Droit applicable et règlement des litiges</h2>
             <p>Les présentes CGU sont soumises au droit français.</p>
             <p>
-              Tout différend relatif aux CGU, à leur validité, opposabilité,
-              interprétation ou exécution qui n&apos;aura pu être réglé
-              amiablement sera soumis à la compétence exclusive du Tribunal de
-              commerce de Lille Métropole, étant entendu que chaque Partie
-              pourra demander une injonction immédiate à tout tribunal
+              Tout différend entre les Parties concernant les questions
+              relatives aux présentes CGU, leur validité, leur opposabilité,
+              leur interprétation ou leur exécution, qui n'aura pu être réglé
+              par une solution amiable, sera soumis à la compétence exclusive du
+              Tribunal de commerce de Lille Métropole, étant entendu que chaque
+              Partie pourra demander une injonction immédiate à tout tribunal
               compétent.
             </p>
-          </Section>
-
+          </section>
         </div>
 
         <div className="legal-updated">
-          Dernière mise à jour : 29 septembre 2026
+          Dernière mise à jour : 30 septembre 2026
         </div>
       </main>
 
