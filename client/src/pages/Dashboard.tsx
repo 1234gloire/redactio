@@ -10,6 +10,7 @@ import {
   FilePenLine,
   FileText,
   Mic,
+  Milestone,
   Shield,
   Stethoscope,
 } from "lucide-react";
@@ -57,6 +58,7 @@ const MODULES = [
     Icon: Bone,
     href: "/redaction/chirurgie-orthopedique",
   },
+  { id: "projet_smr", title: "Projet thérapeutique SMR", desc: "Conclusion d’entrée, projet thérapeutique et mode de sortie, selon le type de SMR.", accent: "#c0573e", Icon: Milestone, href: "/redaction?volet=projet_smr" },
 ];
 
 function firstName(name?: string | null) {

@@ -97,7 +97,7 @@ Rédige le courrier en respectant strictement la structure ci-dessus. Pour toute
 export const CHIRURGIE_ORTHOPEDIQUE_SUBTYPE = "chirurgie_orthopedique" as const;
 type PromptSubtype = RedactionSubtype | typeof CHIRURGIE_ORTHOPEDIQUE_SUBTYPE;
 
-const SUBTYPE_PROMPT_INSTRUCTIONS: Record<PromptSubtype, string> = {
+const SUBTYPE_PROMPT_INSTRUCTIONS: Partial<Record<PromptSubtype, string>> = {
   medecine_aigue: `PROMPT SPÉCIFIQUE — MÉDECINE AIGUË :
 - Oriente le courrier vers une synthèse de prise en charge médicale aiguë.
 - Mets en avant le motif d'admission, les diagnostics retenus, l'évolution clinique, les examens significatifs, les traitements modifiés et le suivi.
@@ -444,7 +444,7 @@ ${subtypeLabel}
 ${templateWithData}`;
   }
 
-  const subtypeInstructions = SUBTYPE_PROMPT_INSTRUCTIONS[params.subtype];
+  const subtypeInstructions = SUBTYPE_PROMPT_INSTRUCTIONS[params.subtype] ?? "";
   return `TYPE SÉLECTIONNÉ PAR L'UTILISATEUR :
 ${subtypeLabel}
 

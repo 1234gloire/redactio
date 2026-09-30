@@ -1,3 +1,5 @@
+import { MODULE_TEXTS, SmrTypeHint } from "@/components/SmrModule";
+import { WordCounter } from "@/components/WordCounter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import RedactioLayout from "@/components/RedactioLayout";
 import MedicalAutocomplete from "@/components/MedicalAutocomplete";
@@ -27,6 +29,7 @@ import {
   FileText,
   FileUp,
   Loader2,
+  Milestone,
   RotateCcw,
   Shield,
   Stethoscope,
@@ -64,6 +67,7 @@ const VOLETS: Record<Volet, { label: string; icon: ReactNode; description: strin
     description: "Rédaction d'une correspondance médicale professionnelle entre praticiens.",
     color: "seal",
   },
+  projet_smr: { label: "Projet thérapeutique SMR", icon: <Milestone className="w-6 h-6" />, description: "Conclusion d’entrée, projet thérapeutique et mode de sortie, selon le type de SMR.", color: "terra" },
   observation: {
     label: "Observation médicale",
     icon: <FilePenLine className="w-6 h-6" />,
@@ -73,6 +77,8 @@ const VOLETS: Record<Volet, { label: string; icon: ReactNode; description: strin
 };
 
 const VOLET_ICON_CLASSES: Record<string, string> = {
+  terra: "volet-icon-terra",
+  terra_accent: "#c0573e",
   teal: "volet-icon-teal",
   teal_accent: "var(--teal)",
   slate: "volet-icon-slate",
@@ -94,6 +100,7 @@ function getSubtypeLabel(volet: Volet) {
   if (volet === "courrier_sortie") return "Service / spécialité";
   if (volet === "conciliation") return "Type de conciliation";
   if (volet === "correspondance") return "Type de correspondance";
+  if (volet === "projet_smr") return "Type de SMR";
   return "Type de document";
 }
 
@@ -101,8 +108,11 @@ function getSubtypeHint(volet: Volet) {
   if (volet === "courrier_sortie") return "oriente la structure du document";
   if (volet === "conciliation") return "étape du parcours de soins";
   if (volet === "correspondance") return "oriente le ton et la structure";
+  if (volet === "projet_smr") return "oriente le contenu du document";
   return "oriente le document";
 }
+
+const isModuleStyled = (volet: Volet | null) => volet === "courrier_sortie" || volet === "projet_smr";
 
 const STEPS_DEFAULT = [
   { id: 1, label: "Volet" },
@@ -266,6 +276,8 @@ export default function Redaction() {
   const [streamingText, setStreamingText] = useState("");
   const [renderedDocumentHtml, setRenderedDocumentHtml] = useState("");
   const [editedDocumentHtml, setEditedDocumentHtml] = useState("");
+  const [liveEditorHtml, setLiveEditorHtml] = useState<string | null>(null);
+  useEffect(() => setLiveEditorHtml(null), [generatedDoc]);
 
   useEffect(() => {
     if (initialVolet === "correspondance") {
@@ -806,7 +818,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                 <h2 className="redaction-step-title">
                   {VOLETS[selectedVolet].label}
                 </h2>
-                <p className="redaction-step-subtitle">Saisissez les données médicales — sans identifiant direct du patient.</p>
+                <p className="redaction-step-subtitle">{selectedVolet === "projet_smr" ? "Saisissez l’observation d’entrée — sans identifiant direct du patient." : "Saisissez les données médicales — sans identifiant direct du patient."}</p>
               </div>
             </div>
 
@@ -833,7 +845,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
               className={cn(
                 "redaction-field-group",
                 selectedVolet === "conciliation" && "conciliation-card conciliation-type-card",
-                selectedVolet === "courrier_sortie" && "redaction-module-card"
+                isModuleStyled(selectedVolet) && "redaction-module-card"
               )}
             >
               <fieldset className="space-y-2">
@@ -846,11 +858,11 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                       Étape du parcours de soins concernée.
                     </p>
                   </>
-                ) : selectedVolet === "courrier_sortie" ? (
+                ) : isModuleStyled(selectedVolet) ? (
                   <>
-                    <legend className="redaction-module-card-title">Service / spécialité</legend>
+                    <legend className="redaction-module-card-title">{getSubtypeLabel(selectedVolet)}</legend>
                     <p className="redaction-module-card-hint">
-                      Oriente la structure du courrier généré (ex. plan gériatrique ajouté en court séjour gériatrique).
+                      {MODULE_TEXTS[selectedVolet].cardHint}
                     </p>
                   </>
                 ) : (
@@ -863,7 +875,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                 )}
                 <div
                   className={
-                    selectedVolet === "courrier_sortie"
+                    isModuleStyled(selectedVolet)
                       ? "redaction-pillgrid"
                       : cn(
                           "grid grid-cols-1 sm:grid-cols-2 gap-2",
@@ -879,7 +891,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                       className={
                         selectedVolet === "conciliation"
                           ? cn("conciliation-pill", selectedSubtype === option.id && "is-selected")
-                          : selectedVolet === "courrier_sortie"
+                          : isModuleStyled(selectedVolet)
                           ? cn("redaction-pill", selectedSubtype === option.id && "on")
                           : cn(
                               "flex min-h-11 items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-colors",
@@ -895,14 +907,14 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                           {selectedSubtype === option.id && <Check className="h-3 w-3" />}
                         </span>
                       )}
-                      {selectedVolet === "courrier_sortie" && (
+                      {isModuleStyled(selectedVolet) && (
                         <span className="redaction-pill-check">
                           <Check className="h-3 w-3" />
                         </span>
                       )}
                       <span className="font-medium leading-snug">{option.label}</span>
                       {selectedVolet !== "conciliation" &&
-                        selectedVolet !== "courrier_sortie" &&
+                        !isModuleStyled(selectedVolet) &&
                         selectedSubtype === option.id && (
                           <CheckCircle className="h-4 w-4 shrink-0" />
                         )}
@@ -915,6 +927,7 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                     {getSubtypeHint(selectedVolet)}
                   </p>
                 )}
+              {selectedVolet === "projet_smr" && <SmrTypeHint subtype={selectedSubtype} />}
               </fieldset>
             </div>
 
@@ -1117,14 +1130,14 @@ APIXABAN 5 mg cp : 1 matin et 1 soir`}
                 <>
                   <div className="redaction-label-row">
                     <label htmlFor="rawData" className="redaction-field-label">
-                      {selectedVolet === "courrier_sortie" ? "Données médicales brutes (sans identifiant direct)" : "Données médicales brutes"}
-                      {selectedVolet !== "courrier_sortie" && <span className="text-muted-foreground font-normal ml-1">(sans identifiant direct)</span>}
+                      {isModuleStyled(selectedVolet) ? `${MODULE_TEXTS[selectedVolet].fieldLabel} (sans identifiant direct)` : "Données médicales brutes"}
+                      {!isModuleStyled(selectedVolet) && <span className="text-muted-foreground font-normal ml-1">(sans identifiant direct)</span>}
                     </label>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground hidden sm:inline">Dictée vocale</span>
                       <VoiceRecorderWithPreview
                         onInsert={handleVoiceTranscript}
-                        fieldLabel="Données médicales brutes"
+                        fieldLabel={MODULE_TEXTS[selectedVolet]?.fieldLabel ?? "Données médicales brutes"}
                         insertMode="append"
                         disabled={isGenerating}
                       />
@@ -1135,18 +1148,18 @@ APIXABAN 5 mg cp : 1 matin et 1 soir`}
                     value={rawData}
                     onChange={setRawData}
                     placeholder={
-                      selectedVolet === "courrier_sortie"
-                        ? "Exemple : entrée le [date], sortie le [date], motif d'hospitalisation : ... Antécédents : ... Traitement à domicile : ... Mode de vie : ... Histoire de la maladie : ... Examen clinique : ... Biologie (avec dates) : ... Examens paracliniques : ... Évolution : ... Traitement de sortie : ... Devenir : domicile / transfert vers ..."
+                      isModuleStyled(selectedVolet)
+                        ? MODULE_TEXTS[selectedVolet].placeholder
                         : `Exemple pour ${VOLETS[selectedVolet].label} :\n\nService : Cardiologie\nMotif d'hospitalisation : Décompensation cardiaque\nAntécédents : HTA, FA chronique, insuffisance cardiaque FE 35%\nTraitement habituel : Furosémide 40mg, Bisoprolol 5mg, Rivaroxaban 20mg\n...\n\nVous pouvez aussi utiliser le bouton microphone pour dicter directement.`
                     }
-                    className={selectedVolet === "courrier_sortie" ? "redaction-module-textarea" : "min-h-[280px]"}
-                    rows={selectedVolet === "courrier_sortie" ? 11 : 12}
+                    className={isModuleStyled(selectedVolet) ? "redaction-module-textarea" : "min-h-[280px]"}
+                    rows={isModuleStyled(selectedVolet) ? 11 : 12}
                     aria-describedby="rawData-help"
                     maxLength={RAW_DATA_MAX_CHARS}
                   />
-                  {selectedVolet === "courrier_sortie" && (
+                  {isModuleStyled(selectedVolet) && (
                     <p className="redaction-hint">
-                      Saisie libre, abréviations admises — le contenu est mis en forme selon la trame du service sélectionné ci-dessus. Aucune donnée n'est inventée : tout élément manquant reste « [à compléter] ».
+                      {MODULE_TEXTS[selectedVolet].hint}
                     </p>
                   )}
                 </>
@@ -1155,7 +1168,7 @@ APIXABAN 5 mg cp : 1 matin et 1 soir`}
                 <div className="flex items-center justify-between gap-3">
                   <p
                     id="rawData-help"
-                    className={selectedVolet === "courrier_sortie" ? "redaction-charcount" : "text-xs text-muted-foreground"}
+                    className={isModuleStyled(selectedVolet) ? "redaction-charcount" : "text-xs text-muted-foreground"}
                   >
                     {currentInputLength}/
                     {RAW_DATA_MAX_CHARS.toLocaleString("fr-FR")} caractères
@@ -1178,7 +1191,7 @@ APIXABAN 5 mg cp : 1 matin et 1 soir`}
                 className={cn(
                   "redaction-dropzone",
                   selectedVolet === "conciliation" && "conciliation-dropzone",
-                  selectedVolet === "courrier_sortie" && "redaction-module-dropzone",
+                  isModuleStyled(selectedVolet) && "redaction-module-dropzone",
                   isFileDragOver ? "is-over" : ""
                 )}
                 onDragEnter={handleFileDrag}
@@ -1509,12 +1522,14 @@ APIXABAN 5 mg cp : 1 matin et 1 soir`}
                 ref={documentEditorRef}
                 className="tiptap-editor"
                 contentEditable
+                onInput={(event) => setLiveEditorHtml(event.currentTarget.innerHTML)}
                 suppressContentEditableWarning
                 role="textbox"
                 aria-label="Éditeur de document médical"
                 aria-multiline="true"
                 dangerouslySetInnerHTML={{ __html: editedDocumentHtml || renderedDocumentHtml }}
               />
+              {selectedVolet === "projet_smr" && <WordCounter html={liveEditorHtml ?? (editedDocumentHtml || renderedDocumentHtml)} />}
             </div>
 
             {/* Validation */}
@@ -2833,4 +2848,41 @@ const newRedactionStyles = `
     flex-direction:column;
   }
 }
+
+/* MEDACTIO — Volet « Projet thérapeutique SMR » : ajouts CSS
+   À placer dans la feuille globale (là où sont déclarées --teal, --navy, --gold, --purple, --blue)
+   ET dans la chaîne de style du Dashboard si elle redéclare ses variables. */
+
+:root {
+  --terra: #c0573e;       /* accent du volet Projet SMR */
+}
+
+/* Icône du volet à l'étape « Volet » (même principe que .volet-icon-teal, -slate, -seal…) */
+.volet-icon-terra { background: var(--terra); color: #fff; }
+
+/* Aide contextuelle sous les pastilles « Type de SMR » */
+.redaction-typehint {
+  margin: 14px 0 0;
+  background: var(--field, #f6f9f9);
+  border: 1px solid var(--line, #e6edf0);
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-soft, #5a6b78);
+}
+.redaction-typehint b { color: var(--ink, #0b1b29); font-weight: 700; }
+
+/* Avec 8 pastilles, laisser la grille passer à la ligne (normalement déjà le cas) */
+.redaction-pillgrid { flex-wrap: wrap; }
+
+/* Compteur de mots sous l'éditeur de relecture (volet SMR) */
+.redaction-wordcount {
+  margin-top: 8px;
+  text-align: right;
+  font-size: 12.5px;
+  color: var(--ink-soft, #5a6b78);
+}
+.redaction-wordcount.is-over { color: #b3261e; font-weight: 700; }
+
 `;

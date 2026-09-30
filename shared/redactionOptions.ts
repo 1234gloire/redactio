@@ -14,6 +14,17 @@ export const REDACTION_SUBTYPES = {
     { id: "transfert_inter_service", label: "Courrier de transfert" },
     { id: "liaison_fin_suivi", label: "Courrier de liaison / fin de suivi" },
   ],
+  projet_smr: [
+    // NOUVEAU — l'ordre = l'ordre d'affichage ; le 1er est sélectionné par défaut (H0)
+    { id: "geriatrie", label: "Gériatrique" },
+    { id: "locomoteur", label: "Locomoteur" },
+    { id: "neurologie", label: "Neurologique" },
+    { id: "cardio_respiratoire", label: "Cardio-respiratoire" },
+    { id: "digestif_endocrinien", label: "Digestif-endocrinien" },
+    { id: "oncologie", label: "Oncologique" },
+    { id: "polyvalent", label: "Polyvalent" },
+    { id: "entree_directe", label: "Entrée directe" },
+  ],
   observation: [
     { id: "observation_libre", label: "Observation libre" },
   ],

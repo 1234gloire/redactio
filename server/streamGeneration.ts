@@ -1,8 +1,9 @@
+import { buildProjetSmrSystemPrompt, buildProjetSmrUserMessage, isProjetSmrSubtype } from "./prompts/projetSmrPrompt";
 /**
  * streamGeneration.ts
  * Endpoint Express SSE pour la génération IA en streaming.
  * EXG-API-02 : Aucun contenu médical n'est journalisé.
- * EXG-PSE-01 : Filtre appliqué uniquement en sortie avant retour utilisateur.
+ * EXG-PSE-01 : Filtre en sortie ; également en entrée pour le projet SMR.
  */
 import type { Express, Request, Response } from "express";
 import {
@@ -97,6 +98,10 @@ export function registerStreamGeneration(app: Express) {
       res.status(400).json({ error: "Le volet observation est réservé aux notes libres et ne déclenche pas de génération IA." });
       return;
     }
+    if (volet === "projet_smr" && !isProjetSmrSubtype(subtype)) {
+      res.status(400).json({ error: "Type de SMR invalide." });
+      return;
+    }
     const selectedSubtype =
       volet === "courrier_sortie" && subtype === CHIRURGIE_ORTHOPEDIQUE_SUBTYPE
         ? CHIRURGIE_ORTHOPEDIQUE_SUBTYPE
@@ -123,16 +128,21 @@ export function registerStreamGeneration(app: Express) {
 
     // 4. Résolution du prompt actif
     const [base, template] = await Promise.all([
-      getActivePromptBase(),
-      getActiveTemplateByVolet(volet),
+      volet === "projet_smr" ? Promise.resolve(undefined) : getActivePromptBase(),
+      volet === "projet_smr" ? Promise.resolve(undefined) : getActiveTemplateByVolet(volet),
     ]);
-    const baseContent = base?.content ?? DEFAULT_PROMPT_BASE.content;
+    const baseContent = volet === "projet_smr" && isProjetSmrSubtype(selectedSubtype)
+      ? buildProjetSmrSystemPrompt(selectedSubtype)
+      : base?.content ?? DEFAULT_PROMPT_BASE.content;
     const baseTemplate = (
       template?.content ??
       DEFAULT_TEMPLATES.find((t) => t.volet === volet)?.content ??
       ""
     );
-    const templateContent = buildTemplateForSubtype({
+    const inputPseudo = volet === "projet_smr" ? pseudonymise(rawData) : null;
+    const templateContent = inputPseudo
+      ? buildProjetSmrUserMessage(inputPseudo.filteredText)
+      : buildTemplateForSubtype({
       volet,
       subtype: selectedSubtype,
       baseTemplate,
@@ -172,6 +182,7 @@ export function registerStreamGeneration(app: Express) {
       while (!finished && continuationCount < 3) {
         let stopReason: string | null = null;
         const llmResponse = await createAnthropicStream({
+          ...(volet === "projet_smr" ? { maxTokens: 1600, temperature: 0.2 } : {}),
           system: baseContent,
           messages,
         });
@@ -275,7 +286,7 @@ export function registerStreamGeneration(app: Express) {
           filterScope: "output",
           tokenCount,
           promptBaseVersion: base?.version ?? "default",
-          promptTemplateVersion: template?.version ?? "default",
+          promptTemplateVersion: volet === "projet_smr" ? "projet-smr-v2.4" : template?.version ?? "default",
           // JAMAIS de contenu médical ici
         },
       });
