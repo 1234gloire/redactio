@@ -76,7 +76,10 @@ export default function CGV() {
               Les présentes conditions générales de vente (ci-après « CGV »)
               régissent la souscription et l&apos;utilisation des offres
               payantes du service MEDACTIO (ci-après le « Service »), édité
-              par la société <strong>Grays &amp; Co</strong> (ci-après
+              par la société <strong>Grays &amp; Co</strong>, société par
+              actions simplifiée au capital de 1 000 €, dont le siège social
+              est situé 229 rue Solférino, 59000 Lille, immatriculée au RCS
+              de Lille Métropole sous le numéro 109 564 427 (ci-après
               « l&apos;Éditeur »), accessible à l&apos;adresse{" "}
               <a
                 href="https://www.medactio.fr"
@@ -104,10 +107,9 @@ export default function CGV() {
             <p>
               MEDACTIO est un outil d&apos;aide à la rédaction hospitalière
               assisté par intelligence artificielle. Il permet, à partir de
-              notes saisies au clavier ou dictées par l&apos;utilisateur, de
-              générer des documents structurés (courrier de sortie,
-              conciliation médicamenteuse, correspondance médicale,
-              observation médicale).
+              notes saisies par l&apos;utilisateur, de générer des documents
+              structurés (courrier de sortie, conciliation médicamenteuse,
+              correspondance médicale, observation médicale).
             </p>
 
             <p className="legal-muted">
@@ -130,7 +132,9 @@ export default function CGV() {
               <li>
                 <strong>Offre Praticien</strong> : destinée à un usage
                 individuel (médecin, interne, candidat PADHUE), donnant
-                accès aux quatre outils de rédaction, dictée vocale comprise.
+                accès aux quatre outils de rédaction. Tarif : 32 € HT, soit
+                38,40 € TTC (TVA à 20 %) par mois, sous forme d&apos;abonnement
+                mensuel résiliable à tout moment.
               </li>
 
               <li>
@@ -146,10 +150,10 @@ export default function CGV() {
               Les tarifs applicables sont ceux affichés sur le site au
               moment de la souscription, ou ceux indiqués dans le devis
               accepté par le Client pour l&apos;offre Établissement. Ils sont
-              exprimés en euros. L&apos;Éditeur se réserve le droit de
-              modifier ses tarifs à tout moment, les nouveaux tarifs
-              s&apos;appliquant aux souscriptions ou renouvellements
-              postérieurs à leur publication.
+              exprimés en euros, hors taxes (HT) et toutes taxes comprises
+              (TTC). L&apos;Éditeur se réserve le droit de modifier ses tarifs
+              à tout moment, les nouveaux tarifs s&apos;appliquant aux
+              souscriptions ou renouvellements postérieurs à leur publication.
             </p>
           </section>
 
@@ -199,10 +203,10 @@ export default function CGV() {
             <h2>Article 6 — Durée, renouvellement et résiliation</h2>
 
             <p>
-              Les offres sont souscrites pour la durée indiquée lors de la
-              souscription (mensuelle, annuelle, ou durée définie au
-              contrat pour l&apos;offre Établissement). Sauf mention
-              contraire, elles se renouvellent tacitement pour une durée
+              L&apos;offre Praticien est souscrite sous forme d&apos;abonnement
+              mensuel, résiliable à tout moment. L&apos;offre Établissement
+              est souscrite pour la durée définie au contrat. Sauf mention
+              contraire, les offres se renouvellent tacitement pour une durée
               identique, sauf résiliation par le Client avant l&apos;échéance,
               dans les conditions et délais indiqués sur le compte du Client
               ou dans le contrat.
@@ -222,6 +226,12 @@ export default function CGV() {
             <h2>Article 7 — Droit de rétractation</h2>
 
             <p>
+              Le présent article ne concerne que le praticien ayant souscrit
+              l&apos;offre Praticien à titre individuel. Il ne s&apos;applique
+              pas à l&apos;offre Établissement.
+            </p>
+
+            <p>
               Conformément à l&apos;article L221-28 du Code de la
               consommation, le droit de rétractation ne s&apos;applique pas
               aux contrats de fourniture de services pleinement exécutés
@@ -238,10 +248,13 @@ export default function CGV() {
 
             <p>
               Le Client s&apos;engage à utiliser le Service conformément à
-              sa destination et à ne saisir dans le Service aucun identifiant
-              direct du patient (nom, prénom, date de naissance, numéro de
-              sécurité sociale, ou tout autre élément permettant une
-              identification directe), conformément aux conditions
+              sa destination. Les informations saisies dans le Service, y
+              compris les éventuels identifiants directs du patient (nom,
+              prénom, date de naissance, numéro de sécurité sociale, ou tout
+              autre élément permettant une identification directe), font
+              l&apos;objet, préalablement à tout traitement, d&apos;une
+              pseudonymisation automatique avant toute transmission au moteur
+              d&apos;intelligence artificielle, conformément aux conditions
               d&apos;utilisation du Service.
             </p>
 
@@ -304,7 +317,8 @@ export default function CGV() {
               relatives au règlement amiable des litiges, le Client
               consommateur peut recourir gratuitement au service de
               médiation de la consommation compétent, dans les conditions
-              prévues par la loi.
+              prévues par la loi. <em>[Nom et coordonnées du médiateur de
+              la consommation à préciser ultérieurement.]</em>
             </p>
           </section>
 
@@ -331,7 +345,7 @@ export default function CGV() {
         </div>
 
         <div className="legal-updated">
-          Dernière mise à jour : 7 août 2026
+          Dernière mise à jour : 30 septembre 2026
         </div>
       </main>
 
