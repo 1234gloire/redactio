@@ -135,10 +135,6 @@ const SUBTYPE_PROMPT_INSTRUCTIONS: Partial<Record<PromptSubtype, string>> = {
 - Rédige une demande ou synthèse pour consultation spécialisée.
 - Mets en avant la question posée au spécialiste, le contexte clinique, les antécédents pertinents, les examens disponibles, le traitement en cours et les attentes du demandeur.
 - Si la spécialité exacte n'est pas fournie, insère [À COMPLÉTER PAR LE MÉDECIN].`,
-  liaison_fin_suivi: `PROMPT SPÉCIFIQUE — COURRIER DE LIAISON / FIN DE SUIVI :
-- Rédige un courrier de liaison ou de fin de suivi, conforme au prompt Correspondance médicale.
-- Mets en avant le motif initial du suivi, la période de prise en charge, l'évolution, la conclusion et les surveillances utiles explicitement fournies.
-- Ne programme aucun suivi ni examen absent des données.`,
   observation_libre: `PROMPT SPÉCIFIQUE — OBSERVATION LIBRE :
 - Ce volet est destiné à la prise de notes médicales libres.
 - Ne produis pas de décision médicale automatisée.
@@ -149,7 +145,6 @@ const SUBTYPE_FULL_TEMPLATES: Partial<Record<PromptSubtype, string>> = {
   chirurgie_orthopedique: CHIRURGIE_ORTHOPEDIQUE_PROMPT,
   consultation_specialisee: CORRESPONDANCE_MEDICALE_PROMPT,
   transfert_inter_service: CORRESPONDANCE_MEDICALE_PROMPT,
-  liaison_fin_suivi: CORRESPONDANCE_MEDICALE_PROMPT,
   medecine_aigue: `# PROMPT — COURRIER DE SORTIE DE MÉDECINE POLYVALENTE
 
 > Modèle de prompt calqué **exactement** sur la structure du courrier de sortie du Service de Médecine Interne et Polyvalente. À copier-coller, puis injecter le contenu clinique du patient.

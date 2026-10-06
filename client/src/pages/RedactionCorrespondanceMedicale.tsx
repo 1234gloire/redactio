@@ -9,12 +9,11 @@ import { Link } from "wouter";
 
 const MISS = "[à préciser par le médecin]";
 
-type CorrespondanceType = "consultation_specialisee" | "transfert_inter_service" | "liaison_fin_suivi";
+type CorrespondanceType = "consultation_specialisee" | "transfert_inter_service";
 
 const TYPES: Record<CorrespondanceType, { label: string; short: string }> = {
   consultation_specialisee: { label: "Demande d'avis spécialisé", short: "Demande d'avis spécialisé" },
   transfert_inter_service: { label: "Courrier de transfert", short: "Courrier de transfert" },
-  liaison_fin_suivi: { label: "Courrier de liaison / fin de suivi", short: "Liaison / fin de suivi" },
 };
 
 function formatDate(value: string) {
@@ -56,13 +55,6 @@ export default function RedactionCorrespondanceMedicale() {
   const [b3a, setB3a] = useState("");
   const [b3b, setB3b] = useState("");
   const [b4, setB4] = useState("");
-  const [c1, setC1] = useState("");
-  const [c2, setC2] = useState("");
-  const [c3a, setC3a] = useState("");
-  const [c3b, setC3b] = useState("");
-  const [c4, setC4] = useState("");
-  const [c5, setC5] = useState("");
-  const [c6, setC6] = useState("");
   const [generatedText, setGeneratedText] = useState("");
   const [streamingText, setStreamingText] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -90,7 +82,7 @@ export default function RedactionCorrespondanceMedicale() {
       ].join("\n");
     }
 
-    if (type === "transfert_inter_service") {
+    {
       return [
         ...common,
         addSection("B. COURRIER DE TRANSFERT", [
@@ -102,18 +94,7 @@ export default function RedactionCorrespondanceMedicale() {
       ].join("\n");
     }
 
-    return [
-      ...common,
-      addSection("C. COURRIER DE LIAISON / FIN DE SUIVI", [
-        `C1. Destinataire fonctionnel : ${valueOrMiss(c1)}`,
-        `C2. Motif initial du suivi : ${valueOrMiss(c2)}`,
-        `C3. Période de suivi : du ${formatDate(c3a)} au ${formatDate(c3b)}`,
-        `C4. Évolution : ${valueOrMiss(c4)}`,
-        `C5. Conclusion / devenir : ${valueOrMiss(c5)}`,
-        `C6. Surveillance proposée / points à reprendre : ${valueOrMiss(c6)}`,
-      ]),
-    ].join("\n");
-  }, [a1, a2, a3, a5, a6, a6Text, age, antecedents, b1, b2, b3a, b3b, b4, c1, c2, c3a, c3b, c4, c5, c6, examenClinique, traitement, type]);
+  }, [a1, a2, a3, a5, a6, a6Text, age, antecedents, b1, b2, b3a, b3b, b4, examenClinique, traitement, type]);
 
   const missingCount = (blocText.match(/\[/g) ?? []).length;
 
@@ -155,7 +136,7 @@ ${a6 === "autre" ? valueOrMiss(a6Text) : a6}
 Bien confraternellement,`;
     }
 
-    if (type === "transfert_inter_service") {
+    {
       return `Cher Confrère,
 
 Je vous adresse ce courrier dans le cadre du transfert vers ${valueOrMiss(b1)}.
@@ -178,36 +159,7 @@ ${valueOrMiss(b4)}
 Bien confraternellement,`;
     }
 
-    return `Cher Confrère,
-
-Je vous adresse ce courrier de liaison concernant la fin du suivi / relais de prise en charge.
-
-DESTINATAIRE FONCTIONNEL :
-${valueOrMiss(c1)}
-
-MOTIF INITIAL DU SUIVI :
-${valueOrMiss(c2)}
-
-PÉRIODE DE SUIVI :
-Du ${formatDate(c3a)} au ${formatDate(c3b)}.
-
-CONTEXTE CLINIQUE :
-${ageLine}
-Antécédents : ${valueOrMiss(antecedents)}
-Examen clinique : ${valueOrMiss(examenClinique)}
-Traitement en cours : ${valueOrMiss(traitement)}
-
-ÉVOLUTION :
-${valueOrMiss(c4)}
-
-CONCLUSION / DEVENIR :
-${valueOrMiss(c5)}
-
-SURVEILLANCE / POINTS À REPRENDRE :
-${valueOrMiss(c6)}
-
-Bien confraternellement,`;
-  }, [a1, a2, a3, a5, a6, a6Text, age, antecedents, b1, b2, b3a, b3b, b4, c1, c2, c3a, c3b, c4, c5, c6, examenClinique, traitement, type]);
+  }, [a1, a2, a3, a5, a6, a6Text, age, antecedents, b1, b2, b3a, b3b, b4, examenClinique, traitement, type]);
 
   const handleGenerate = useCallback(async () => {
     setGeneratedText("");
@@ -315,7 +267,6 @@ Bien confraternellement,`;
     setTraitement("");
     setA1(""); setA2(""); setA3(""); setA5(""); setA6("non urgent"); setA6Text("");
     setB1(""); setB2(""); setB3a(""); setB3b(""); setB4("");
-    setC1(""); setC2(""); setC3a(""); setC3b(""); setC4(""); setC5(""); setC6("");
     setGeneratedText("");
     setStreamingText("");
     setPseudoInfo(null);
@@ -395,20 +346,6 @@ Bien confraternellement,`;
             </>
           )}
 
-          {type === "liaison_fin_suivi" && (
-            <>
-              <h2>3 · Liaison / fin de suivi</h2>
-              <TextField label="Destinataire fonctionnel" value={c1} onChange={setC1} placeholder="Ex. médecin traitant, spécialiste référent, service adresseur" />
-              <TextField label="Motif initial du suivi" value={c2} onChange={setC2} />
-              <div className="grid2">
-                <Field label="Début du suivi" value={c3a} onChange={setC3a} type="date" />
-                <Field label="Fin / relais" value={c3b} onChange={setC3b} type="date" />
-              </div>
-              <TextField label="Évolution" value={c4} onChange={setC4} />
-              <TextField label="Conclusion / devenir" value={c5} onChange={setC5} />
-              <TextField label="Surveillance / points à reprendre" value={c6} onChange={setC6} />
-            </>
-          )}
         </section>
 
         <section className="correspondance-card">

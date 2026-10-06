@@ -12,7 +12,6 @@ export const REDACTION_SUBTYPES = {
   correspondance: [
     { id: "consultation_specialisee", label: "Demande d'avis spécialisé" },
     { id: "transfert_inter_service", label: "Courrier de transfert" },
-    { id: "liaison_fin_suivi", label: "Courrier de liaison / fin de suivi" },
   ],
   projet_smr: [
     // NOUVEAU — l'ordre = l'ordre d'affichage ; le 1er est sélectionné par défaut (H0)
