@@ -25,7 +25,6 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { applyVoicePunctuation } from "@/lib/voicePunctuation";
 import { Check, Eye, FlaskConical, Loader2, Mic, Pause, Play, RotateCcw, Sparkles, Square, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -153,20 +152,19 @@ export function VoiceRecorderWithPreview({
         throw new Error(message || `HTTP ${res.status}`);
       }
       const data = await res.json();
-      const text: string = data.text?.trim() || "";
+      const text: string = String(data.texte_corrige ?? data.text ?? "").trim();
       if (!text) {
         toast.warning("Aucun texte détecté. Veuillez réessayer.");
         setState("idle");
         setElapsed(0);
         return;
       }
-      const normalizedText = applyVoicePunctuation(text).text;
-      setPreviewText(normalizedText);
-      setEditedText(normalizedText);
-      setAnalyzedText(normalizedText);
+      setPreviewText(text);
+      setEditedText(text);
+      setAnalyzedText(text);
       setCorrectionOriginal("");
-      setCorrectionChanges([]);
-      setActiveTab("analyze"); // Ouvrir directement l'onglet analyse
+      setCorrectionChanges(Array.isArray(data.modifications) ? data.modifications : []);
+      setActiveTab("edit");
       setState("preview");
     } catch (err: unknown) {
       toast.error(`Transcription échouée : ${err instanceof Error ? err.message : "Erreur inconnue"}`);

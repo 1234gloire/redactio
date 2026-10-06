@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildDictationCorrectionSystemPrompt,
   buildWhisperMedicalPrompt,
+  normalizeDictationTranscription,
   normalizeDictationField,
 } from "./dictationMedicalContext";
 
@@ -23,6 +24,12 @@ describe("dictationMedicalContext", () => {
     expect(buildWhisperMedicalPrompt("general")).toContain("fibrillation atriale");
   });
 
+  it("sélectionne le contexte suivi évolution avant l'examen clinique", () => {
+    expect(normalizeDictationField("Réévaluation clinique du jour")).toBe("suivi_evolution");
+    expect(normalizeDictationField("Observation du jour")).toBe("suivi_evolution");
+    expect(buildWhisperMedicalPrompt("suivi_evolution")).toContain("toux isolée");
+  });
+
   it("sélectionne un biais orthopédique pour les champs de chirurgie ortho", () => {
     expect(normalizeDictationField("Type de chirurgie")).toBe("orthopedie");
     expect(normalizeDictationField("Consignes de sortie orthopédie")).toBe("orthopedie");
@@ -34,5 +41,14 @@ describe("dictationMedicalContext", () => {
     expect(prompt).toContain("proximité phonétique");
     expect(prompt).toContain("dosage ou la forme galénique");
     expect(prompt).toContain("[terme incertain");
+  });
+
+  it("normalise les ponctuations parasites avant correction IA", () => {
+    expect(normalizeDictationTranscription("patiente vue ce jour,. , pas de plainte particulière")).toBe(
+      "Patiente vue ce jour. Pas de plainte particulière."
+    );
+    expect(normalizeDictationTranscription("Conclusion deux points tableau probable")).toBe(
+      "Conclusion\u00A0: tableau probable."
+    );
   });
 });

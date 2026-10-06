@@ -10,7 +10,6 @@
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { applyVoicePunctuation } from "@/lib/voicePunctuation";
 import { Loader2, Mic, MicOff, Pause, Play, Square } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -166,15 +165,15 @@ export default function VoiceRecorder({
       }
 
       const data = await response.json();
-      if (!data.text?.trim()) {
+      const correctedText = String(data.texte_corrige ?? data.text ?? "").trim();
+      if (!correctedText) {
         toast.warning("Aucun texte détecté dans l'enregistrement. Veuillez réessayer.");
         setState("idle");
         setElapsed(0);
         return;
       }
 
-      const normalizedText = applyVoicePunctuation(data.text.trim()).text;
-      onTranscript(normalizedText);
+      onTranscript(correctedText);
       toast.success("Dictée transcrite avec succès.");
       setState("idle");
       setElapsed(0);

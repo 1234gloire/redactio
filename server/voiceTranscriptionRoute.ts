@@ -1,7 +1,8 @@
 /**
  * Endpoint de transcription vocale pour MEDACTIO.
  * Reçoit un fichier audio en multipart/form-data, le transcrit via Whisper,
- * et retourne le texte transcrit. Aucun contenu médical n'est journalisé.
+ * corrige la dictée via IA, puis retourne le texte corrigé.
+ * Aucun contenu médical n'est journalisé.
  */
 import { Express, Request, Response } from "express";
 import multer from "multer";
@@ -11,8 +12,10 @@ import { createAnthropicMessage } from "./_core/anthropic";
 import {
   buildDictationCorrectionSystemPrompt,
   buildWhisperMedicalPrompt,
+  normalizeDictationTranscription,
   normalizeDictationField,
   type DictationCorrectionModification,
+  type DictationField,
 } from "./dictationMedicalContext";
 
 const DICTATION_CORRECTION_TYPES = [
@@ -20,6 +23,8 @@ const DICTATION_CORRECTION_TYPES = [
   "grammaire",
   "ponctuation",
   "terminologie",
+  "nombre",
+  "nom_propre",
   "ambigu",
 ] as const;
 
@@ -29,6 +34,89 @@ function isDictationCorrectionType(
   return DICTATION_CORRECTION_TYPES.includes(
     value as DictationCorrectionModification["type"]
   );
+}
+
+type DictationCorrectionPayload = {
+  texte_corrige: string;
+  modifications: DictationCorrectionModification[];
+  genre_retenu: "masculin" | "feminin" | "indetermine";
+};
+
+function sanitizeCorrectionJson(content: string): string {
+  return content
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "");
+}
+
+function normalizeCorrectionGenre(value: unknown): DictationCorrectionPayload["genre_retenu"] {
+  return value === "masculin" || value === "feminin" ? value : "indetermine";
+}
+
+function parseDictationCorrection(content: string): DictationCorrectionPayload {
+  const parsed = JSON.parse(sanitizeCorrectionJson(content)) as {
+    texte_corrige?: unknown;
+    modifications?: unknown;
+    genre_retenu?: unknown;
+  };
+
+  if (typeof parsed.texte_corrige !== "string" || !parsed.texte_corrige.trim()) {
+    throw new Error("Réponse IA invalide : champ texte_corrige absent");
+  }
+
+  const modifications = Array.isArray(parsed.modifications)
+    ? parsed.modifications
+        .map((item) => {
+          if (!item || typeof item !== "object") return null;
+          const record = item as Record<string, unknown>;
+          const type = String(record.type ?? "");
+          if (!isDictationCorrectionType(type)) return null;
+          return {
+            original: String(record.original ?? ""),
+            corrige: String(record.corrige ?? ""),
+            type,
+          } satisfies DictationCorrectionModification;
+        })
+        .filter((item): item is DictationCorrectionModification => Boolean(item))
+    : [];
+
+  return {
+    texte_corrige: parsed.texte_corrige.trim(),
+    modifications,
+    genre_retenu: normalizeCorrectionGenre(parsed.genre_retenu),
+  };
+}
+
+async function correctDictationText(rawText: string, field: DictationField): Promise<DictationCorrectionPayload> {
+  const normalizedText = normalizeDictationTranscription(rawText);
+  const content = await createAnthropicMessage({
+    system: buildDictationCorrectionSystemPrompt(field),
+    maxTokens: 2500,
+    temperature: 0,
+    messages: [
+      {
+        role: "user",
+        content: `Corrige cette transcription de dictée médicale. Applique R1 à R8. Retourne exactement ce JSON :
+{
+  "texte_corrige": "...",
+  "modifications": [
+    {"original":"...", "corrige":"...", "type":"orthographe|grammaire|ponctuation|terminologie|nombre|nom_propre|ambigu"}
+  ],
+  "genre_retenu": "masculin|feminin|indetermine"
+}
+
+TRANSCRIPTION SOURCE :
+${normalizedText}`,
+      },
+    ],
+  });
+
+  return parseDictationCorrection(content);
+}
+
+function logDictationCorrectionError(scope: string, error: unknown): void {
+  const message = error instanceof Error ? error.message : "erreur inconnue";
+  console.error(`[DictationCorrection] ${scope} (sans contenu): ${message}`);
 }
 
 // Stockage en mémoire uniquement — pas de fichier sur disque
@@ -98,12 +186,34 @@ export function registerVoiceTranscription(app: Express): void {
           return;
         }
 
-        // Retourner uniquement le texte — aucun log du contenu
+        const transcribedText = result.text?.trim() ?? "";
+        if (!transcribedText) {
+          res.status(422).json({ error: "Aucun texte détecté dans l'enregistrement" });
+          return;
+        }
+
+        let correction: DictationCorrectionPayload;
+        try {
+          correction = await correctDictationText(transcribedText, field);
+        } catch (error) {
+          logDictationCorrectionError("Correction après transcription échouée", error);
+          res.status(502).json({
+            error: "Correction IA indisponible",
+            details: "La transcription a réussi, mais le texte corrigé n'a pas pu être produit. Le texte non corrigé n'a pas été inséré.",
+          });
+          return;
+        }
+
+        // Retourner le texte corrigé — aucun log du contenu
         res.json({
-          text: result.text,
+          text: correction.texte_corrige,
+          texte_corrige: correction.texte_corrige,
+          modifications: correction.modifications,
+          genre_retenu: correction.genre_retenu,
+          correctionApplied: true,
           language: result.language ?? "fr",
           duration: result.duration ?? null,
-          provider: "openai",
+          provider: "openai+anthropic",
         });
       } catch (err) {
         console.error("[VoiceTranscription] Erreur inattendue (sans contenu)");
@@ -137,59 +247,19 @@ export function registerVoiceTranscription(app: Express): void {
     const field = normalizeDictationField(req.body?.champ ?? req.body?.fieldLabel ?? "");
 
     try {
-      const content = await createAnthropicMessage({
-        system: buildDictationCorrectionSystemPrompt(field),
-        maxTokens: 2500,
-        temperature: 0,
-        messages: [
-          {
-            role: "user",
-            content: `Corrige cette transcription de dictée médicale et retourne ce JSON exact :
-{
-  "texte_corrige": "...",
-  "modifications": [
-    {"original":"...", "corrige":"...", "type":"orthographe|grammaire|ponctuation|terminologie|ambigu"}
-  ]
-}
-
-TRANSCRIPTION SOURCE :
-${rawText}`,
-          },
-        ],
-      });
-
-      const cleaned = content
-        .trim()
-        .replace(/^```(?:json)?\s*/i, "")
-        .replace(/\s*```$/i, "");
-      const parsed = JSON.parse(cleaned) as {
-        texte_corrige?: unknown;
-        modifications?: unknown;
-      };
-      const corrected = typeof parsed.texte_corrige === "string" ? parsed.texte_corrige.trim() : rawText;
-      const modifications = Array.isArray(parsed.modifications)
-        ? parsed.modifications
-            .map((item) => {
-              if (!item || typeof item !== "object") return null;
-              const record = item as Record<string, unknown>;
-              const type = String(record.type ?? "");
-              if (!isDictationCorrectionType(type)) return null;
-              return {
-                original: String(record.original ?? ""),
-                corrige: String(record.corrige ?? ""),
-                type,
-              } satisfies DictationCorrectionModification;
-            })
-            .filter(Boolean)
-        : [];
+      const correction = await correctDictationText(rawText, field);
 
       res.json({
-        texte_corrige: corrected,
-        modifications,
+        texte_corrige: correction.texte_corrige,
+        modifications: correction.modifications,
+        genre_retenu: correction.genre_retenu,
       });
     } catch (error) {
-      console.error("[DictationCorrection] Erreur correction IA (sans contenu)");
-      res.status(502).json({ error: "Correction IA indisponible" });
+      logDictationCorrectionError("Correction manuelle échouée", error);
+      res.status(502).json({
+        error: "Correction IA indisponible",
+        details: "Le texte corrigé n'a pas pu être produit. Le texte non corrigé n'a pas été renvoyé.",
+      });
     }
   });
 }
