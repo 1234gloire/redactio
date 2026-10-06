@@ -98,7 +98,7 @@ export default function Tutoriels() {
             <div className="tutorial-kick">Commencez ici</div>
             <h2>Découvrir MEDACTIO en 4 minutes</h2>
             <p>
-              Le parcours complet : choisir un volet, dicter ou coller vos notes,
+              Le parcours complet : choisir un volet, coller vos notes,
               laisser la pseudonymisation structurer le document, puis relire,
               valider et exporter. Le fil conducteur commun à tous les blocs.
             </p>

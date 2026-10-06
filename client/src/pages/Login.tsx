@@ -302,7 +302,7 @@ export default function Login() {
           <p className="mt-[18px] hidden max-w-[46ch] text-[16px] leading-[1.55] text-[#d6e3e9] min-[861px]:block">
             Courrier de sortie, conciliation
             médicamenteuse, correspondance, observation :
-            collez ou dictez vos notes, MEDACTIO les met
+            collez vos notes, MEDACTIO les met
             en forme — pseudonymisées, conformes, prêtes
             à relire et signer.
           </p>

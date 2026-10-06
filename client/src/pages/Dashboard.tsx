@@ -9,7 +9,6 @@ import {
   Clock3,
   FilePenLine,
   FileText,
-  Mic,
   Milestone,
   Shield,
   Stethoscope,
@@ -107,12 +106,6 @@ export default function Dashboard() {
           effacées à la déconnexion.
         </p>
 
-        <div className="dashboard-pill">
-          <b>NOUVEAU</b>
-          <Mic aria-hidden="true" />
-          Dictée vocale disponible dans les outils compatibles
-        </div>
-
         <p className="dashboard-section-label">Démarrer une rédaction</p>
 
         <section className="dashboard-grid" aria-label="Modules de rédaction">
@@ -133,10 +126,6 @@ export default function Dashboard() {
                 <span className="dashboard-go">
                   Démarrer <ArrowRight aria-hidden="true" />
                 </span>
-                <span className="dashboard-dictee">
-                  <Mic aria-hidden="true" />
-                  dictée
-                </span>
               </span>
             </Link>
           ))}
@@ -153,7 +142,7 @@ export default function Dashboard() {
             </p>
             <Step
               n="01"
-              title="Dictez ou collez vos notes"
+              title="Collez vos notes"
               desc="Forme libre, abréviations admises — sans identifiant direct du patient."
             />
             <Step
@@ -227,8 +216,6 @@ const dashboardStyles = `
 .dashboard-tool-foot{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .dashboard-go{display:inline-flex;align-items:center;gap:6px;color:var(--accent,var(--teal));font-weight:700;font-size:14px}
 .dashboard-go svg{width:16px;height:16px}
-.dashboard-dictee{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink-faint);background:var(--field);border:1px solid var(--line);border-radius:999px;padding:5px 10px;font-weight:600}
-.dashboard-dictee svg{width:12px;height:12px}
 .dashboard-panels{display:grid;grid-template-columns:1fr 1fr;gap:20px}
 .dashboard-panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:26px 28px;box-shadow:0 2px 6px rgba(11,27,41,.04)}
 .dashboard-panel h2{display:flex;align-items:center;gap:9px;font-family:"Spectral",Georgia,serif;font-weight:600;font-size:18px;margin:0 0 6px}

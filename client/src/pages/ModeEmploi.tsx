@@ -73,8 +73,8 @@ const GUIDE_MODULES: GuideModule[] = [
             déposez le fichier dans la zone prévue. La présence d&apos;une date sur
             chaque observation optimise la mise en forme automatique. Sources utiles :
             observation d&apos;entrée, notes d&apos;évolution, comptes rendus d&apos;examens,
-            observations en mode suite. Par saisie ou dictée directe : si aucun
-            fichier n&apos;est disponible, rédigez ou dictez les éléments cliniques
+            observations en mode suite. Par saisie directe : si aucun
+            fichier n&apos;est disponible, rédigez les éléments cliniques
             manuellement.
           </>
         ),
@@ -116,7 +116,7 @@ const GUIDE_MODULES: GuideModule[] = [
         body: (
           <>
             Traitement d&apos;entrée et traitement de sortie suivent les mêmes méthodes :
-            glisser-déposer du fichier correspondant (recommandé), ou saisie/dictée
+            glisser-déposer du fichier correspondant (recommandé), ou saisie
             directe en l&apos;absence de fichier.
             <div className="emploi-callout warn">
               <AlertTriangle aria-hidden="true" />
@@ -178,7 +178,7 @@ const GUIDE_MODULES: GuideModule[] = [
       {
         title: "Rédiger le suivi clinique",
         body:
-          "Au-delà de l'intégration des bilans, ce module sert à la rédaction de l'observation médicale proprement dite : saisie manuelle des éléments cliniques de la visite ou dictée numérique, idéale pour le suivi quotidien.",
+          "Au-delà de l'intégration des bilans, ce module sert à la rédaction de l'observation médicale proprement dite : saisie manuelle des éléments cliniques de la visite, idéale pour le suivi quotidien.",
       },
     ],
   },
@@ -268,12 +268,6 @@ const FAQ_ITEMS: FaqItem[] = [
     question: "Mes données patient sont-elles conservées par MEDACTIO ?",
     answer:
       "Non. Aucune donnée patient n'est stockée : tout reste en mémoire de votre session et disparaît à la déconnexion. Pensez à exporter ou copier vos documents avant de vous déconnecter.",
-  },
-  {
-    category: "general",
-    question: "Puis-je utiliser la dictée vocale sur tous les modules ?",
-    answer:
-      "Oui, la dictée vocale est disponible sur l'ensemble des modules qui proposent une saisie de texte libre, identifiés par le bouton « Dicter ». Elle est particulièrement adaptée au suivi quotidien en Observation médicale.",
   },
   {
     category: "general",
@@ -418,7 +412,7 @@ export default function ModeEmploi() {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Rechercher dans le mode d'emploi (ex. traitement de sortie, dictée, export...)"
+            placeholder="Rechercher dans le mode d'emploi (ex. traitement de sortie, export...)"
           />
         </label>
 

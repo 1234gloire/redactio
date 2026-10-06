@@ -1,9 +1,8 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import VoiceRecorderWithPreview from "@/components/VoiceRecorderWithPreview";
 import { Button } from "@/components/ui/button";
 import { getLoginUrl } from "@/const";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, ArrowLeft, BookOpen, Check, Copy, FileUp, Mic, RefreshCw, Shield } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, Check, Copy, FileUp, RefreshCw, Shield } from "lucide-react";
 import { useCallback, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { toast } from "sonner";
 import { Link } from "wouter";
@@ -335,7 +334,7 @@ Bien confraternellement,`;
         <Link href="/dashboard" className="correspondance-back"><ArrowLeft size={16} /> Tableau de bord</Link>
         <h1><BookOpen size={24} /> Saisie rapide — Correspondance médicale</h1>
         <p>MEDACTIO · Aide rédactionnelle : met en forme ce que vous saisissez. Le destinataire n'est jamais nommé, il est décrit par sa fonction, spécialité ou service.</p>
-        <p className="mic-note"><Mic size={13} /> La dictée vocale et l'import de fichier sont disponibles sur les champs de texte.</p>
+        <p className="tools-note">L'import de fichier est disponible sur les champs de texte.</p>
       </header>
 
       <div className="correspondance-cbar">
@@ -457,21 +456,15 @@ function TextField({
   importKey?: "antecedents" | "examenClinique" | "traitement";
   onImport?: (target: "antecedents" | "examenClinique" | "traitement") => void;
 }) {
-  const insertDictation = useCallback((text: string) => {
-    const next = [value.trim(), text.trim()].filter(Boolean).join(value.trim() ? " " : "");
-    onChange(next);
-  }, [onChange, value]);
-
   return (
     <label className="correspondance-field">
       <span className="field-head">
         {label}
-        <span className="field-tools">
-          {importKey && onImport && (
+        {importKey && onImport && (
+          <span className="field-tools">
             <button type="button" onClick={() => onImport(importKey)}><FileUp size={14} /> Importer</button>
-          )}
-          <VoiceRecorderWithPreview onInsert={insertDictation} fieldLabel={label} insertMode="append" />
-        </span>
+          </span>
+        )}
       </span>
       <textarea value={value} placeholder={placeholder || "Saisie libre, sans identifiant direct du patient."} onChange={(event) => onChange(event.target.value)} />
     </label>
@@ -485,7 +478,7 @@ const styles = `
 .correspondance-back{display:inline-flex;align-items:center;gap:7px;color:#fff;text-decoration:none;font-size:.85rem;opacity:.9;margin-bottom:8px}
 .correspondance-top h1{display:flex;align-items:center;gap:10px;margin:0;font-size:1.25rem;font-weight:800}
 .correspondance-top p{margin:6px 0 0;opacity:.93;font-size:.88rem;max-width:1000px}
-.correspondance-top .mic-note{display:flex;align-items:center;gap:6px;opacity:.86;font-size:.8rem}
+.correspondance-top .tools-note{display:flex;align-items:center;gap:6px;opacity:.86;font-size:.8rem}
 .correspondance-cbar{background:#102233;color:#dbe6ec;display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;padding:10px 18px;font-size:.82rem}
 .correspondance-cbar span{display:inline-flex;align-items:center;gap:6px}
 .correspondance-wrap{max-width:1180px;margin:0 auto;padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:18px}

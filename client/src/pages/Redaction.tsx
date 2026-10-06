@@ -3,7 +3,6 @@ import { WordCounter } from "@/components/WordCounter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import RedactioLayout from "@/components/RedactioLayout";
 import MedicalAutocomplete from "@/components/MedicalAutocomplete";
-import VoiceRecorderWithPreview from "@/components/VoiceRecorderWithPreview";
 import { getLoginUrl } from "@/const";
 import {
   getDefaultSubtype,
@@ -457,37 +456,6 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }, [conciliationImportTarget, selectedVolet]);
-
-  // ─── Dictée vocale ─────────────────────────────────────────────────────────
-  /**
-   * Appelé par VoiceRecorder quand la transcription est prête.
-   * Le texte est ajouté à la fin du contenu existant (mode append).
-   * Pour la conciliation, le texte est ajouté dans le champ actif selon conciliationImportTarget.
-   */
-  const handleVoiceTranscript = useCallback((text: string) => {
-    if (selectedVolet === "conciliation") {
-      const updateTreatment = conciliationImportTarget === "exit" ? setTreatmentExitData : setTreatmentEntryData;
-      updateTreatment((prev) => {
-        if (!prev.trim()) return text;
-        const separator = prev.endsWith("\n") ? "" : "\n";
-        return `${prev}${separator}${text}`.slice(0, RAW_DATA_MAX_CHARS);
-      });
-    } else if (selectedVolet === "observation") {
-      setObservationText((prev) => {
-        if (!prev.trim()) return text;
-        const separator = prev.endsWith("\n") ? "" : "\n";
-        return `${prev}${separator}${text}`.slice(0, RAW_DATA_MAX_CHARS);
-      });
-    } else {
-      setRawData((prev) => {
-        if (!prev.trim()) return text;
-        const separator = prev.endsWith("\n") ? "" : "\n";
-        return `${prev}${separator}${text}`.slice(0, RAW_DATA_MAX_CHARS);
-      });
-    }
-    toast.success("Dictée ajoutée au champ de saisie.");
-  }, [conciliationImportTarget, selectedVolet]);
-  // ─────────────────────────────────────────────────────────────────────────────
 
   const handleFileDrag = useCallback((event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -950,29 +918,6 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
                           Traitement d&apos;entrée{" "}
                           <span>(bilan médicamenteux)</span>
                         </label>
-
-                        <div className="conciliation-dictation">
-                          <span>Dictée</span>
-                          <VoiceRecorderWithPreview
-                            onInsert={(dictatedText) => {
-                              if (noTreatmentEntry) return;
-                              setConciliationImportTarget("entry");
-                              setTreatmentEntryData((previous) => {
-                                if (!previous.trim()) return dictatedText;
-                                const separator = previous.endsWith("\n")
-                                  ? ""
-                                  : "\n";
-                                return `${previous}${separator}${dictatedText}`.slice(
-                                  0,
-                                  RAW_DATA_MAX_CHARS
-                                );
-                              });
-                            }}
-                            fieldLabel="Traitement d'entrée"
-                            insertMode="append"
-                            disabled={noTreatmentEntry}
-                          />
-                        </div>
                       </div>
 
                       <button
@@ -1052,27 +997,6 @@ KARDEGIC 75 mg : 1 sachet à midi`
                           Traitement de sortie{" "}
                           <span>(ordonnance finale)</span>
                         </label>
-
-                        <div className="conciliation-dictation">
-                          <span>Dictée</span>
-                          <VoiceRecorderWithPreview
-                            onInsert={(dictatedText) => {
-                              setConciliationImportTarget("exit");
-                              setTreatmentExitData((previous) => {
-                                if (!previous.trim()) return dictatedText;
-                                const separator = previous.endsWith("\n")
-                                  ? ""
-                                  : "\n";
-                                return `${previous}${separator}${dictatedText}`.slice(
-                                  0,
-                                  RAW_DATA_MAX_CHARS
-                                );
-                              });
-                            }}
-                            fieldLabel="Traitement de sortie"
-                            insertMode="append"
-                          />
-                        </div>
                       </div>
 
                       <MedicalAutocomplete
@@ -1133,15 +1057,6 @@ APIXABAN 5 mg cp : 1 matin et 1 soir`}
                       {isModuleStyled(selectedVolet) ? `${MODULE_TEXTS[selectedVolet].fieldLabel} (sans identifiant direct)` : "Données médicales brutes"}
                       {!isModuleStyled(selectedVolet) && <span className="text-muted-foreground font-normal ml-1">(sans identifiant direct)</span>}
                     </label>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground hidden sm:inline">Dictée vocale</span>
-                      <VoiceRecorderWithPreview
-                        onInsert={handleVoiceTranscript}
-                        fieldLabel={MODULE_TEXTS[selectedVolet]?.fieldLabel ?? "Données médicales brutes"}
-                        insertMode="append"
-                        disabled={isGenerating}
-                      />
-                    </div>
                   </div>
                   <MedicalAutocomplete
                     id="rawData"
@@ -1150,7 +1065,7 @@ APIXABAN 5 mg cp : 1 matin et 1 soir`}
                     placeholder={
                       isModuleStyled(selectedVolet)
                         ? MODULE_TEXTS[selectedVolet].placeholder
-                        : `Exemple pour ${VOLETS[selectedVolet].label} :\n\nService : Cardiologie\nMotif d'hospitalisation : Décompensation cardiaque\nAntécédents : HTA, FA chronique, insuffisance cardiaque FE 35%\nTraitement habituel : Furosémide 40mg, Bisoprolol 5mg, Rivaroxaban 20mg\n...\n\nVous pouvez aussi utiliser le bouton microphone pour dicter directement.`
+                        : `Exemple pour ${VOLETS[selectedVolet].label} :\n\nService : Cardiologie\nMotif d'hospitalisation : Décompensation cardiaque\nAntécédents : HTA, FA chronique, insuffisance cardiaque FE 35%\nTraitement habituel : Furosémide 40mg, Bisoprolol 5mg, Rivaroxaban 20mg\n...`
                     }
                     className={isModuleStyled(selectedVolet) ? "redaction-module-textarea" : "min-h-[280px]"}
                     rows={isModuleStyled(selectedVolet) ? 11 : 12}
@@ -1304,7 +1219,7 @@ APIXABAN 5 mg cp : 1 matin et 1 soir`}
               </Button>
               <div>
                 <h2 className="redaction-step-title">Observation Médicale</h2>
-                <p className="redaction-step-subtitle">Saisissez ou dictez vos notes libres.</p>
+                <p className="redaction-step-subtitle">Saisissez vos notes libres.</p>
               </div>
             </div>
 
@@ -1327,25 +1242,12 @@ APIXABAN 5 mg cp : 1 matin et 1 soir`}
                 <label htmlFor="observation-text" className="redaction-field-label">
                   Contenu de l'observation
                 </label>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground hidden sm:inline">Dictée vocale</span>
-                  <VoiceRecorderWithPreview
-                    onInsert={(text) => {
-                      setObservationText((prev) => {
-                        if (!prev.trim()) return text;
-                        return `${prev}${prev.endsWith("\n") ? "" : "\n"}${text}`.slice(0, RAW_DATA_MAX_CHARS);
-                      });
-                    }}
-                    fieldLabel="Observation médicale"
-                    insertMode="append"
-                  />
-                </div>
               </div>
               <MedicalAutocomplete
                 id="observation-text"
                 value={observationText}
                 onChange={setObservationText}
-                placeholder="Saisissez ou dictez vos notes ici..."
+                placeholder="Saisissez vos notes ici..."
                 className="redaction-module-textarea redaction-observation-textarea"
                 rows={14}
                 maxLength={RAW_DATA_MAX_CHARS}
@@ -2595,15 +2497,6 @@ const newRedactionStyles = `
 
 .conciliation-field-label span{
   color:var(--ink-faint);
-  font-weight:600;
-}
-
-.conciliation-dictation{
-  display:flex;
-  align-items:center;
-  gap:9px;
-  color:var(--ink-faint);
-  font-size:12px;
   font-weight:600;
 }
 

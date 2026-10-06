@@ -70,7 +70,7 @@ export default function Conformite() {
             <p className="lead">La protection des données de santé n'est pas une fonctionnalité de MEDACTIO : c'est sa condition de fonctionnement.</p>
             <div className="commit">
               <Commit icon={Shield} title="Aucune donnée patient stockée" text="Les saisies et documents vivent en mémoire de session, puis sont purgés à la déconnexion." />
-              <Commit icon={EyeOff} title="Pseudonymisation automatique" text="Appliquée au texte comme à la dictée, avant tout envoi au moteur d'IA." />
+              <Commit icon={EyeOff} title="Pseudonymisation automatique" text="Appliquée au texte saisi, avant tout envoi au moteur d'IA." />
               <Commit icon={Lock} title="Hébergement HDS" text="Hébergement agréé Données de Santé pour les traitements concernés." />
               <Commit icon={Shield} title="Secret médical" text="Respect du secret professionnel et de la confidentialité des soins." />
               <Commit icon={RefreshCw} title="Pas d'entraînement sur vos données" text="Vos contenus ne servent jamais à entraîner les modèles d'IA." />
@@ -93,7 +93,7 @@ export default function Conformite() {
             <p>MEDACTIO a une finalité unique : <strong>l'aide à la rédaction de documents hospitaliers</strong> : courrier de sortie, conciliation médicamenteuse, correspondance, observation médicale.</p>
             <Checklist items={[
               <><strong>Données de compte :</strong> <Tag>[À COMPLÉTER : nom, e-mail, identifiant professionnel…]</Tag>.</>,
-              <><strong>Contenus de rédaction :</strong> notes saisies ou dictées, traitées en session puis non conservées.</>,
+              <><strong>Contenus de rédaction :</strong> notes saisies, traitées en session puis non conservées.</>,
               <><strong>Aucun identifiant direct patient</strong> n'est requis ; la pseudonymisation est appliquée avant tout traitement par l'IA.</>,
             ]} />
           </DocSection>
