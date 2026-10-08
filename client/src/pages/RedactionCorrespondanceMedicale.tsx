@@ -276,7 +276,7 @@ Bien confraternellement,`;
     return <div className="correspondance-loading"><div /></div>;
   }
 
-  const displayedText = generatedText || streamingText || "Le courrier généré s'affichera ici après un clic sur « Générer le courrier ».";
+  const resultText = generatedText || streamingText;
 
   return (
     <div className="correspondance-page">
@@ -359,7 +359,26 @@ Bien confraternellement,`;
           </div>
           {missingCount > 0 && <div className="correspondance-warning">{missingCount} champ(s) restent à compléter avant l'envoi définitif.</div>}
           {pseudoInfo && <div className="correspondance-mask">Masquages appliqués : {pseudoInfo.maskCount} {pseudoInfo.detectedCategories.join(" · ")}</div>}
-          <div className="correspondance-letter">{displayedText}</div>
+          {resultText ? (
+            <>
+              <textarea
+                className="correspondance-letter correspondance-letter-editor"
+                value={resultText}
+                onChange={(event) => setGeneratedText(event.target.value)}
+                aria-label="Courrier généré modifiable"
+                readOnly={isGenerating && !generatedText}
+              />
+              <p className="correspondance-hint">
+                {isGenerating && !generatedText
+                  ? "Génération en cours..."
+                  : "Le courrier généré est modifiable avant copie."}
+              </p>
+            </>
+          ) : (
+            <div className="correspondance-letter">
+              Le courrier généré s'affichera ici après un clic sur « Générer le courrier ».
+            </div>
+          )}
           <div className="correspondance-note">
             Aide rédactionnelle : l'outil structure ce que vous saisissez et ne recommande aucune décision. Le praticien relit, complète et valide le courrier final.
           </div>
@@ -440,6 +459,8 @@ const styles = `
 .correspondance-warning{border:1px solid #f0d9a8;background:#fff8e8;color:#7d560c;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:.9rem}
 .correspondance-mask{border:1px solid #bfe6e0;background:#e7f4f2;color:#0a7b70;border-radius:999px;display:inline-flex;padding:6px 11px;font-size:.8rem;font-weight:800;margin:0 0 10px}
 .correspondance-letter{border:1px dashed #dde4ec;border-radius:12px;background:#fff;min-height:360px;padding:18px;white-space:pre-wrap;font-size:.98rem;line-height:1.55;color:#1c2733}
+.correspondance-letter-editor{display:block;width:100%;height:58vh;max-height:720px;resize:vertical;border-style:solid;border-color:#B8D5E9;font-family:inherit;overflow:auto}
+.correspondance-hint{margin:8px 0 0;font-size:.8rem;color:#6b7b8a}
 .correspondance-note{border:1px solid #f0d9a8;background:#fff8e8;color:#7d560c;border-radius:10px;padding:10px 12px;margin-top:14px;font-size:.88rem;line-height:1.5}
 @media(max-width:900px){.correspondance-wrap,.grid2{grid-template-columns:1fr}.correspondance-actions .correspondance-main-btn{width:100%}}
 `;

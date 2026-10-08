@@ -1,27 +1,39 @@
 /**
  * MEDACTIO — Compteur de mots affiché sous l'éditeur de relecture (étape 4) pour le volet projet_smr.
- * Le prompt impose 250 à 350 mots (400 maximum) ; le compteur aide le praticien à le vérifier.
+ * Information de relecture : aucune longueur maximale n'est imposée au praticien.
  *
- * Intégration (étape 4, sous « Éditeur de document — … ») :
- *   {h === "projet_smr" && <WordCounter html={editorHtml} />}
- * où editorHtml = contenu courant de l'éditeur (état déjà présent : texte généré / édité).
+ * Le compteur s'abonne aux saisies de l'éditeur `contentEditable` via sa ref : la frappe ne
+ * provoque donc que le rendu du compteur, et non celui de toute la page de rédaction.
  */
-import { useMemo } from "react";
+import { useEffect, useState, type RefObject } from "react";
 
-const MAX = 400;
+function countWords(html: string): number {
+  const text = (html || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\[À COMPLÉTER PAR LE MÉDECIN\]/g, " ");
+  return (text.match(/[A-Za-zÀ-ÖØ-öø-ÿ0-9]+(?:['’-][A-Za-zÀ-ÖØ-öø-ÿ0-9]+)*/g) ?? []).length;
+}
 
-export function WordCounter({ html }: { html: string }) {
-  const n = useMemo(() => {
-    const text = (html || "")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\[À COMPLÉTER PAR LE MÉDECIN\]/g, " ");
-    return (text.match(/[A-Za-zÀ-ÖØ-öø-ÿ0-9]+(?:['’-][A-Za-zÀ-ÖØ-öø-ÿ0-9]+)*/g) ?? []).length;
-  }, [html]);
+export function WordCounter({
+  editorRef,
+  sourceHtml,
+}: {
+  editorRef: RefObject<HTMLElement | null>;
+  sourceHtml: string;
+}) {
+  const [words, setWords] = useState(() => countWords(sourceHtml));
 
-  return (
-    <p className={`redaction-wordcount${n > MAX ? " is-over" : ""}`}>
-      Synthèse : {n} / {MAX} mots
-      {n > MAX && " — texte trop long, pensez à régénérer ou à raccourcir"}
-    </p>
-  );
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) {
+      setWords(countWords(sourceHtml));
+      return;
+    }
+    const update = () => setWords(countWords(editor.innerHTML));
+    update();
+    editor.addEventListener("input", update);
+    return () => editor.removeEventListener("input", update);
+  }, [editorRef, sourceHtml]);
+
+  return <p className="redaction-wordcount">Synthèse : {words} mots</p>;
 }

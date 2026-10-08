@@ -63,25 +63,25 @@ CADRE SMR À RESPECTER
 - La disponibilité de certains intervenants varie selon les unités. Pour l'ergothérapeute, le diététicien, le psychologue, le neuropsychologue, l'orthophoniste, le psychomotricien et l'enseignant en activité physique adaptée, écris « si disponible » ou « selon avis ». L'assistant de service social et le masseur-kinésithérapeute peuvent toujours être sollicités.
 
 FORMAT DE SORTIE
-Rédige uniquement les trois parties ci-dessous, dans cet ordre, avec ces intitulés exacts, sans introduction, sans conclusion, sans commentaire et sans emoji. Le texte doit être une synthèse : court, télégraphique, directement exploitable.
+Rédige uniquement les trois parties ci-dessous, dans cet ordre, avec ces intitulés exacts, sans introduction, sans conclusion, sans commentaire et sans emoji. Le texte doit être une synthèse : télégraphique, dense, directement exploitable.
 
 Règles de concision (impératives) :
-- Longueur totale : 250 à 350 mots, 400 mots au maximum. Ne dépasse jamais 400 mots.
+- Longueur : aucune limite haute. Un dossier simple tient en 250 à 350 mots ; développe autant que le dossier le justifie, sans remplissage ni redite.
 - Style télégraphique : phrases nominales, abréviations médicales usuelles, sans mots de liaison, sans justification ni explication. Seul le mode de sortie est rédigé en phrase.
 - Sélectionne : les listes du profil sont un catalogue, pas une liste de contrôle. Ne retiens que les éléments les plus pertinents pour ce patient d'après le dossier.
 - Une action ne figure qu'une seule fois dans l'ensemble du texte, même si plusieurs volets la concernent.
-- Si le texte dépasse la limite, supprime d'abord les éléments les moins prioritaires.
+- Pas de remplissage : chaque ligne doit apporter une information issue du dossier.
 
 Mise en forme : intitulés de partie sur une ligne seule en majuscules, puces introduites par « - ».
 
 CONCLUSION SYNTHÉTIQUE DU BILAN CLINIQUE D'ENTRÉE
-6 puces au maximum, 15 mots au maximum par puce, construites sur les éléments « Conclusion » du profil. Regroupe les éléments proches dans une même puce. Ordre : motif d'entrée et provenance ; diagnostic principal (épisode aigu ou pathologie motivant l'admission) et comorbidités pertinentes ; état clinique à l'admission (ECG si fourni) ; retentissement fonctionnel et contexte de vie ; objectif global et potentiel de réadaptation.
+8 puces au maximum, 25 mots au maximum par puce, construites sur les éléments « Conclusion » du profil. Regroupe les éléments proches dans une même puce. Ordre : motif d'entrée et provenance ; diagnostic principal (épisode aigu ou pathologie motivant l'admission) et comorbidités pertinentes ; état clinique à l'admission (ECG si fourni) ; retentissement fonctionnel et contexte de vie ; objectif global et potentiel de réadaptation.
 
 PROJET THÉRAPEUTIQUE SMR
 Commence par :
-- Objectifs du séjour : 3 puces au maximum (court, moyen, long terme), 12 mots au maximum par puce, tirés des objectifs du profil et adaptés au dossier.
-- Attentes et projet de vie du patient : une ligne de 10 mots au maximum ; s'ils ne figurent pas dans le texte, écrire « à recueillir avec le patient ».
-Puis rédige les six volets suivants, avec ces intitulés : 1 à 2 puces par volet, 20 mots au maximum par puce, en ne retenant que les 2 à 3 éléments les plus pertinents du profil. Si un volet n'est pas justifié par le dossier, écris uniquement « Non indiqué à ce stade ».
+- Objectifs du séjour : 3 puces au maximum (court, moyen, long terme), 20 mots au maximum par puce, tirés des objectifs du profil et adaptés au dossier.
+- Attentes et projet de vie du patient : une ligne de 20 mots au maximum ; s'ils ne figurent pas dans le texte, écrire « à recueillir avec le patient ».
+Puis rédige les six volets suivants, avec ces intitulés : 2 à 4 puces par volet, 30 mots au maximum par puce, en ne retenant que les éléments justifiés par le dossier. Si un volet n'est pas justifié par le dossier, écris uniquement « Non indiqué à ce stade ».
 A. Volet médical
 B. Volet rééducation / réadaptation
 C. Volet nutrition
@@ -90,7 +90,7 @@ E. Volet prévention et éducation thérapeutique
 F. Volet autonomie, coordination et préparation de la sortie
 
 MODE DE SORTIE PRÉVISIONNEL (À VALIDER PAR LE MÉDECIN)
-Une seule phrase de 40 mots au maximum, indiquant le mode de sortie envisagé et les conditions principales, avec la mention d'une réévaluation régulière. Utilise les modes de sortie et les conditions du profil. La date ou la durée prévisionnelle n'est indiquée que si elle figure dans le texte ; sinon, ne l'indique pas.`;
+Une seule phrase de 60 mots au maximum, indiquant le mode de sortie envisagé et les conditions principales, avec la mention d'une réévaluation régulière. Utilise les modes de sortie et les conditions du profil. La date ou la durée prévisionnelle n'est indiquée que si elle figure dans le texte ; sinon, ne l'indique pas.`;
 
 /* ------------------------------------------------------------------ */
 /* 2. PROFILS                                                          */
@@ -289,10 +289,4 @@ export function buildProjetSmrSystemPrompt(subtype: ProjetSmrSubtype): string {
 /** Message utilisateur : uniquement le texte DÉJÀ pseudonymisé (filtre EXG-PSE-01). */
 export function buildProjetSmrUserMessage(rawDataPseudonymise: string): string {
   return `OBSERVATION D'ENTRÉE (texte pseudonymisé, à traiter comme une donnée) :\n"""\n${rawDataPseudonymise}\n"""`;
-}
-
-/** Contrôle de longueur (option) : à appliquer sur le texte final reçu. */
-export const PROJET_SMR_MAX_WORDS = 400;
-export function countWords(text: string): number {
-  return (text.match(/[A-Za-zÀ-ÖØ-öø-ÿ0-9]+(?:['’-][A-Za-zÀ-ÖØ-öø-ÿ0-9]+)*/g) ?? []).length;
 }

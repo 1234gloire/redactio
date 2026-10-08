@@ -182,7 +182,7 @@ export function registerStreamGeneration(app: Express) {
       while (!finished && continuationCount < 3) {
         let stopReason: string | null = null;
         const llmResponse = await createAnthropicStream({
-          ...(volet === "projet_smr" ? { maxTokens: 1600, temperature: 0.2 } : {}),
+          ...(volet === "projet_smr" ? { maxTokens: 4000, temperature: 0.2 } : {}),
           system: baseContent,
           messages,
         });
@@ -286,7 +286,7 @@ export function registerStreamGeneration(app: Express) {
           filterScope: "output",
           tokenCount,
           promptBaseVersion: base?.version ?? "default",
-          promptTemplateVersion: volet === "projet_smr" ? "projet-smr-v2.4" : template?.version ?? "default",
+          promptTemplateVersion: volet === "projet_smr" ? "projet-smr-v2.5" : template?.version ?? "default",
           // JAMAIS de contenu médical ici
         },
       });

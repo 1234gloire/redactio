@@ -275,8 +275,6 @@ export default function Redaction() {
   const [streamingText, setStreamingText] = useState("");
   const [renderedDocumentHtml, setRenderedDocumentHtml] = useState("");
   const [editedDocumentHtml, setEditedDocumentHtml] = useState("");
-  const [liveEditorHtml, setLiveEditorHtml] = useState<string | null>(null);
-  useEffect(() => setLiveEditorHtml(null), [generatedDoc]);
 
   useEffect(() => {
     if (initialVolet === "correspondance") {
@@ -610,6 +608,12 @@ ${treatmentExitDate.trim() || "[À COMPLÉTER PAR LE MÉDECIN]"}`;
     setValidated(true);
     setStep(5);
   }, [editedDocumentHtml, renderedDocumentHtml]);
+
+  /** Retour à l'éditeur depuis l'export : le document reste modifiable, la validation est à refaire. */
+  const handleResumeEditing = useCallback(() => {
+    setValidated(false);
+    setStep(4);
+  }, []);
 
   const handleReset = useCallback(() => {
     setStep(1);
@@ -1424,14 +1428,18 @@ APIXABAN 5 mg cp : 1 matin et 1 soir`}
                 ref={documentEditorRef}
                 className="tiptap-editor"
                 contentEditable
-                onInput={(event) => setLiveEditorHtml(event.currentTarget.innerHTML)}
                 suppressContentEditableWarning
                 role="textbox"
                 aria-label="Éditeur de document médical"
                 aria-multiline="true"
                 dangerouslySetInnerHTML={{ __html: editedDocumentHtml || renderedDocumentHtml }}
               />
-              {selectedVolet === "projet_smr" && <WordCounter html={liveEditorHtml ?? (editedDocumentHtml || renderedDocumentHtml)} />}
+              {selectedVolet === "projet_smr" && (
+                <WordCounter
+                  editorRef={documentEditorRef}
+                  sourceHtml={editedDocumentHtml || renderedDocumentHtml}
+                />
+              )}
             </div>
 
             {/* Validation */}
@@ -1542,7 +1550,7 @@ APIXABAN 5 mg cp : 1 matin et 1 soir`}
 
             <div className="flex justify-center">
               <div className="flex flex-wrap justify-center gap-2">
-                <Button variant="outline" onClick={() => setStep(4)} className="gap-2">
+                <Button variant="outline" onClick={() => setStep(2)} className="gap-2">
                   <ArrowLeft className="w-4 h-4" />
                   Revenir à la relecture
                 </Button>
@@ -1604,10 +1612,16 @@ APIXABAN 5 mg cp : 1 matin et 1 soir`}
             </Card>
 
             <div className="flex justify-center">
-              <Button variant="outline" onClick={handleReset} className="gap-2">
-                <RotateCcw className="w-4 h-4" />
-                Nouvelle rédaction
-              </Button>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button variant="outline" onClick={handleResumeEditing} className="gap-2">
+                  <ArrowLeft className="w-4 h-4" />
+                  Modifier le document
+                </Button>
+                <Button variant="outline" onClick={handleReset} className="gap-2">
+                  <RotateCcw className="w-4 h-4" />
+                  Nouvelle rédaction
+                </Button>
+              </div>
             </div>
           </div>
         )}
@@ -2776,6 +2790,5 @@ const newRedactionStyles = `
   font-size: 12.5px;
   color: var(--ink-soft, #5a6b78);
 }
-.redaction-wordcount.is-over { color: #b3261e; font-weight: 700; }
 
 `;
