@@ -7,6 +7,7 @@ import {
   FilePenLine,
   FileText,
   Info,
+  Milestone,
   Plus,
   Search,
   Shield,
@@ -34,6 +35,7 @@ type FaqCategory =
   | "observation"
   | "ortho"
   | "correspondance"
+  | "smr"
   | "securite";
 
 type FaqItem = {
@@ -249,6 +251,47 @@ const GUIDE_MODULES: GuideModule[] = [
       },
     ],
   },
+  {
+    id: "guide-smr",
+    title: "Projet thérapeutique SMR",
+    description:
+      "Sélection du service SMR, dépôt des données cliniques, génération, révision par le praticien.",
+    accent: "var(--terra)",
+    badge: "4 étapes",
+    icon: <Milestone />,
+    steps: [
+      {
+        title: "Sélectionner le service SMR",
+        body: (
+          <>
+            Ouvrez l&apos;onglet Projet thérapeutique SMR et choisissez le service SMR
+            concerné :
+            <ul>
+              <li>SMR gériatrique</li>
+              <li>SMR polyvalent</li>
+              <li>SMR locomoteur</li>
+              <li>SMR neurologique</li>
+              <li>et les autres types de SMR proposés dans la liste</li>
+            </ul>
+          </>
+        ),
+      },
+      {
+        title: "Déposer les données cliniques",
+        body:
+          "Renseignez les données depuis le motif d'entrée jusqu'à la conclusion de l'examen clinique, sans aller au-delà de ce niveau. Deux méthodes : saisissez ou collez directement les données dans la case appropriée, ou importez un fichier contenant ces données.",
+      },
+      {
+        title: "Générer le document",
+        body: "Cliquez sur Générer.",
+      },
+      {
+        title: "Révision par le praticien",
+        body:
+          "Une fois le document généré, vous relisez le projet thérapeutique SMR, corrigez les éventuelles inexactitudes et complétez les éléments manquants. Transmettez ensuite le document finalisé à la secrétaire médicale, ou joignez-le au dossier dans votre DPI.",
+      },
+    ],
+  },
 ];
 
 const FAQ_LABELS: Record<FaqCategory | "tous", string> = {
@@ -259,6 +302,7 @@ const FAQ_LABELS: Record<FaqCategory | "tous", string> = {
   observation: "Observation médicale",
   ortho: "Chirurgie ortho",
   correspondance: "Correspondance",
+  smr: "Projet SMR",
   securite: "Sécurité & données",
 };
 
@@ -330,6 +374,30 @@ const FAQ_ITEMS: FaqItem[] = [
       "Correspondance médicale couvre tout courrier médical sortant en dehors du courrier de sortie standard : avis, courrier confraternel, réponse à un correspondant, etc.",
   },
   {
+    category: "smr",
+    question: "Quelle différence avec le courrier de sortie SMR ?",
+    answer:
+      "Le courrier de sortie résume le séjour à la fin de l'hospitalisation. Le Projet thérapeutique SMR couvre la conclusion d'entrée, le projet thérapeutique et le mode de sortie, selon le type de SMR.",
+  },
+  {
+    category: "smr",
+    question: "Jusqu'où dois-je déposer les données cliniques ?",
+    answer:
+      "Du motif d'entrée jusqu'à la conclusion de l'examen clinique. Il n'est pas nécessaire d'aller au-delà de ce niveau.",
+  },
+  {
+    category: "smr",
+    question: "Dois-je saisir les données ou puis-je déposer un fichier ?",
+    answer:
+      "Les deux sont possibles : saisie directe dans la case appropriée, ou import d'un fichier contenant les données cliniques.",
+  },
+  {
+    category: "smr",
+    question: "Que faire du document une fois généré ?",
+    answer:
+      "Relisez-le, corrigez les inexactitudes et complétez les éléments manquants. Transmettez ensuite le document finalisé à la secrétaire médicale, ou joignez-le au dossier dans votre DPI.",
+  },
+  {
     category: "securite",
     question: "Qui peut relire et valider les documents avant transmission ?",
     answer:
@@ -371,6 +439,7 @@ export default function ModeEmploi() {
         observation: [],
         ortho: [],
         correspondance: [],
+        smr: [],
         securite: [],
       }
     );
@@ -549,7 +618,7 @@ const monEmploiStyles = `
   --ink:#0b1b29; --ink-soft:#5a6b78; --ink-faint:#8a99a4;
   --teal:#0e9c8e; --teal-deep:#0a7b70; --line:#e6edf0;
   --field:#f6f9f9; --mint:#eef6f4; --navy:#1e3a5f;
-  --gold:#c58a17; --purple:#6d5bd0; --blue:#2f6fb0;
+  --gold:#c58a17; --purple:#6d5bd0; --blue:#2f6fb0; --terra:#c0573e;
   --amber:#b9740a; --amber-bg:#fdf4e7; --amber-line:#f0dcb4;
   width:100%;
   max-width:1180px;
