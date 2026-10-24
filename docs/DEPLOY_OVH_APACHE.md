@@ -1,5 +1,9 @@
 # Deploy MEDACTIO on OVH Ubuntu with Apache
 
+> Legacy runbook: it describes the non-HDS VPS that served `medactio.fr`
+> until the migration. For the OVHcloud HDS Public Cloud instance, follow
+> [DEPLOY_OVH_HDS.md](DEPLOY_OVH_HDS.md) instead.
+
 Target domain: `medactio.fr`
 
 This deployment keeps MEDACTIO isolated from other projects. Internal

@@ -3,7 +3,7 @@ import express from "express";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { ensureLocalAdmin } from "../db";
+import { assertDatabaseReady, ensureLocalAdmin } from "../db";
 import { appRouter } from "../routers";
 import { registerOAuthRoutes } from "./oauth";
 import { registerExportRoutes } from "../exportRoute";
@@ -37,6 +37,11 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  // La base doit répondre avant tout le reste : en production, un démarrage
+  // sans base donnerait une application en apparence saine mais sans comptes
+  // ni journal d'audit.
+  await assertDatabaseReady();
+
   // S'assurer que l'admin local existe AVANT de démarrer le serveur.
   // C'est crucial pour que la connexion admin fonctionne dès le premier lancement.
   await ensureLocalAdmin();

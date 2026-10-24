@@ -1,5 +1,7 @@
 import { and, count, desc, eq, gt, isNull, like, or, sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import { drizzle, type MySql2Database } from "drizzle-orm/mysql2";
+import mysql from "mysql2/promise";
+import { readFileSync } from "node:fs";
 import { hashPassword } from "./_core/passwords";
 import {
   AuditLog,
@@ -30,18 +32,83 @@ import {
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
-let _db: ReturnType<typeof drizzle> | null = null;
+type Database = MySql2Database<Record<string, unknown>>;
+
+let _db: Database | null = null;
+let _pool: mysql.Pool | null = null;
+
+/**
+ * Options TLS de la connexion MySQL.
+ *
+ * Une base managée (OVH Public Cloud Databases dans le périmètre HDS, par exemple)
+ * n'accepte que des connexions chiffrées et fournit son propre certificat
+ * d'autorité : renseigner DATABASE_SSL_CA avec le chemin du fichier PEM.
+ * DATABASE_SSL=true active TLS avec les autorités du système, sans CA dédiée.
+ * Sans l'une de ces variables, la connexion reste en clair — acceptable
+ * uniquement pour une base locale sur la même machine.
+ */
+function buildSslOptions(): mysql.PoolOptions["ssl"] | undefined {
+  const caPath = process.env.DATABASE_SSL_CA?.trim();
+  if (caPath) {
+    return { ca: readFileSync(caPath, "utf8"), minVersion: "TLSv1.2" };
+  }
+  if (process.env.DATABASE_SSL === "true") {
+    return { minVersion: "TLSv1.2" };
+  }
+  return undefined;
+}
+
+function getPool(): mysql.Pool | null {
+  if (_pool) return _pool;
+  const uri = process.env.DATABASE_URL;
+  if (!uri) return null;
+  const ssl = buildSslOptions();
+  _pool = mysql.createPool({ uri, ...(ssl ? { ssl } : {}) });
+  return _pool;
+}
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      const pool = getPool();
+      _db = pool ? drizzle(pool) : null;
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
     }
   }
   return _db;
+}
+
+/**
+ * Vérifie que la base répond avant que le serveur accepte du trafic.
+ *
+ * En production, une base injoignable arrête le démarrage : l'application
+ * tournerait sinon sans comptes, sans journal d'audit et sans que personne
+ * ne s'en aperçoive avant la première connexion.
+ */
+export async function assertDatabaseReady(): Promise<void> {
+  if (!process.env.DATABASE_URL) {
+    if (ENV.isProduction) {
+      console.error("[Database] DATABASE_URL manquante : démarrage impossible en production.");
+      process.exit(1);
+    }
+    console.warn("[Database] DATABASE_URL manquante : démarrage sans base de données.");
+    return;
+  }
+
+  try {
+    const pool = getPool();
+    if (!pool) throw new Error("pool non initialisé");
+    await pool.query("SELECT 1");
+    const chiffree = Boolean(buildSslOptions());
+    console.log(`[Database] Connexion établie (TLS ${chiffree ? "activé" : "désactivé"}).`);
+  } catch (error) {
+    console.error("[Database] Connexion impossible :", error instanceof Error ? error.message : error);
+    if (ENV.isProduction) {
+      process.exit(1);
+    }
+  }
 }
 
 // ─── Utilisateurs ─────────────────────────────────────────────────────────────
